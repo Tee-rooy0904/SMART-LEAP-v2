@@ -1,0 +1,1 @@
+-- Migration scaffold: 011_create_initial_requirement_types_table.sql

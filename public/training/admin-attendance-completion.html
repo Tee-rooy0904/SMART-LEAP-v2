@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in a tt en da nc e c om pl et io n.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Attendance and Completion</title><link rel="stylesheet" href="../assets/css/training/training-admin.css"></head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-attendance-completion">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Admin</li><li>/</li><li>Training</li><li>/</li><li>Attendance &amp; Completion</li></ol></nav><h1>Attendance &amp; Completion Panel</h1></div><div class="page-actions"><button class="btn-ghost" type="button">Back to Session</button><button class="btn-secondary" type="button">Open PDO Workspace</button></div></header>
+    <section class="panel-card"><div class="panel-card__body"><div class="label-value-list" id="attendance-session-context"></div></div></section>
+    <section id="attendance-summary-cards" class="stats-grid"></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Attendance Table</h2></div><div class="panel-card__body"><form class="filter-toolbar" id="attendance-toolbar"></form><div class="table-row-actions"><button class="btn-secondary" type="button">Mark Selected Present</button><button class="btn-secondary" type="button">Mark Selected Absent</button><button class="btn-secondary" type="button">Mark Selected Late</button></div><div class="data-table-wrap"><table class="data-table"><caption>Attendance table</caption><thead><tr><th>Applicant Name</th><th>Group Number</th><th>Assigned Status</th><th>Attendance Status</th><th>Time In</th><th>Time Out</th><th>Attendance Remarks</th><th>Completion Status</th><th>Form Completion Status</th><th>Action</th></tr></thead><tbody id="attendance-table-body"></tbody></table></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Completion Panel</h2></div><div class="panel-card__body"><form class="form-grid" id="completion-form"></form></div></section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-attendance-completion.js"></script>
+</body>
+</html>

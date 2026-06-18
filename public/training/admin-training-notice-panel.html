@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in t ra in in g n ot ic e p an el.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Training Notice Panel</title><link rel="stylesheet" href="../assets/css/training/training-admin.css"></head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-training-notice-panel">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Admin</li><li>/</li><li>Training</li><li>/</li><li>Notice Panel</li></ol></nav><h1>Training Notice Sending Panel</h1></div><div class="page-actions"><button class="btn-ghost" type="button">Back to Session</button><button class="btn-secondary" type="button">Go to Attendance</button></div></header>
+    <section class="panel-card"><div class="panel-card__body"><div class="label-value-list" id="notice-session-context"></div></div></section>
+    <div id="notice-banner" class="validation-banner validation-banner--warning" role="alert"></div>
+    <section class="split-workspace">
+      <section class="panel-card"><div class="panel-card__header"><h2>Compose Notice</h2></div><div class="panel-card__body"><form id="notice-compose-form" class="form-grid form-grid--single"></form></div></section>
+      <div></div>
+      <section class="summary-rail"><div id="notice-summary-cards" class="stats-grid"></div></section>
+    </section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Delivery Status</h2></div><div class="panel-card__body"><div class="data-table-wrap"><table class="data-table"><caption>Delivery status</caption><thead><tr><th>Applicant Name</th><th>Group Number</th><th>In-System Notice Status</th><th>Email Notice Status</th><th>Last Sent At</th><th>Last Failure Reason</th><th>Action</th></tr></thead><tbody id="notice-delivery-body"></tbody></table></div></div></section>
+  </main>
+  <div class="modal" id="notice-preview-modal" aria-hidden="true"><div class="modal__dialog"><div class="modal__header"><h2>Preview Notice</h2></div><div class="modal__body" id="notice-preview-body"></div><div class="modal__footer"><button class="btn-ghost" type="button" data-close-modal>Close</button><button class="btn" id="send-preview-notice" type="button">Send Notice to Assigned Participants</button></div></div></div>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-training-notice-panel.js"></script>
+</body>
+</html>

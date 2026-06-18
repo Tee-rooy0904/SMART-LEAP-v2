@@ -1,0 +1,262 @@
+.smart-notification-center {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: 80;
+}
+
+.smart-notification-center--floating {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+}
+
+.smart-notification-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid rgba(20, 67, 105, 0.16);
+  border-radius: 0.85rem;
+  background: #ffffff;
+  color: #074b7a;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 10px 22px rgba(15, 47, 74, 0.08);
+}
+
+.smart-notification-toggle:hover,
+.smart-notification-toggle:focus-visible {
+  border-color: rgba(10, 91, 146, 0.34);
+  background: #f7fbff;
+  outline: none;
+}
+
+.smart-notification-toggle__icon {
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: #e5f1fb;
+  color: #07558c;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.smart-notification-toggle__badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.34rem;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #0f8b62;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1rem;
+  text-align: center;
+}
+
+.smart-notification-panel {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  width: min(390px, calc(100vw - 2rem));
+  z-index: 220;
+  max-height: min(620px, calc(100vh - 7rem));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(24, 71, 107, 0.16);
+  border-radius: 1.1rem;
+  background: #ffffff;
+  color: #0d2742;
+  box-shadow: 0 24px 50px rgba(16, 42, 67, 0.2);
+}
+
+.smart-notification-panel--staff-floating {
+  position: fixed;
+  z-index: 12000;
+  max-height: min(640px, calc(100vh - 96px));
+}
+
+.smart-notification-panel[hidden] {
+  display: none;
+}
+
+.smart-notification-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid rgba(30, 65, 95, 0.09);
+}
+
+.smart-notification-panel__eyebrow {
+  display: block;
+  color: #07558c;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.smart-notification-panel__header h2 {
+  margin: 0.18rem 0 0;
+  color: #082744;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.smart-notification-panel__refresh,
+.smart-notification-mark,
+.smart-notification-item__read {
+  border: 1px solid rgba(14, 77, 122, 0.18);
+  border-radius: 0.75rem;
+  background: #f8fbff;
+  color: #07558c;
+  font-weight: 800;
+}
+
+.smart-notification-panel__refresh {
+  padding: 0.48rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.smart-notification-panel__meta {
+  padding: 0.72rem 1rem;
+  color: #5f7185;
+  font-size: 0.82rem;
+  border-bottom: 1px solid rgba(30, 65, 95, 0.08);
+}
+
+.smart-notification-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.85rem;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.smart-notification-item,
+.smart-notification-empty {
+  border: 1px solid rgba(24, 71, 107, 0.12);
+  border-radius: 0.9rem;
+  background: #f8fbff;
+}
+
+.smart-notification-item {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+}
+
+.smart-notification-item.is-unread {
+  border-color: rgba(15, 139, 98, 0.3);
+  background: linear-gradient(90deg, rgba(15, 139, 98, 0.08), #ffffff 45%);
+}
+
+.smart-notification-item__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.smart-notification-item__top strong {
+  color: #082744;
+  font-size: 0.9rem;
+}
+
+.smart-notification-item__top span,
+.smart-notification-item small {
+  color: #62758a;
+  font-size: 0.72rem;
+}
+
+.smart-notification-item p {
+  margin: 0.35rem 0;
+  color: #25425c;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.smart-notification-item__read {
+  justify-self: start;
+  padding: 0.42rem 0.65rem;
+  font-size: 0.76rem;
+}
+
+.smart-notification-empty {
+  padding: 1rem;
+  color: #60758a;
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+.smart-notification-panel__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid rgba(30, 65, 95, 0.09);
+  background: #fbfdff;
+}
+
+.smart-notification-mark {
+  padding: 0.55rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+.mobile-topbar__account + .smart-notification-center,
+.smart-notification-center + .mobile-topbar__account {
+  margin-left: 0.45rem;
+}
+
+.beneficiary-contextbar__notifications .smart-notification-center {
+  margin-left: 0;
+}
+
+.mobile-topbar > .smart-notification-center {
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  .smart-notification-toggle {
+    min-height: 38px;
+    padding: 0.62rem;
+  }
+
+  .smart-notification-toggle__text {
+    display: none;
+  }
+
+  .smart-notification-panel {
+    position: fixed;
+    inset: 4.5rem 1rem auto 1rem;
+    width: auto;
+    max-height: calc(100vh - 6rem);
+    z-index: 12000;
+  }
+
+  .smart-notification-panel--staff-floating {
+    inset: 4.5rem 0.75rem auto 0.75rem !important;
+    width: auto !important;
+    max-height: calc(100vh - 5.5rem);
+  }
+
+  .smart-notification-panel.smart-notification-panel--beneficiary-mobile {
+    inset: auto;
+    position: fixed;
+    z-index: 4200;
+    max-height: calc(100vh - 6rem);
+  }
+}

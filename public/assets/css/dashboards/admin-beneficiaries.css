@@ -1,0 +1,744 @@
+.admin-beneficiaries-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-beneficiaries-filters {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.5fr) repeat(4, minmax(150px, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.admin-beneficiaries-filter-actions {
+  display: grid;
+  gap: 6px;
+  align-content: end;
+}
+
+.admin-beneficiaries-filters > .filter-group--search {
+  grid-column: 1;
+}
+
+.admin-beneficiaries-filters > .filter-group--actions {
+  grid-column: auto;
+}
+
+.admin-beneficiaries-filter-actions .app-btn-outline {
+  width: 100%;
+}
+
+@media (max-width: 1320px) {
+  .admin-beneficiaries-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-beneficiaries-filters > .filter-group--search,
+  .admin-beneficiaries-filters > .filter-group--actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 780px) {
+  .admin-beneficiaries-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-beneficiaries-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  transition:
+    border-color var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out);
+}
+
+.admin-beneficiaries-table-head h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  color: #102347;
+}
+
+.admin-beneficiaries-table {
+  min-width: 1440px;
+  table-layout: fixed;
+}
+
+.admin-beneficiaries-table th:nth-child(1),
+.admin-beneficiaries-table td:nth-child(1) {
+  width: 22%;
+}
+
+.admin-beneficiaries-table th:nth-child(2),
+.admin-beneficiaries-table td:nth-child(2) {
+  width: 17%;
+}
+
+.admin-beneficiaries-table th:nth-child(3),
+.admin-beneficiaries-table td:nth-child(3) {
+  width: 15%;
+  text-align: left !important;
+}
+
+.admin-beneficiaries-table th:nth-child(4),
+.admin-beneficiaries-table td:nth-child(4) {
+  width: 14%;
+  text-align: left !important;
+}
+
+.admin-beneficiaries-table th:nth-child(5),
+.admin-beneficiaries-table td:nth-child(5) {
+  width: 11%;
+}
+
+.admin-beneficiaries-table th:nth-child(6),
+.admin-beneficiaries-table td:nth-child(6) {
+  width: 11%;
+  white-space: nowrap;
+}
+
+.admin-beneficiaries-table th:nth-child(7),
+.admin-beneficiaries-table td:nth-child(7) {
+  width: 10%;
+  white-space: nowrap;
+}
+
+#beneficiaries-section .admin-beneficiaries-table thead th:last-child,
+#beneficiaries-section .admin-beneficiaries-table tbody td:last-child,
+.admin-beneficiaries-table th.actions,
+.admin-beneficiaries-table td.actions {
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.admin-beneficiaries-table tbody td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  vertical-align: top;
+}
+
+.admin-beneficiaries-table th:nth-child(3),
+.admin-beneficiaries-table th:nth-child(4),
+.admin-beneficiaries-table th:nth-child(5),
+.admin-beneficiaries-table th:nth-child(6) {
+  text-align: left !important;
+}
+
+.admin-beneficiaries-table td:nth-child(3),
+.admin-beneficiaries-table td:nth-child(4),
+.admin-beneficiaries-table td:nth-child(5),
+.admin-beneficiaries-table td:nth-child(6) {
+  text-align: left !important;
+}
+
+.admin-beneficiaries-snapshot-card .metric-card__body {
+  gap: 10px;
+}
+
+.admin-beneficiary-person,
+.admin-beneficiary-stack {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-beneficiary-stack--compact {
+  gap: 4px;
+}
+
+.admin-beneficiary-person strong,
+.admin-beneficiary-stack strong {
+  color: #102347;
+  font-size: 1rem;
+}
+
+.admin-beneficiary-person span,
+.admin-beneficiary-person small,
+.admin-beneficiary-stack span,
+.admin-beneficiary-stack small {
+  color: #64748b;
+  margin: 0;
+}
+
+.admin-beneficiary-stack small {
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.admin-beneficiaries-table td:nth-child(3),
+.admin-beneficiaries-table td:nth-child(4),
+.admin-beneficiaries-table td:nth-child(5),
+.admin-beneficiaries-table td:nth-child(6),
+.admin-beneficiaries-table td:nth-child(7) {
+  padding-top: 14px;
+  vertical-align: top;
+}
+
+#beneficiaries-section .admin-beneficiaries-table tbody td:last-child,
+.admin-beneficiaries-table tbody td.actions,
+.admin-beneficiaries-table td:nth-child(7).actions {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  vertical-align: middle !important;
+  display: table-cell;
+}
+
+.admin-beneficiary-stack--program,
+.admin-beneficiary-stack--repayment,
+.admin-beneficiary-stack--compliance {
+  justify-items: start;
+  text-align: left;
+}
+
+.admin-beneficiary-stack--program strong,
+.admin-beneficiary-stack--repayment strong,
+.admin-beneficiary-stack--compliance strong {
+  font-size: 0.95rem;
+}
+
+.admin-beneficiary-actions {
+  display: grid;
+  place-items: center;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 0;
+  width: 100%;
+  min-height: 88px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.admin-beneficiary-actions .team-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 108px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 0.88rem;
+  margin: 0 auto;
+}
+
+.admin-beneficiary-actions--single {
+  min-height: auto;
+  align-content: start;
+  place-items: start center;
+}
+
+.admin-beneficiaries-shell .table-card:hover .admin-beneficiaries-table-head {
+  border-color: rgba(106, 89, 232, 0.22);
+  background: rgba(249, 247, 255, 0.84);
+}
+
+.admin-beneficiaries-table tbody tr:hover .admin-beneficiary-person strong,
+.admin-beneficiaries-table tbody tr:hover .admin-beneficiary-stack strong {
+  color: #5d4cb3;
+}
+
+.admin-status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-status-chip--success {
+  background: rgba(34, 197, 94, 0.16);
+  color: #1f7a43;
+}
+
+.admin-status-chip--warning {
+  background: rgba(245, 158, 11, 0.16);
+  color: #9a5b0a;
+}
+
+.admin-status-chip--danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b42318;
+}
+
+.admin-co-maker-roster-wrap {
+  overflow-x: auto;
+}
+
+.admin-co-maker-roster {
+  min-width: 1100px;
+}
+
+.admin-co-maker-roster__head,
+.admin-co-maker-roster__row {
+  display: grid;
+  grid-template-columns: 1.22fr 1.08fr 0.56fr 0.72fr 0.9fr 0.82fr 0.82fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-co-maker-roster__head {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.admin-co-maker-roster__head > span {
+  color: #5f7ba1;
+  font-size: 0.79rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-co-maker-roster__body {
+  display: grid;
+}
+
+.admin-co-maker-roster__row {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.admin-co-maker-roster__row:last-child {
+  border-bottom: none;
+}
+
+.admin-co-maker-roster__cell {
+  min-width: 0;
+}
+
+.admin-co-maker-roster__cell--actions,
+.admin-co-maker-roster__head > span:last-child {
+  text-align: center;
+}
+
+.admin-co-maker-roster__cell--relationship,
+.admin-co-maker-roster__head > span:nth-child(3),
+.admin-co-maker-roster__cell--status,
+.admin-co-maker-roster__head > span:nth-child(4),
+.admin-co-maker-roster__cell--assigned,
+.admin-co-maker-roster__head > span:nth-child(5),
+.admin-co-maker-roster__cell--submitted,
+.admin-co-maker-roster__head > span:nth-child(6) {
+  text-align: center;
+}
+
+.admin-co-maker-roster__cell--co-maker .admin-beneficiary-person,
+.admin-co-maker-roster__cell--primary .admin-beneficiary-stack,
+.admin-co-maker-roster__cell--assigned .admin-beneficiary-stack,
+.admin-co-maker-roster__cell--submitted .admin-beneficiary-stack,
+.admin-co-maker-roster__cell--relationship .admin-beneficiary-stack {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-co-maker-roster__cell--relationship .admin-beneficiary-stack {
+  justify-items: center;
+  text-align: center;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.admin-co-maker-roster__cell--assigned .admin-beneficiary-stack {
+  justify-items: center;
+  text-align: center;
+}
+
+.admin-co-maker-roster__cell--submitted,
+.admin-co-maker-roster__head > span:nth-child(6) {
+  padding-left: 14px;
+}
+
+.admin-co-maker-roster__cell--submitted .admin-beneficiary-stack {
+  justify-items: center;
+  text-align: center;
+}
+
+.admin-co-maker-roster__cell--co-maker .admin-beneficiary-person span,
+.admin-co-maker-roster__cell--co-maker .admin-beneficiary-person small,
+.admin-co-maker-roster__cell--primary .admin-beneficiary-stack span,
+.admin-co-maker-roster__cell--primary .admin-beneficiary-stack small,
+.admin-co-maker-roster__cell--assigned .admin-beneficiary-stack small,
+.admin-co-maker-roster__cell--submitted .admin-beneficiary-stack small,
+.admin-co-maker-roster__cell--relationship .admin-beneficiary-stack small {
+  line-height: 1.35;
+}
+
+.admin-co-maker-cell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+}
+
+.admin-co-maker-cell--status {
+  justify-content: center;
+}
+
+.admin-co-maker-cell--relationship {
+  justify-content: center;
+}
+
+.admin-co-maker-roster__cell--assigned .admin-co-maker-cell {
+  justify-content: center;
+}
+
+.admin-co-maker-roster__cell--submitted .admin-co-maker-cell {
+  justify-content: center;
+}
+
+.admin-co-maker-cell--actions {
+  justify-content: center;
+}
+
+.admin-co-maker-roster__empty {
+  padding: 26px 24px;
+  color: #64748b;
+}
+
+.admin-co-maker-roster__cell--actions .action-button--review {
+  margin: 0;
+  min-width: 132px;
+  min-height: 42px;
+  line-height: 1;
+  border-color: rgba(37, 99, 235, 0.18);
+  background-image: linear-gradient(135deg, #2563eb, #3b82f6);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.16);
+}
+
+.admin-co-maker-roster__cell--actions .action-button--review:hover {
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.18);
+}
+
+.admin-co-maker-roster__cell--actions .action-button--review:focus-visible {
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.18),
+    0 16px 30px rgba(37, 99, 235, 0.22);
+}
+
+.admin-co-maker-roster .status-badge,
+.co-maker-review-modal .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  line-height: 1;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.admin-co-maker-roster .status-badge::before,
+.co-maker-review-modal .status-badge::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+}
+
+.admin-co-maker-roster .status-badge.is-success,
+.co-maker-review-modal .status-badge.is-success {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #166534 !important;
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.admin-co-maker-roster .status-badge.is-warning,
+.co-maker-review-modal .status-badge.is-warning {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e !important;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.admin-co-maker-roster .status-badge.is-danger,
+.co-maker-review-modal .status-badge.is-danger {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #b91c1c !important;
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.admin-co-maker-roster .status-badge.is-muted,
+.co-maker-review-modal .status-badge.is-muted {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  color: #475569 !important;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.admin-co-maker-table-card .admin-beneficiaries-table-head {
+  align-items: center;
+}
+
+.admin-co-maker-review-modal {
+  padding: 18px;
+  align-items: start;
+}
+
+.co-maker-review-modal__card {
+  width: min(1080px, calc(100vw - 36px));
+  max-height: calc(100vh - 36px);
+}
+
+.co-maker-review-modal .modal-header {
+  align-items: center;
+  padding: 16px 20px;
+  background: #134a77;
+  color: #fff;
+}
+
+.co-maker-review-modal .modal-title,
+.co-maker-review-modal .validation-review-modal__title h3 {
+  color: #fff;
+}
+
+.co-maker-review-modal .validation-review-modal__title small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.co-maker-review-modal .admin-inline-pill {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.co-maker-review-modal .validation-review-modal__status {
+  align-items: center;
+}
+
+.co-maker-review-modal .validation-review-modal__status .status-badge {
+  min-height: 38px;
+  padding-inline: 16px;
+  box-shadow: 0 14px 28px rgba(7, 20, 36, 0.22);
+}
+
+.co-maker-review-modal .validation-review-modal__status .status-badge::before {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28);
+}
+
+.co-maker-review-modal .modal-close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.co-maker-review-modal .modal-close:hover,
+.co-maker-review-modal .modal-close:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.co-maker-review-modal .validation-record-card strong .status-badge {
+  vertical-align: middle;
+}
+
+.co-maker-review-modal .validation-record-card p {
+  margin: 0;
+}
+
+.co-maker-review-modal .validation-upload-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.co-maker-review-modal .validation-review-modal__footer {
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .co-maker-review-modal .validation-upload-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-status-chip--muted {
+  background: rgba(148, 163, 184, 0.18);
+  color: #475569;
+}
+
+.admin-status-chip--info {
+  background: rgba(31, 133, 221, 0.12);
+  color: #1f4d85;
+}
+
+.admin-status-chip.beneficiary-status {
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+}
+
+.admin-status-chip.beneficiary-status--active {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.18), rgba(110, 231, 183, 0.18));
+  border-color: rgba(22, 163, 74, 0.22);
+  color: #0f6b38;
+}
+
+.admin-status-chip.beneficiary-status--inactive {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(253, 230, 138, 0.18));
+  border-color: rgba(217, 119, 6, 0.22);
+  color: #9a5b0a;
+}
+
+.admin-status-chip.beneficiary-status--deceased {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.18), rgba(252, 165, 165, 0.18));
+  border-color: rgba(185, 28, 28, 0.22);
+  color: #9f1d1d;
+}
+
+.admin-beneficiary-modal[hidden] {
+  display: none !important;
+}
+
+.admin-beneficiary-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+}
+
+.admin-beneficiary-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(8px);
+}
+
+.admin-beneficiary-modal__panel {
+  position: relative;
+  width: min(1080px, calc(100vw - 80px));
+  max-height: calc(100vh - 60px);
+  overflow: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  background:
+    radial-gradient(circle at top right, rgba(106, 89, 232, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 250, 252, 0.98));
+  box-shadow: 0 32px 72px rgba(15, 23, 42, 0.24);
+}
+
+.admin-beneficiary-modal__header,
+.admin-beneficiary-modal__footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px;
+}
+
+.admin-beneficiary-modal__header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: #134a77;
+}
+
+.admin-beneficiary-modal__header h3 {
+  margin: 8px 0 0;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.admin-beneficiary-modal__header .admin-inline-pill {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.admin-beneficiary-modal__header .app-btn-outline {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.admin-beneficiary-modal__header .app-btn-outline:hover,
+.admin-beneficiary-modal__header .app-btn-outline:focus-visible {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.admin-beneficiary-modal__body {
+  padding: 24px 28px;
+}
+
+.admin-beneficiary-modal__footer {
+  justify-content: flex-end;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.admin-beneficiary-manage {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.admin-beneficiary-manage__side {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(203, 213, 225, 0.78);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.06);
+}
+
+.admin-beneficiary-manage__side strong {
+  font-size: 1.08rem;
+  color: var(--blue-900);
+}
+
+.admin-beneficiary-manage__side p {
+  margin: 0;
+  color: var(--slate-600);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.admin-beneficiary-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-beneficiary-detail-grid div {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: #fff;
+  box-shadow: var(--shadow-1);
+}
+
+.admin-beneficiary-detail-grid span {
+  color: #50647e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-beneficiary-detail-grid strong {
+  color: #102347;
+  font-size: 1rem;
+}
+
+@media (max-width: 860px) {
+  .admin-beneficiary-manage,
+  .admin-beneficiary-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for p do t ra in in g o ve rv ie w.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PDO Training Overview</title><link rel="stylesheet" href="../assets/css/training/training-pdo.css"></head>
+<body class="training-body training-theme-pdo">
+  <main class="training-page" data-page="pdo-training-overview">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Project Officer</li><li>/</li><li>Training</li></ol></nav><h1>PDO Training Overview</h1><p>Track the training sessions and operational workload visible to your account.</p></div></header>
+    <section id="pdo-summary-cards" class="stats-grid"></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Sessions</h2></div><div class="panel-card__body"><form class="filter-toolbar" id="pdo-sessions-toolbar"></form><div class="data-table-wrap"><table class="data-table"><caption>PDO sessions</caption><thead><tr><th>Session Title</th><th>Seminar Focus</th><th>Session Status</th><th>My Participants Count</th><th>Notice Status</th><th>Attendance Status</th><th>Start Date</th><th>Actions</th></tr></thead><tbody id="pdo-sessions-body"></tbody></table></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Alerts</h2></div><div class="panel-card__body" id="pdo-alerts-list"></div></section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/pdo-training-overview.js"></script>
+</body>
+</html>

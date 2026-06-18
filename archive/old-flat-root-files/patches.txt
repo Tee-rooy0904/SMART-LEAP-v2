@@ -1,0 +1,9 @@
+*** Begin Patch
+*** Update File: socialworker.js
+@@
+-function setTextarea(id, value) {
+-  const input = document.getElementById(id);
+-  if (input) input.value = value || '';
+-}
+-
+*** End Patch

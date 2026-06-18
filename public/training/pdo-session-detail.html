@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for p do s es si on d et ai l.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PDO Session Detail</title><link rel="stylesheet" href="../assets/css/training/training-pdo.css"></head>
+<body class="training-body training-theme-pdo">
+  <main class="training-page" data-page="pdo-session-detail">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Project Officer</li><li>/</li><li>Training</li><li>/</li><li>Session Detail</li></ol></nav><h1>PDO Session Detail</h1></div><div class="page-actions"><button class="btn-ghost" type="button">Back to Training Overview</button><button class="btn-secondary" type="button">Open Operations</button></div></header>
+    <section class="panel-card"><div class="panel-card__body"><div class="label-value-list" id="pdo-session-context"></div></div></section>
+    <section class="split-workspace">
+      <section class="panel-card"><div class="panel-card__header"><h2>Participant Table</h2></div><div class="panel-card__body"><div class="data-table-wrap"><table class="data-table"><caption>Assigned participants</caption><thead><tr><th>Applicant Name</th><th>Group Number</th><th>Notice Status</th><th>Form Access Status</th><th>Attendance Status</th><th>Completion Status</th><th>Action</th></tr></thead><tbody id="pdo-session-participants-body"></tbody></table></div></div></section>
+      <div></div>
+      <aside class="summary-rail"><section class="panel-card"><div class="panel-card__header"><h2>Operations Summary Rail</h2></div><div class="panel-card__body"><div id="pdo-operations-summary" class="stats-grid"></div></div></section></aside>
+    </section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/pdo-session-detail.js"></script>
+</body>
+</html>

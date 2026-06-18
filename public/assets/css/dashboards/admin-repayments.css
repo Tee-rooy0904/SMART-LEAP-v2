@@ -1,0 +1,934 @@
+.admin-repayments-page {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-repayments-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-repayments-summary-strip .metric-card {
+  min-height: 116px;
+  padding: 18px 20px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(238, 246, 253, 0.78) 0%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.055);
+}
+
+.admin-repayments-summary-strip .metric-card__label {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(214, 231, 246, 0.86);
+  color: #155c94;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-repayments-summary-strip .metric-card__value {
+  display: block;
+  color: #0f2748;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.admin-repayments-summary-strip .metric-card__meta {
+  margin-top: 10px;
+  color: #5f7591;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.admin-repayments-filters-card,
+.admin-repayments-roster-card,
+.admin-repayment-panel {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 251, 255, 0.98));
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.06);
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-repayments-filters-card,
+.admin-repayments-roster-card {
+  padding: 18px 18px 16px;
+}
+
+.admin-repayments-block-head,
+.admin-repayment-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-repayments-block-head h3,
+.admin-repayment-panel__header h4 {
+  margin: 4px 0 0;
+  color: #102347;
+}
+
+.admin-repayments-block-head h3 {
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.admin-repayment-panel__header h4 {
+  font-size: 1.08rem;
+}
+
+.admin-repayments-filters-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.admin-repayments-filter--search {
+  grid-column: span 2;
+}
+
+.admin-repayments-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.admin-repayments-table-wrapper {
+  margin-top: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  background: #fff;
+  max-width: 100%;
+  min-width: 0;
+  overscroll-behavior-x: contain;
+}
+
+.admin-repayments-table {
+  width: 100%;
+  min-width: 1540px;
+  table-layout: auto;
+}
+
+.admin-repayments-table thead th {
+  white-space: nowrap;
+}
+
+.admin-repayments-table th:nth-child(1),
+.admin-repayments-table td:nth-child(1) {
+  min-width: 270px;
+}
+
+.admin-repayments-table th:nth-child(2),
+.admin-repayments-table td:nth-child(2),
+.admin-repayments-table th:nth-child(3),
+.admin-repayments-table td:nth-child(3) {
+  min-width: 88px;
+}
+
+.admin-repayments-table th:nth-child(4),
+.admin-repayments-table td:nth-child(4) {
+  min-width: 126px;
+}
+
+.admin-repayments-table th:nth-child(5),
+.admin-repayments-table td:nth-child(5),
+.admin-repayments-table th:nth-child(6),
+.admin-repayments-table td:nth-child(6) {
+  min-width: 124px;
+}
+
+.admin-repayments-table th:nth-child(7),
+.admin-repayments-table td:nth-child(7) {
+  min-width: 148px;
+}
+
+.admin-repayments-table th:nth-child(8),
+.admin-repayments-table td:nth-child(8) {
+  min-width: 144px;
+}
+
+.admin-repayments-table th:nth-child(9),
+.admin-repayments-table td:nth-child(9),
+.admin-repayments-table th:nth-child(10),
+.admin-repayments-table td:nth-child(10) {
+  min-width: 110px;
+}
+
+.admin-repayments-table th:nth-child(11),
+.admin-repayments-table td:nth-child(11),
+.admin-repayments-table th.actions,
+.admin-repayments-table td.actions {
+  min-width: 164px;
+  white-space: nowrap;
+}
+
+.admin-repayments-table th:nth-child(8),
+.admin-repayments-table td:nth-child(8),
+.admin-repayments-table th:nth-child(9),
+.admin-repayments-table td:nth-child(9),
+.admin-repayments-table th:nth-child(10),
+.admin-repayments-table td:nth-child(10) {
+  text-align: center;
+}
+
+.admin-repayments-table th.actions,
+.admin-repayments-table td.actions {
+  text-align: center;
+}
+
+.admin-repayments-table tbody tr {
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-repayments-table tbody tr.is-active {
+  background: rgba(231, 243, 255, 0.82);
+}
+
+.admin-repayments-table tbody td {
+  vertical-align: middle;
+}
+
+.admin-repayment-person {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-repayment-person strong {
+  color: #102347;
+  font-size: 1rem;
+}
+
+.admin-repayment-person span {
+  color: #627894;
+  font-size: 0.9rem;
+}
+
+.repayment-state-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.repayment-state-chip--muted {
+  border-color: rgba(148, 163, 184, 0.24);
+  background: rgba(241, 245, 249, 0.92);
+  color: #51657f;
+}
+
+.repayment-state-chip--uploaded {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.98), rgba(224, 242, 254, 0.96));
+  color: #1d4ed8;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+}
+
+.repayment-state-chip--under-review {
+  border-color: rgba(14, 165, 233, 0.24);
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.98), rgba(219, 234, 254, 0.96));
+  color: #075985;
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.12);
+}
+
+.repayment-state-chip--warning {
+  border-color: rgba(245, 158, 11, 0.22);
+  background: rgba(254, 243, 199, 0.88);
+  color: #9a6700;
+  box-shadow: 0 8px 18px rgba(245, 158, 11, 0.12);
+}
+
+.repayment-state-chip--needs-correction {
+  border-color: rgba(249, 115, 22, 0.24);
+  background: rgba(255, 237, 213, 0.94);
+  color: #c2410c;
+  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.12);
+}
+
+.repayment-state-chip--rejected {
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(254, 226, 226, 0.9);
+  color: #b42318;
+  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.12);
+}
+
+.repayment-state-chip--verified,
+.repayment-state-chip--success {
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(209, 250, 229, 0.92);
+  color: #0f766e;
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.12);
+}
+
+body.admin-repayment-modal-open {
+  overflow: hidden;
+}
+
+.admin-repayment-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: none;
+}
+
+.admin-repayment-modal.is-open {
+  display: block;
+}
+
+.admin-repayment-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.admin-repayment-modal.is-open .admin-repayment-modal__backdrop {
+  opacity: 1;
+}
+
+.admin-repayment-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(1320px, calc(100vw - 48px));
+  max-height: calc(100vh - 40px);
+  margin: 20px auto;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 34px 70px rgba(15, 23, 42, 0.26);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(12px) scale(0.985);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.admin-repayment-modal.is-open .admin-repayment-modal__dialog {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.admin-repayment-modal__header,
+.admin-repayment-modal__footer {
+  position: sticky;
+  z-index: 2;
+}
+
+.admin-repayment-modal__header {
+  top: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  background: #134a77;
+  color: #fff;
+  border-bottom: 0;
+}
+
+.admin-repayment-modal__header-copy h3 {
+  margin: 6px 0 0;
+  color: #fff;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.admin-repayment-modal__header-copy p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.92rem;
+}
+
+.admin-repayment-modal__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-repayment-modal__close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.admin-repayment-modal__header .admin-section-label,
+.admin-repayment-modal__header .admin-inline-pill {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.admin-repayment-modal__header .admin-inline-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.admin-repayment-modal__footer {
+  background: linear-gradient(180deg, rgba(252, 254, 255, 0.98), rgba(244, 249, 255, 0.98));
+}
+
+.admin-repayment-modal__body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  gap: 18px;
+  padding: 20px 22px 22px;
+  min-width: 0;
+}
+
+.admin-repayment-modal__body > * {
+  min-width: 0;
+}
+
+.admin-repayment-modal__summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-repayment-modal__metric {
+  padding: 16px 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(232, 242, 252, 0.7) 0%, rgba(255, 255, 255, 0) 38%),
+    #fff;
+}
+
+.admin-repayment-modal__metric span {
+  display: block;
+  color: #5a718f;
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-repayment-modal__metric strong {
+  display: block;
+  margin-top: 10px;
+  color: #102347;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.admin-repayment-modal__top {
+  display: grid;
+  grid-template-columns: minmax(0, 0.98fr) minmax(0, 1.02fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-repayment-modal__details {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-repayment-panel {
+  padding: 18px;
+  min-width: 0;
+}
+
+.admin-repayment-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  margin-top: 16px;
+}
+
+.admin-repayment-detail-grid span {
+  display: block;
+  color: #5a718f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-repayment-detail-grid strong {
+  display: block;
+  margin-top: 7px;
+  color: #102347;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.admin-repayment-proof-meta {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.admin-repayment-proof-meta strong {
+  color: #102347;
+}
+
+.admin-repayment-proof-meta span,
+.admin-repayment-proof-meta small {
+  color: #5f7591;
+}
+
+.admin-repayment-proof-preview {
+  min-height: 320px;
+  max-height: 420px;
+  margin-top: 14px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed rgba(148, 163, 184, 0.34);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(247, 250, 252, 0.96), rgba(238, 245, 251, 0.94));
+}
+
+.admin-repayment-proof-preview img,
+.admin-repayment-proof-preview iframe,
+.admin-repayment-proof-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border: 0;
+}
+
+.admin-repayment-proof-empty {
+  padding: 24px;
+  color: #60758f;
+  text-align: center;
+}
+
+.admin-repayment-proof-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-repayment-warning {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 247, 237, 0.92);
+  color: #9a6700;
+}
+
+.admin-repayment-warning.is-hidden {
+  display: none;
+}
+
+.admin-repayment-history-wrapper {
+  position: relative;
+  margin-top: 16px;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding-bottom: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.admin-repayment-history-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.admin-repayment-history-wrapper::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.7);
+  border-radius: 999px;
+}
+
+.admin-repayment-history-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.42);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.admin-repayment-history-table {
+  width: 100% !important;
+  min-width: 1136px !important;
+  max-width: none !important;
+  display: table;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.admin-repayment-history-table th,
+.admin-repayment-history-table td {
+  white-space: nowrap;
+  padding: 12px 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.admin-repayment-history-table th {
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.admin-repayment-history-table td > .repayment-state-chip,
+.admin-repayment-history-table td > .app-btn-outline,
+.admin-repayment-history-table td > .admin-inline-pill {
+  margin-inline: auto;
+}
+
+.admin-repayment-history-table th:nth-child(1),
+.admin-repayment-history-table td:nth-child(1) {
+  width: 176px;
+  min-width: 176px;
+  max-width: 176px;
+}
+
+.admin-repayment-history-table th:nth-child(2),
+.admin-repayment-history-table td:nth-child(2),
+.admin-repayment-history-table th:nth-child(3),
+.admin-repayment-history-table td:nth-child(3) {
+  min-width: 170px;
+}
+
+.admin-repayment-history-table th:nth-child(2),
+.admin-repayment-history-table td:nth-child(2) {
+  width: 170px;
+  max-width: 170px;
+}
+
+.admin-repayment-history-table th:nth-child(4),
+.admin-repayment-history-table td:nth-child(4) {
+  min-width: 156px;
+}
+
+.admin-repayment-history-table th:nth-child(5),
+.admin-repayment-history-table td:nth-child(5) {
+  min-width: 108px;
+}
+
+.admin-repayment-history-table th:nth-child(6),
+.admin-repayment-history-table td:nth-child(6),
+.admin-repayment-history-table th:nth-child(7),
+.admin-repayment-history-table td:nth-child(7) {
+  min-width: 158px;
+}
+
+.admin-repayment-history-table th:nth-child(8),
+.admin-repayment-history-table td:nth-child(8) {
+  min-width: 144px;
+}
+
+.admin-repayment-history-table th:nth-child(9),
+.admin-repayment-history-table td:nth-child(9) {
+  min-width: 220px;
+  white-space: normal;
+}
+
+.admin-repayment-history-table th:nth-child(10),
+.admin-repayment-history-table td:nth-child(10) {
+  min-width: 196px;
+}
+
+.admin-repayment-history-table tr.is-active {
+  background: rgba(231, 243, 255, 0.88);
+}
+
+.admin-repayment-history-table col:nth-child(1),
+.admin-repayment-history-table th:nth-child(1),
+.admin-repayment-history-table td:nth-child(1) {
+  width: 106px;
+  min-width: 106px;
+  max-width: 106px;
+}
+
+.admin-repayment-history-table col:nth-child(2),
+.admin-repayment-history-table th:nth-child(2),
+.admin-repayment-history-table td:nth-child(2) {
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+}
+
+.admin-repayment-history-table col:nth-child(3),
+.admin-repayment-history-table th:nth-child(3),
+.admin-repayment-history-table td:nth-child(3) {
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+}
+
+.admin-repayment-history-table col:nth-child(4),
+.admin-repayment-history-table th:nth-child(4),
+.admin-repayment-history-table td:nth-child(4) {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+.admin-repayment-history-table col:nth-child(5),
+.admin-repayment-history-table th:nth-child(5),
+.admin-repayment-history-table td:nth-child(5) {
+  width: 78px;
+  min-width: 78px;
+  max-width: 78px;
+}
+
+.admin-repayment-history-table col:nth-child(6),
+.admin-repayment-history-table th:nth-child(6),
+.admin-repayment-history-table td:nth-child(6) {
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+}
+
+.admin-repayment-history-table col:nth-child(7),
+.admin-repayment-history-table th:nth-child(7),
+.admin-repayment-history-table td:nth-child(7) {
+  width: 142px;
+  min-width: 142px;
+  max-width: 142px;
+}
+
+.admin-repayment-history-table col:nth-child(8),
+.admin-repayment-history-table th:nth-child(8),
+.admin-repayment-history-table td:nth-child(8) {
+  width: 132px;
+  min-width: 132px;
+  max-width: 132px;
+  white-space: normal;
+}
+
+.admin-repayment-history-table col:nth-child(9),
+.admin-repayment-history-table th:nth-child(9),
+.admin-repayment-history-table td:nth-child(9) {
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+  white-space: normal;
+}
+
+.admin-repayment-history-table col:nth-child(10),
+.admin-repayment-history-table th:nth-child(10),
+.admin-repayment-history-table td:nth-child(10) {
+  width: 148px;
+  min-width: 148px;
+  max-width: 148px;
+  white-space: normal;
+}
+
+.admin-repayment-history-wrapper .admin-repayment-history-table thead th,
+.admin-repayment-history-wrapper .admin-repayment-history-table tbody td {
+  height: 58px;
+  padding: 0 12px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.admin-repayment-history-wrapper .admin-repayment-history-table thead th {
+  line-height: 1.25;
+}
+
+.admin-repayment-history-wrapper .admin-repayment-history-table tbody td {
+  line-height: 1.35;
+}
+
+.admin-repayment-history-wrapper .admin-repayment-history-table tbody td > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.admin-repayment-decision-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 18px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.admin-repayment-decision-grid > * {
+  min-width: 0;
+}
+
+.admin-repayment-remarks {
+  min-height: 168px;
+  resize: vertical;
+}
+
+.admin-repayment-decision-actions {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.admin-repayment-office-status-group {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-repayment-office-status-group .filter-select {
+  min-height: 44px;
+}
+
+.admin-repayment-decision-note {
+  margin: 0;
+  color: #5f7591;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.admin-repayment-decision-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.admin-repayment-decision-buttons > * {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 150px;
+}
+
+.admin-repayment-decision-buttons .is-locked-state {
+  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(209, 250, 229, 0.92);
+  color: #0f766e;
+  opacity: 1;
+}
+
+.admin-repayment-modal__footer {
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 22px;
+  border-top: 1px solid rgba(226, 232, 240, 0.92);
+}
+
+.admin-inline-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.admin-inline-pill--slate {
+  background: rgba(241, 245, 249, 0.96);
+  color: #55687f;
+}
+
+@media (max-width: 1280px) {
+  .admin-repayments-summary-strip,
+  .admin-repayment-modal__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-repayments-filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-repayments-filter--search {
+    grid-column: 1 / -1;
+  }
+
+  .admin-repayment-modal__top,
+  .admin-repayment-decision-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .admin-repayments-summary-strip,
+  .admin-repayment-modal__summary,
+  .admin-repayment-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-repayments-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-repayment-modal__dialog {
+    width: min(100vw, calc(100vw - 20px));
+    max-height: calc(100vh - 12px);
+    margin: 6px auto;
+    border-radius: 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-repayments-filters-grid,
+  .admin-repayments-filter-actions,
+  .admin-repayment-proof-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-repayments-filter-actions,
+  .admin-repayment-proof-actions {
+    flex-direction: column;
+    justify-content: stretch;
+  }
+
+  .admin-repayments-filter-actions > *,
+  .admin-repayment-proof-actions > *,
+  .admin-repayment-decision-buttons > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-repayment-modal__dialog {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .admin-repayment-modal__header,
+  .admin-repayment-modal__body,
+  .admin-repayment-modal__footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

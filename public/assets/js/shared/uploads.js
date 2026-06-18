@@ -1,0 +1,1 @@
+// JS scaffold: uploads.js

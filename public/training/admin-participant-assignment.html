@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in p ar ti ci pa nt a ss ig nm en t.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Participant Assignment</title><link rel="stylesheet" href="../assets/css/training/training-admin.css"></head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-participant-assignment">
+    <header class="page-header">
+      <div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Admin</li><li>/</li><li>Training</li><li>/</li><li>Assignment</li></ol></nav><h1>Participant Assignment Workspace</h1><p>Assign eligible applicants into the yearly batch and place PDOs into Groups 1, 2, or 3 for training.</p></div>
+      <div class="page-actions"><button class="btn-ghost" type="button">Back to Session</button><button class="btn-secondary" type="button">Open Forms Control</button></div>
+    </header>
+    <section class="panel-card"><div class="panel-card__body"><div class="label-value-list" id="assignment-session-context"></div></div></section>
+    <section class="rules-panel"><h3>Assignment Rules</h3><ul class="list-clean"><li>Only training-eligible applicants can be assigned.</li><li>The yearly batch limit follows the live program capacity.</li><li>Exactly 3 groups are used.</li><li>Each group limit follows the current live batch size.</li><li>Participants stay under their assigned PDO.</li><li>Multiple PDOs may share the same training group.</li></ul></section>
+    <section id="assignment-summary" class="stats-grid"></section>
+    <div id="assignment-banner" class="validation-banner validation-banner--destructive" role="alert"></div>
+    <section class="split-workspace">
+      <section class="panel-card">
+        <div class="panel-card__header"><h2>Eligible Applicants</h2></div>
+        <div class="panel-card__body">
+          <form class="filter-toolbar" id="eligible-assignment-toolbar"></form>
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <caption>Eligible applicants</caption>
+              <thead><tr><th>Select</th><th>Applicant Name</th><th>Business Name</th><th>Assigned PDO</th><th>Eligibility Date</th><th>Current Assignment Status</th><th>Action</th></tr></thead>
+              <tbody id="eligible-assignment-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <div class="summary-rail">
+        <button class="btn" type="button" id="add-selected">Add Selected</button>
+        <button class="btn-secondary" type="button" id="remove-selected">Remove Selected</button>
+        <button class="btn-ghost" type="button" id="auto-assign">Auto-Assign by PDO</button>
+      </div>
+      <section class="panel-card">
+        <div class="panel-card__header"><h2>Assigned Participants</h2></div>
+        <div class="panel-card__body">
+          <form class="filter-toolbar" id="assigned-toolbar"></form>
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <caption>Assigned participants</caption>
+              <thead><tr><th>Select</th><th>Applicant Name</th><th>Business Name</th><th>Assigned PDO</th><th>Group Number</th><th>Notice Status</th><th>Form Access Status</th><th>Attendance Status</th><th>Remove Action</th></tr></thead>
+              <tbody id="assigned-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Group Distribution</h2></div><div class="panel-card__body"><div id="group-distribution" class="stats-grid"></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>PDO Group Mapping</h2></div><div class="panel-card__body"><div id="pdo-group-mapping" class="form-grid"></div></div></section>
+    <footer class="sticky-action-bar">
+      <strong id="assignment-footer-text">Review PDO-to-group mapping before saving.</strong>
+      <div class="page-actions"><button class="btn" type="button" id="save-assignment">Save Participant Assignment</button><button class="btn-secondary" type="button" id="recalculate-groups">Recalculate PDO Groups</button><button class="btn-ghost" type="button">Cancel</button></div>
+    </footer>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-participant-assignment.js"></script>
+</body>
+</html>

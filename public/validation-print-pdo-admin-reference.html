@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART LEAP Validation Form - PDO/Admin Reference</title>
+  <style>
+    :root {
+      --page-width: 215.9mm;
+      --page-min-height: 330.2mm;
+      --ink: #111111;
+      --line: #2a2a2a;
+      --border: #0a3d7a;
+      --footer-ink: #0a3d7a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #d6d6d6;
+    }
+
+    .print-toolbar {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .print-button {
+      border: 1px solid #1d5aa7;
+      background: #1d5aa7;
+      color: #fff;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .print-shell {
+      display: flex;
+      justify-content: center;
+    }
+
+    .sheet-frame {
+      width: var(--page-width);
+      min-height: var(--page-min-height);
+    }
+
+    .sheet {
+      width: var(--page-width);
+      min-height: var(--page-min-height);
+      padding: 34mm 11mm 0;
+      background: #fff;
+      font-family: "Times New Roman", Times, serif;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+    }
+
+    .sheet-footer-band {
+      position: absolute;
+      left: -18mm;
+      right: -18mm;
+      bottom: 3px;
+      height: 3.5px;
+      background: linear-gradient(90deg, #2b66b1 0%, #1d5aa7 55%, #15448a 100%);
+      z-index: 2;
+    }
+
+    .header {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 194mm;
+      transform: translateX(-50%);
+      height: 33mm;
+      margin: 0;
+    }
+
+    .header-seal {
+      position: absolute;
+      top: 3mm;
+      width: 32mm;
+      height: 32mm;
+      object-fit: contain;
+      display: block;
+      z-index: 2;
+    }
+
+    .header-seal--left {
+      left: 0;
+    }
+
+    .header-seal--right {
+      right: 0;
+    }
+
+    .header-banner {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .header-copy {
+      width: 108mm;
+      position: absolute;
+      top: 4mm;
+      left: 34mm;
+      color: #0f4e97;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 3mm;
+      line-height: 1.08;
+      z-index: 3;
+      background: #ffffff;
+      padding: 0 1mm 0.5mm 0.5mm;
+    }
+
+    .header-copy .header-republic {
+      display: block;
+      font-size: 3.4mm;
+      line-height: 1.05;
+    }
+
+    .header-copy strong {
+      display: block;
+      font-size: 4.9mm;
+      font-weight: 700;
+      color: #0f4e97;
+    }
+
+    .header-copy .header-dept {
+      display: block;
+      font-size: 3.15mm;
+      font-weight: 700;
+      color: #0f4e97;
+    }
+
+    .header-bar {
+      position: absolute;
+      left: 24mm;
+      right: 24mm;
+      top: 22mm;
+      height: 8.8mm;
+      background: linear-gradient(90deg, #88b9e1 0%, #3c8fcb 38%, #104d94 100%);
+      border-top: 0.25mm solid #6c829b;
+      border-bottom: 0.25mm solid #6c829b;
+    }
+
+    .program-title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 900;
+      text-shadow: 0.15px 0 0 currentColor, -0.15px 0 0 currentColor;
+      margin-top: 2px;
+    }
+
+    .program-acronym {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      text-shadow: 0.15px 0 0 currentColor, -0.15px 0 0 currentColor;
+      margin-top: 2px;
+      margin-bottom: 14px;
+    }
+
+    .form-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      margin: 20px 0 24px;
+      text-transform: uppercase;
+    }
+
+    .field-stack {
+      margin: 0 12px 10px;
+      font-size: 18px;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .line-field {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .line-field__label {
+      white-space: nowrap;
+    }
+
+    .line-field__value {
+      display: inline-block;
+      border-bottom: 1px solid var(--line);
+      min-height: 18px;
+      padding: 0 4px 1px;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .w-xs { min-width: 70px; }
+    .w-sm { min-width: 120px; }
+    .w-md { min-width: 170px; }
+    .w-lg { min-width: 240px; }
+    .w-xl { min-width: 340px; }
+
+    .checklist-table {
+      width: calc(100% - 24px);
+      margin: 12px 12px 12px;
+      border-collapse: collapse;
+      font-size: 18px;
+    }
+
+    .checklist-table th,
+    .checklist-table td {
+      border: 1px solid var(--border);
+      padding: 5px 6px;
+      color: #000;
+    }
+
+    .checklist-table th {
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .checklist-table td:first-child,
+    .checklist-table th:first-child {
+      text-align: left;
+    }
+
+    .recommendation {
+      margin: 10px 12px 0;
+      font-size: 18px;
+    }
+
+    .recommendation-label {
+      margin-bottom: 4px;
+    }
+
+    .recommendation-line {
+      border-bottom: 1px solid var(--line);
+      height: 16px;
+      margin-bottom: 6px;
+    }
+
+    .affidavit {
+      margin: 48px 12px 0;
+      font-size: 18px;
+      line-height: 1.35;
+      text-align: left;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      margin: 46px 12px 0;
+      align-items: end;
+    }
+
+    .signature-block {
+      text-align: center;
+      min-height: 76px;
+      position: relative;
+    }
+
+    .signature-image-wrap {
+      height: 46px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+
+    .signature-image {
+      max-width: 170px;
+      max-height: 42px;
+      object-fit: contain;
+    }
+
+    .signature-line {
+      border-top: 1px solid var(--line);
+      margin: 0 auto;
+      width: 180px;
+      padding-top: 4px;
+      font-size: 16px;
+    }
+
+    .footer {
+      position: absolute;
+      left: 11mm;
+      right: 11mm;
+      bottom: 2.5mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 3;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+    }
+
+    .footer-left {
+      color: #0a3d7a;
+      line-height: 1.35;
+    }
+
+    .footer-email {
+      color: #6aa7ff;
+      text-decoration: underline;
+    }
+
+    .footer-right {
+      text-align: right;
+      color: #0a3d7a;
+      line-height: 1.2;
+    }
+
+    .footer-right img {
+      width: 29mm;
+      display: block;
+      margin-left: auto;
+      margin-bottom: 2px;
+      position: relative;
+      top: 4px;
+      right: -2mm;
+    }
+
+    @page {
+      size: 8.5in 13in portrait;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+
+      .print-toolbar {
+        display: none !important;
+      }
+
+      .sheet-frame,
+      .sheet {
+        width: 215.9mm;
+        min-height: 330.2mm;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar">
+    <button type="button" class="print-button" onclick="window.print()">Print / Save PDF</button>
+  </div>
+  <main class="print-shell">
+    <div class="sheet-frame">
+      <section class="sheet">
+        <div class="sheet-footer-band" aria-hidden="true"></div>
+        <header class="header" aria-label="Standard form header">
+          <img class="header-seal header-seal--left" src="assets/img/cityOfButuan-cropped.png" alt="City of Butuan seal">
+          <div class="header-banner">
+            <div class="header-bar" aria-hidden="true"></div>
+          </div>
+          <div class="header-copy">
+            <span class="header-republic">Republic of the Philippines</span>
+            <strong>CITY GOVERNMENT OF BUTUAN</strong>
+            <span class="header-dept">City Social Welfare and Development Department</span>
+            <div>J.P. Rosales Ave., Tandang Sora, Butuan City</div>
+          </div>
+          <img class="header-seal header-seal--right" src="assets/img/CSWD-logo-cropped.png" alt="CSWDO logo">
+        </header>
+
+        <div class="program-title">Sustainable Market and Technology and Employment Assistance Program</div>
+        <div class="program-acronym">(SMART LEAP)</div>
+        <div class="form-title">Validation Form</div>
+
+        <section class="field-stack">
+          <div class="field-row">
+            <div class="line-field">
+              <span class="line-field__label">Date of Validation:</span>
+              <span class="line-field__value w-sm">03/29/2026</span>
+            </div>
+          </div>
+do 
+          <div class="field-row">
+            <span class="line-field__label">Name:</span>
+            <div class="line-field">
+              <span class="line-field__value w-md">Reformado</span>
+            </div>
+            <div class="line-field">
+              <span class="line-field__value w-md">John Paul</span>
+            </div>
+            <div class="line-field">
+              <span class="line-field__value w-md">-</span>
+            </div>
+          </div>
+
+          <div class="field-row" style="margin-top: -4px; margin-left: 50px;">
+            <div class="line-field"><span class="line-field__label">Last Name</span></div>
+            <div class="line-field" style="margin-left: 94px;"><span class="line-field__label">First Name</span></div>
+            <div class="line-field" style="margin-left: 103px;"><span class="line-field__label">Middle Name</span></div>
+          </div>
+
+          <div class="field-row">
+            <div class="line-field">
+              <span class="line-field__label">Address: Purok</span>
+              <span class="line-field__value w-md">P-7 CCF</span>
+            </div>
+            <div class="line-field">
+              <span class="line-field__label">Barangay:</span>
+              <span class="line-field__value w-md">Doongan</span>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="line-field">
+              <span class="line-field__label">Birthday:</span>
+              <span class="line-field__value w-md">08/14/2004</span>
+            </div>
+            <div class="line-field">
+              <span class="line-field__label">Educational Attainment:</span>
+              <span class="line-field__value w-lg">Senior High School Graduate</span>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="line-field">
+              <span class="line-field__label">Contact number :</span>
+              <span class="line-field__value w-md">09123456789</span>
+            </div>
+          </div>
+        </section>
+
+        <table class="checklist-table">
+          <thead>
+            <tr>
+              <th>Is He/She</th>
+              <th>Yes</th>
+              <th>No</th>
+              <th>Specify</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pantawid Member</td>
+              <td style="text-align:center;">✓</td>
+              <td></td>
+              <td>4Ps beneficiary</td>
+            </tr>
+            <tr>
+              <td>SLPA Member</td>
+              <td></td>
+              <td style="text-align:center;">✓</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <section class="recommendation">
+          <div class="recommendation-label">Validator's Recommendation:</div>
+          <div class="recommendation-line"></div>
+          <div class="recommendation-line"></div>
+          <div class="recommendation-line"></div>
+        </section>
+
+        <section class="affidavit">
+          Ako si <span class="line-field__value w-md">John Paul Reformado</span>
+          <span class="line-field__value w-xs">21</span> anyos, lumolupyo sa Barangay
+          <span class="line-field__value w-md">Doongan</span>, Butuan City, Agusan Del Norte. Ako nakasabot sa tumong ug proseso niini'ng Livelihood Assistance kung diin ako
+          <span class="line-field__value w-md">(ANGAYAN)</span>
+          mahimung benepisyaryo sa among program nga gi dumala sa SMART LEAP ng City Social Welfare and Development Department (CSWDD).
+        </section>
+
+        <section class="signature-grid">
+          <div class="signature-block">
+            <div class="signature-image-wrap">
+              <img class="signature-image" src="uploads/post-approval/signatures/applicant/applicant-signature_20260330094825_c62c3583718aa82a.png" alt="Participant signature">
+            </div>
+            <div class="signature-line">Ngalan/Perma sa Partisipante</div>
+          </div>
+          <div class="signature-block">
+            <div class="signature-image-wrap">
+              <img class="signature-image" src="uploads/post-approval/signatures/applicant/applicant-signature_20260329181824_186f65b2527028ce.png" alt="Validator signature">
+            </div>
+            <div class="signature-line">Ngalan/Perma sa Validator</div>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <div class="footer-left">
+            <div>Phone: &nbsp;&nbsp; +639562241679 / +639816016317</div>
+            <div>Email: &nbsp;&nbsp;&nbsp; <span class="footer-email">cswdobutuan@gmail.com</span></div>
+            <div>Website: http://www.butuan.gov.ph</div>
+          </div>
+          <div class="footer-right">
+            <img src="assets/img/NewButuanon.png" alt="ButuanON logo">
+            <div>CSWDO.DPSD.F.60.REV00</div>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

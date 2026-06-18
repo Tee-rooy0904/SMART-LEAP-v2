@@ -1,0 +1,1 @@
+-- Migration scaffold: 009_create_application_comments_table.sql

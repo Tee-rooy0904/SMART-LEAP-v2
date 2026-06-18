@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in e li gi bl e a pp li ca nt r os te r.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Eligible Applicants</title><link rel="stylesheet" href="../assets/css/training/training-admin.css"></head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-eligible-applicant-roster">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Admin</li><li>/</li><li>Training</li><li>/</li><li>Eligible Applicants</li></ol></nav><h1>Eligible Applicant Roster</h1><p>Review training eligibility based on latest-application upload verification only.</p></div></header>
+    <section id="eligible-summary" class="stats-grid"></section>
+    <section class="rules-panel"><h3>Eligibility Rules</h3><ul class="list-clean"><li>Eligibility is based only on the latest application.</li><li>Assigned PDO is required.</li><li>All required initial uploads must exist.</li><li>All required uploads must be reviewed by the assigned PDO.</li><li>All required uploads must be verified/approved.</li><li>Final approval is not required for training eligibility.</li></ul></section>
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>Roster</h2></div>
+      <div class="panel-card__body">
+        <form class="filter-toolbar" id="eligible-toolbar"></form>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <caption>Eligible applicant roster</caption>
+            <thead><tr><th>Applicant Name</th><th>Business Name</th><th>Latest Application ID</th><th>Assigned PDO</th><th>Upload Readiness</th><th>Review Status</th><th>Verification Status</th><th>Eligibility Status</th><th>Eligibility Date</th><th>Actions</th></tr></thead>
+            <tbody id="eligible-roster-body"></tbody>
+          </table>
+        </div>
+        <div id="eligible-empty" class="empty-state" hidden><h3>No eligible applicants matched the current filters.</h3><p>Adjust the filters or wait for PDO upload verification to complete.</p></div>
+      </div>
+    </section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-eligible-applicant-roster.js"></script>
+</body>
+</html>

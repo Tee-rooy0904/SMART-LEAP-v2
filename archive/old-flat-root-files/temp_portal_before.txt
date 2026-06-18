@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART LEAP | Applicant Workspace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="applicantPortal.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    <script defer src="applicantPortal.js"></script>
+</head>
+<body>
+    <div class="portal-shell">
+        <header class="portal-header">
+            <div class="brand">
+                <img src="SMARTLEAP.png" alt="SMART LEAP seal" class="brand-logo">
+                <div class="brand-copy">
+                    <span class="brand-eyebrow">City Government of Butuan • CSWDD</span>
+                    <strong class="brand-title">SMART LEAP Applicant Workspace</strong>
+                </div>
+            </div>
+            <div class="user-meta">
+                <div class="user-profile">
+                    <span class="user-avatar" id="userAvatar" aria-hidden="true">A</span>
+                    <div>
+                        <strong id="userName">Applicant</strong>
+                        <span id="userEmail">applicant@example.com</span>
+                    </div>
+                </div>
+                <button class="btn-outline" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+
+        <main class="portal-main">
+            <section class="welcome-card" id="welcomeCard">
+                <h1 id="welcomeHeading">Welcome to SMART LEAP</h1>
+                <p id="welcomeMessage">Complete your applicant profile, submit the required forms, and upload supporting documents so your PDO can review your livelihood proposal.</p>
+                <div class="cta-group">
+                    <a class="btn-primary" href="forms.html" target="_blank" rel="noopener">Open printable forms</a>
+                    <a class="btn-outline" href="#requirementsSection">Upload requirements</a>
+                </div>
+            </section>
+
+            <section class="portal-grid">
+                <article class="panel" id="profilePanel">
+                    <header class="panel-header">
+                        <h2>Applicant profile</h2>
+                        <p>Share contact, barangay, and livelihood details so your PDO can reach you quickly.</p>
+                    </header>
+                    <form id="applicantProfileForm" class="profile-form">
+                        <label>
+                            <span>Full name</span>
+                            <input type="text" id="profileName" name="fullName" autocomplete="name" required>
+                        </label>
+                        <label>
+                            <span>Mobile number</span>
+                            <input type="tel" id="profileMobile" name="mobile" placeholder="09xxxxxxxxx" required>
+                        </label>
+                        <label>
+                            <span>Barangay</span>
+                            <input type="text" id="profileBarangay" name="barangay" required>
+                        </label>
+                        <label>
+                            <span>Livelihood / Business type</span>
+                            <input type="text" id="profileLivelihood" name="livelihood" placeholder="Sari-sari store, Food processing, etc." required>
+                        </label>
+                        <label>
+                            <span>Household size</span>
+                            <input type="number" id="profileHousehold" name="household" min="1" required>
+                        </label>
+                        <label class="full">
+                            <span>Short project description</span>
+                            <textarea id="profileDescription" name="description" rows="3" placeholder="What do you plan to achieve through SMART LEAP?" required></textarea>
+                        </label>
+                        <button type="submit" class="btn-primary">Save profile</button>
+                        <p class="form-feedback" id="profileFeedback" role="alert" hidden></p>
+                    </form>
+                </article>
+
+                <article class="panel" id="requirementsSection">
+                    <header class="panel-header">
+                        <h2>Requirements tracker</h2>
+                        <p>Upload clear scans or photos of each requirement. You can return and update files anytime before PDO validation.</p>
+                    </header>
+                    <ul class="requirements-list" id="requirementsList"></ul>
+                    <div class="upload-hint">
+                        <strong>Tip:</strong> save copies locally. PDOs may request higher-resolution versions during validation.
+                    </div>
+                </article>
+
+                <article class="panel" id="statusPanel">
+                    <header class="panel-header">
+                        <h2>Submission status</h2>
+                        <p>Track what’s done and what still needs your attention.</p>
+                    </header>
+                    <dl class="status-list">
+                        <div>
+                            <dt>Profile completeness</dt>
+                            <dd id="profileStatus">Incomplete</dd>
+                        </div>
+                        <div>
+                            <dt>Requirements uploaded</dt>
+                            <dd id="requirementsStatus">0 / 0</dd>
+                        </div>
+                        <div>
+                            <dt>Last activity</dt>
+                            <dd id="lastUpdated">No updates yet</dd>
+                        </div>
+                    </dl>
+                </article>
+            </section>
+
+            <section class="panel panel--wide">
+                <header class="panel-header">
+                    <h2>Next steps</h2>
+                </header>
+                <ol class="next-steps">
+                    <li><strong>Step 1:</strong> Complete the applicant profile to help PDOs confirm your details.</li>
+                    <li><strong>Step 2:</strong> Fill out and print the SMART LEAP forms, then upload digital copies here.</li>
+                    <li><strong>Step 3:</strong> Coordinate with your PDO to schedule trainings and secure the certificate of completion.</li>
+                    <li><strong>Step 4:</strong> Await PDO validation. Keep your phone and email active for follow-up questions.</li>
+                </ol>
+            </section>
+        </main>
+
+        <footer class="portal-footer">
+            <p>SMART LEAP — City Government of Butuan &amp; CSWDD • Empowering local enterprises together.</p>
+        </footer>
+    </div>
+</body>
+</html>
+

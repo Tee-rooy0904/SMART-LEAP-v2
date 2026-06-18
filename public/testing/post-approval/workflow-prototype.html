@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART LEAP | Training Form Workflow Prototype</title>
+    <link rel="stylesheet" href="../../assets/css/dashboards/applicant.css">
+    <link rel="stylesheet" href="../../assets/css/dashboards/post-approval.css">
+    <style>
+        :root {
+            --proto-ink: #17324d;
+            --proto-muted: #5c6f86;
+            --proto-line: #d7e3f0;
+            --proto-sky: #eef7ff;
+            --proto-mint: #ebfff6;
+            --proto-sand: #fff8e8;
+            --proto-rose: #fff1f0;
+            --proto-panel: rgba(255, 255, 255, 0.94);
+        }
+
+        body.post-approval-form-page {
+            background:
+                radial-gradient(circle at top left, rgba(18, 132, 255, 0.13), transparent 28%),
+                radial-gradient(circle at top right, rgba(30, 181, 123, 0.15), transparent 24%),
+                linear-gradient(180deg, #edf6ff 0%, #f8fbff 42%, #fefefe 100%);
+        }
+
+        .proto-shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 28px 20px 64px;
+        }
+
+        .proto-hero {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 248, 255, 0.98));
+            border: 1px solid var(--proto-line);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 28px 60px rgba(23, 50, 77, 0.12);
+        }
+
+        .proto-hero__top {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: start;
+            flex-wrap: wrap;
+        }
+
+        .proto-hero h1 {
+            margin: 0 0 10px;
+            color: var(--proto-ink);
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            line-height: 1.04;
+        }
+
+        .proto-hero p {
+            margin: 0;
+            color: var(--proto-muted);
+            max-width: 760px;
+        }
+
+        .proto-badge-row,
+        .proto-filter-row,
+        .proto-forms,
+        .proto-lanes,
+        .proto-status-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .proto-badge-row {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            margin-top: 22px;
+        }
+
+        .proto-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #22537a;
+            background: rgba(226, 239, 252, 0.92);
+        }
+
+        .proto-stat {
+            border-radius: 20px;
+            border: 1px solid var(--proto-line);
+            background: var(--proto-panel);
+            padding: 18px;
+        }
+
+        .proto-stat strong,
+        .proto-section h2,
+        .proto-lane h3,
+        .proto-step h4,
+        .proto-status-card h4 {
+            color: var(--proto-ink);
+        }
+
+        .proto-stat strong {
+            display: block;
+            font-size: 1.35rem;
+            margin-bottom: 6px;
+        }
+
+        .proto-filter-row {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            margin-top: 24px;
+        }
+
+        .proto-filter {
+            border: 1px solid var(--proto-line);
+            background: #fff;
+            color: var(--proto-ink);
+            border-radius: 18px;
+            padding: 14px 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+        }
+
+        .proto-filter:hover,
+        .proto-filter:focus-visible {
+            transform: translateY(-2px);
+            border-color: #78a9d6;
+            box-shadow: 0 12px 26px rgba(23, 50, 77, 0.1);
+            outline: none;
+        }
+
+        .proto-filter.is-active {
+            background: linear-gradient(135deg, #0f6ad7, #17b897);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .proto-filter span {
+            display: block;
+            font-size: 0.85rem;
+            opacity: 0.82;
+            margin-top: 4px;
+        }
+
+        .proto-section {
+            margin-top: 26px;
+            border: 1px solid var(--proto-line);
+            border-radius: 28px;
+            background: var(--proto-panel);
+            box-shadow: 0 22px 46px rgba(23, 50, 77, 0.09);
+            padding: 26px;
+        }
+
+        .proto-section h2 {
+            margin: 0 0 8px;
+            font-size: 1.5rem;
+        }
+
+        .proto-section > p {
+            margin: 0 0 22px;
+            color: var(--proto-muted);
+            max-width: 860px;
+        }
+
+        .proto-forms {
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+
+        .proto-form-card {
+            border: 1px solid var(--proto-line);
+            border-radius: 22px;
+            padding: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+        }
+
+        .proto-form-card small,
+        .proto-step p,
+        .proto-status-card p,
+        .proto-lane > p {
+            color: var(--proto-muted);
+        }
+
+        .proto-form-card strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--proto-ink);
+        }
+
+        .proto-lanes {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            align-items: start;
+        }
+
+        .proto-lane {
+            position: relative;
+            border: 1px solid var(--proto-line);
+            border-radius: 26px;
+            padding: 18px;
+            min-height: 100%;
+        }
+
+        .proto-lane[data-lane="applicant"] {
+            background: linear-gradient(180deg, #ffffff 0%, var(--proto-sky) 100%);
+        }
+
+        .proto-lane[data-lane="system"] {
+            background: linear-gradient(180deg, #ffffff 0%, #f4fbff 100%);
+        }
+
+        .proto-lane[data-lane="pdo"] {
+            background: linear-gradient(180deg, #ffffff 0%, var(--proto-mint) 100%);
+        }
+
+        .proto-lane[data-lane="oversight"] {
+            background: linear-gradient(180deg, #ffffff 0%, var(--proto-sand) 100%);
+        }
+
+        .proto-lane::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: -12px;
+            width: 24px;
+            height: 2px;
+            background: linear-gradient(90deg, #7ba8d7, #7ba8d7 60%, transparent 60%);
+            transform: translateY(-50%);
+        }
+
+        .proto-lane:last-child::after {
+            display: none;
+        }
+
+        .proto-lane h3 {
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+        }
+
+        .proto-step-list {
+            display: grid;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .proto-step {
+            border-radius: 18px;
+            border: 1px solid rgba(111, 145, 180, 0.26);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 16px;
+        }
+
+        .proto-step h4 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+        }
+
+        .proto-step p {
+            margin: 0 0 10px;
+            line-height: 1.5;
+        }
+
+        .proto-step ul {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--proto-muted);
+        }
+
+        .proto-step li + li {
+            margin-top: 6px;
+        }
+
+        .proto-step.is-conditional {
+            background: linear-gradient(180deg, #fff 0%, #fff7e7 100%);
+        }
+
+        .proto-step.is-warning {
+            background: linear-gradient(180deg, #fff 0%, var(--proto-rose) 100%);
+        }
+
+        .proto-status-grid {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .proto-status-card {
+            border-radius: 20px;
+            border: 1px solid var(--proto-line);
+            background: #fff;
+            padding: 18px;
+        }
+
+        .proto-status-card h4 {
+            margin: 0 0 8px;
+        }
+
+        .proto-status-card p {
+            margin: 0;
+            line-height: 1.45;
+        }
+
+        .proto-note {
+            margin-top: 22px;
+            border-left: 4px solid #17b897;
+            background: rgba(23, 184, 151, 0.08);
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: var(--proto-ink);
+        }
+
+        .proto-lane.is-dim,
+        .proto-form-card.is-dim,
+        .proto-status-card.is-dim {
+            opacity: 0.42;
+            filter: grayscale(0.08);
+        }
+
+        @media (max-width: 1080px) {
+            .proto-lanes {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .proto-lane::after {
+                display: none;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .proto-shell {
+                padding: 20px 14px 48px;
+            }
+
+            .proto-hero,
+            .proto-section {
+                padding: 20px;
+                border-radius: 22px;
+            }
+
+            .proto-lanes,
+            .proto-filter-row,
+            .proto-badge-row,
+            .proto-forms,
+            .proto-status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="post-approval-form-page">
+    <main class="proto-shell">
+        <section class="proto-hero">
+            <div class="proto-hero__top">
+                <div>
+                    <div class="proto-chip">Workflow Prototype</div>
+                    <h1>Current SMART LEAP 5-Form Process</h1>
+                    <p>This prototype shows how the current system actually behaves today: applicant requirements must be verified first, training/seminar access exposes the allowed forms, applicants fill and submit those forms, and PDO reviews them through the post-approval review flow.</p>
+                </div>
+                <div class="mock-test-actions">
+                    <a class="btn-outline" href="index.html">Back to test pages</a>
+                    <a class="btn-primary" href="availment-form.html">Open a sample form</a>
+                </div>
+            </div>
+
+            <div class="proto-badge-row">
+                <article class="proto-stat">
+                    <strong>5 online forms</strong>
+                    <span>Availment, Validation, Mungkahing Proyekto, Business Plan, and Buhat sa Pagpanumpa.</span>
+                </article>
+                <article class="proto-stat">
+                    <strong>Applicant gate first</strong>
+                    <span>Required application uploads must be fully verified before the form workspace becomes usable.</span>
+                </article>
+                <article class="proto-stat">
+                    <strong>Training-linked access</strong>
+                    <span>Only the seminar form codes attached to the applicant’s training invite are actually opened.</span>
+                </article>
+                <article class="proto-stat">
+                    <strong>PDO review loop</strong>
+                    <span>Submitted forms move to PDO review, then come back as Verified, Needs Correction, or Rejected.</span>
+                </article>
+            </div>
+
+            <div class="proto-filter-row" id="personaFilters">
+                <button type="button" class="proto-filter is-active" data-filter="all">
+                    Full workflow
+                    <span>Show the complete end-to-end process</span>
+                </button>
+                <button type="button" class="proto-filter" data-filter="applicant">
+                    Applicant focus
+                    <span>Only the applicant-side actions</span>
+                </button>
+                <button type="button" class="proto-filter" data-filter="pdo">
+                    PDO focus
+                    <span>Only the review and correction loop</span>
+                </button>
+                <button type="button" class="proto-filter" data-filter="oversight">
+                    Admin / SW view
+                    <span>See what oversight roles can observe</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="proto-section">
+            <h2>The 5 Digital Fill-Up Forms</h2>
+            <p>These are the old training forms that the current system now serves through the post-approval form workspace. They are still the same core documents, just digitized and reviewed inside the portal.</p>
+            <div class="proto-forms">
+                <article class="proto-form-card" data-persona="applicant pdo oversight">
+                    <strong>1. Availment Form</strong>
+                    <small>Client identity, family or individual project details, income eligibility, commitments, and signatures.</small>
+                </article>
+                <article class="proto-form-card" data-persona="applicant pdo oversight">
+                    <strong>2. Validation Form</strong>
+                    <small>Eligibility checklist, validator-style details, and participant signature.</small>
+                </article>
+                <article class="proto-form-card" data-persona="applicant pdo oversight">
+                    <strong>3. Mungkahing Proyekto</strong>
+                    <small>Project rationale, products/services, materials, labor, tools, expenses, and expected sales.</small>
+                </article>
+                <article class="proto-form-card" data-persona="applicant pdo oversight">
+                    <strong>4. Business Plan</strong>
+                    <small>Marketing, production, organization, and financial planning content.</small>
+                </article>
+                <article class="proto-form-card" data-persona="applicant pdo oversight">
+                    <strong>5. Buhat sa Pagpanumpa</strong>
+                    <small>Program oath, applicant and co-maker details, dates, and final signatures.</small>
+                </article>
+            </div>
+        </section>
+
+        <section class="proto-section">
+            <h2>Prototype Workflow</h2>
+            <p>This is the clean version of the current real flow, grouped by role. It follows the behavior already present in the system today, including the hybrid “post-approval” naming used for the old 5 forms.</p>
+
+            <div class="proto-lanes">
+                <article class="proto-lane" data-lane="applicant" data-persona="applicant">
+                    <div class="proto-chip">Applicant</div>
+                    <h3>Fill-up and resubmission lane</h3>
+                    <p>The applicant does not see all forms by default. They only see the forms opened by the current gate and training codes.</p>
+                    <div class="proto-step-list">
+                        <section class="proto-step">
+                            <h4>Step A1: Finish core application requirements</h4>
+                            <p>The applicant first uploads the required application documents in the applicant portal.</p>
+                            <ul>
+                                <li>These uploads must be reviewed and fully verified first.</li>
+                                <li>If not fully verified, the 5 form workspace remains blocked.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step is-conditional">
+                            <h4>Step A2: Open the training-form tracker</h4>
+                            <p>Once the gate is open, the applicant can access the tracker page and only the allowed seminar-form codes show up.</p>
+                            <ul>
+                                <li>Unlocked forms can be opened.</li>
+                                <li>Unavailable forms stay visible but not clickable.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step A3: Fill out one of the 5 forms</h4>
+                            <p>The applicant opens a form page, enters the requested details, and uploads signatures or attachments where allowed.</p>
+                            <ul>
+                                <li>Save draft changes the task to <strong>In Progress</strong>.</li>
+                                <li>Submit sends the form to reviewer queue as <strong>Submitted</strong>.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step is-warning">
+                            <h4>Step A4: Revise if PDO sends it back</h4>
+                            <p>If the PDO marks the form as Needs Correction or Rejected, the applicant sees the reviewer note and reopens the same form for revision.</p>
+                            <ul>
+                                <li>Reviewer remarks appear in the tracker and inside the form page.</li>
+                                <li>The applicant edits and resubmits the same form.</li>
+                            </ul>
+                        </section>
+                    </div>
+                </article>
+
+                <article class="proto-lane" data-lane="system" data-persona="applicant pdo oversight">
+                    <div class="proto-chip">System</div>
+                    <h3>Gate and routing lane</h3>
+                    <p>The system decides when tasks exist, which forms are open, and where submissions go next.</p>
+                    <div class="proto-step-list">
+                        <section class="proto-step">
+                            <h4>Step S1: Verify application gate</h4>
+                            <p>The system checks whether the applicant’s required uploads are fully verified.</p>
+                            <ul>
+                                <li>If false, the form API returns blocked state.</li>
+                                <li>If true, the workspace beneficiary profile and application-stage tasks are ensured.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step S2: Read training invite seminar codes</h4>
+                            <p>The system looks at the applicant’s training invite and extracts the allowed seminar form codes.</p>
+                            <ul>
+                                <li>This is why one applicant may not see all 5 at once.</li>
+                                <li>The current order is Availment, Validation, Mungkahing Proyekto, Business Plan, then Buhat sa Pagpanumpa.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step S3: Persist payload and status</h4>
+                            <p>Draft save stores `form_payload`. Final submit stores payload, task status, and a `post_approval_submissions` record.</p>
+                            <ul>
+                                <li>Draft becomes <strong>In Progress</strong>.</li>
+                                <li>Final submit becomes <strong>Submitted</strong>.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step S4: Notify and reflect status</h4>
+                            <p>The system pushes the latest status back into the applicant tracker and reviewer queue.</p>
+                            <ul>
+                                <li>Applicant sees new state and remarks.</li>
+                                <li>PDO sees the form in the review queue.</li>
+                            </ul>
+                        </section>
+                    </div>
+                </article>
+
+                <article class="proto-lane" data-lane="pdo" data-persona="pdo">
+                    <div class="proto-chip">PDO</div>
+                    <h3>Review and decision lane</h3>
+                    <p>The PDO checks submitted fill-up forms through the post-approval review interface or the application review embed.</p>
+                    <div class="proto-step-list">
+                        <section class="proto-step">
+                            <h4>Step P1: Open review queue</h4>
+                            <p>The PDO sees submitted or previously reviewed form tasks in the review queue.</p>
+                            <ul>
+                                <li>The queue includes only the 5 digital forms.</li>
+                                <li>Status scope includes Submitted, Needs Correction, Rejected, and Verified.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step P2: Inspect applicant submission</h4>
+                            <p>The reviewer can inspect the applicant’s entries, applicant identity, history, and staff-only review sections.</p>
+                            <ul>
+                                <li>PDO may also upload reviewer-side files or signatures.</li>
+                                <li>The latest Admin modal now mirrors this PDO review behavior.</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step is-warning">
+                            <h4>Step P3: Decide the outcome</h4>
+                            <p>PDO chooses one review result.</p>
+                            <ul>
+                                <li><strong>Verified</strong> if acceptable</li>
+                                <li><strong>Needs Correction</strong> if the applicant can revise it</li>
+                                <li><strong>Rejected</strong> if the submission should not proceed</li>
+                            </ul>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step P4: Save review and notify</h4>
+                            <p>The system updates the task, the latest submission row, and sends the applicant-visible remark back to the applicant portal.</p>
+                            <ul>
+                                <li>Correction and rejection require an applicant-visible remark.</li>
+                                <li>Verified closes the loop for that form.</li>
+                            </ul>
+                        </section>
+                    </div>
+                </article>
+
+                <article class="proto-lane" data-lane="oversight" data-persona="oversight">
+                    <div class="proto-chip">Admin / SW</div>
+                    <h3>Oversight and visibility lane</h3>
+                    <p>These roles do not fill the forms, but they can monitor the same general lifecycle and review state.</p>
+                    <div class="proto-step-list">
+                        <section class="proto-step">
+                            <h4>Step O1: Observe applicant readiness</h4>
+                            <p>Admin and SW can track whether an applicant has already reached the form-eligible stage.</p>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step O2: Observe review outcomes</h4>
+                            <p>Once forms are submitted and reviewed, the oversight side can see the reflected statuses and applicant progression.</p>
+                        </section>
+                        <section class="proto-step">
+                            <h4>Step O3: Use the same latest form-review pattern</h4>
+                            <p>The Admin-side application review modal now follows the newer PDO-style fill-up form review behavior.</p>
+                        </section>
+                    </div>
+                </article>
+            </div>
+
+            <div class="proto-note">
+                Current-system reality: the old 5 training forms are still being served through the <strong>post-approval</strong> task infrastructure. So the naming is hybrid, but the applicant-to-PDO digital fill-up workflow is already live in that structure.
+            </div>
+        </section>
+
+        <section class="proto-section">
+            <h2>Status Prototype</h2>
+            <p>This is the simplest way to read the task state transitions for one form in the current system.</p>
+            <div class="proto-status-grid">
+                <article class="proto-status-card" data-persona="applicant pdo oversight">
+                    <h4>Locked</h4>
+                    <p>The applicant still cannot use the form because the required application gate or seminar access is not open.</p>
+                </article>
+                <article class="proto-status-card" data-persona="applicant pdo oversight">
+                    <h4>Unlocked</h4>
+                    <p>The form is available to open. The applicant may begin filling it up.</p>
+                </article>
+                <article class="proto-status-card" data-persona="applicant pdo oversight">
+                    <h4>In Progress</h4>
+                    <p>The applicant saved a draft, but the form has not yet been formally submitted for review.</p>
+                </article>
+                <article class="proto-status-card" data-persona="pdo oversight">
+                    <h4>Submitted</h4>
+                    <p>The form is now in the PDO review queue and ready for checking.</p>
+                </article>
+                <article class="proto-status-card" data-persona="applicant pdo oversight">
+                    <h4>Needs Correction</h4>
+                    <p>PDO returned the form with a revision note. The applicant edits the same form and resubmits it.</p>
+                </article>
+                <article class="proto-status-card" data-persona="applicant pdo oversight">
+                    <h4>Rejected</h4>
+                    <p>The submission did not pass review. The applicant still sees the reviewer remark.</p>
+                </article>
+                <article class="proto-status-card" data-persona="applicant pdo oversight">
+                    <h4>Verified</h4>
+                    <p>The form is accepted and effectively complete from the reviewer side.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            const filters = Array.from(document.querySelectorAll('[data-filter]'));
+            const personaNodes = Array.from(document.querySelectorAll('[data-persona]'));
+
+            function applyFilter(filter) {
+                filters.forEach((button) => {
+                    button.classList.toggle('is-active', button.dataset.filter === filter);
+                });
+
+                personaNodes.forEach((node) => {
+                    if (filter === 'all') {
+                        node.classList.remove('is-dim');
+                        return;
+                    }
+
+                    const personas = String(node.dataset.persona || '').split(/\s+/).filter(Boolean);
+                    node.classList.toggle('is-dim', !personas.includes(filter));
+                });
+            }
+
+            filters.forEach((button) => {
+                button.addEventListener('click', () => applyFilter(button.dataset.filter || 'all'));
+            });
+        })();
+    </script>
+</body>
+</html>

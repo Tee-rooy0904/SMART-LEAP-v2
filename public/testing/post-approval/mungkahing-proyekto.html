@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART LEAP | Mungkahing Proyekto Test</title>
+    <link rel="stylesheet" href="../../assets/css/dashboards/applicant.css">
+    <link rel="stylesheet" href="../../assets/css/dashboards/post-approval.css">
+    <link rel="stylesheet" href="../../assets/css/components/notifications.css">
+</head>
+<body class="post-approval-form-page">
+    <script>
+        window.SMARTLEAP_AUTH_USER = { id: 0, full_name: 'Test Applicant', email: 'test.applicant@smartleap.local', role: 'Applicant' };
+        window.SMARTLEAP_BASE_URL = '../..';
+        window.SMARTLEAP_POST_APPROVAL_CODE = 'mungkahing_proyekto';
+    </script>
+    <div class="dashboard-shell">
+        <aside class="dash-sidebar" id="appSidebar" aria-label="Applicant navigation">
+            <div class="sidebar-drawer__top">
+                <div class="sidebar-brand">
+                    <img src="../../assets/img/SMARTLEAP.png" alt="SMART LEAP seal" class="sidebar-logo">
+                    <div class="sidebar-brand__copy"><strong class="sidebar-title">SMART LEAP</strong></div>
+                </div>
+                <button type="button" class="sidebar-drawer__close" id="sidebarClose" aria-label="Close navigation"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-link" href="index.html"><span>All Test Forms</span></a>
+                <a class="sidebar-link is-active" href="mungkahing-proyekto.html"><span>Mungkahing Proyekto</span></a>
+            </nav>
+            <button type="button" class="btn-outline sidebar-logout" data-reset-mock-form>Reset this test form</button>
+        </aside>
+        <button type="button" class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true" tabindex="-1"></button>
+        <div class="dash-content">
+            <header class="mobile-topbar" aria-label="Applicant mobile navigation">
+                <div class="mobile-topbar__brand">
+                    <img src="../../assets/img/SMARTLEAP.png" alt="SMART LEAP seal" class="mobile-topbar__logo">
+                    <strong class="mobile-topbar__title">SMART LEAP</strong>
+                </div>
+                <button type="button" class="mobile-topbar__menu" id="sidebarToggle" aria-label="Open navigation" aria-controls="appSidebar" aria-expanded="false"><span class="mobile-topbar__menu-box" aria-hidden="true"><span></span><span></span><span></span></span></button>
+            </header>
+            <main class="dash-main post-main">
+                <section class="panel post-form-panel">
+                    <div class="post-approval-workspace post-approval-workspace--page">
+                        <div class="post-form-toolbar post-form-toolbar--back">
+                            <a class="btn-outline post-back-link" href="index.html">Back to form tests</a>
+                            <button type="button" class="btn-outline" data-reset-mock-form>Reset this form</button>
+                        </div>
+                        <div class="dash-page__header post-form-page-header">
+                            <div>
+                                <p class="dash-page__eyebrow">Standalone Browser Test</p>
+                                <h1 id="formPageTitle">Mungkahing Proyekto</h1>
+                                <p class="dash-page__lead" id="formPageSubtitle">Loading mock form workspace...</p>
+                            </div>
+                        </div>
+                        <section class="form-status-strip" aria-label="Form status">
+                            <article class="form-status-strip__item"><span class="overview-label">Status</span><strong class="overview-value" id="formPageStatus">Loading</strong></article>
+                            <article class="form-status-strip__item"><span class="overview-label">Progress</span><strong class="overview-value" id="formPageCompletion">0%</strong></article>
+                            <article class="form-status-strip__item"><span class="overview-label">Review</span><strong class="overview-value" id="formPageReview">Awaiting draft</strong></article>
+                        </section>
+                        <nav class="form-section-nav" id="formSectionNav" aria-label="Form sections" hidden></nav>
+                        <section class="form-guidance-card" aria-labelledby="formGuidanceHeading">
+                            <div class="form-guidance-card__header">
+                                <h3 id="formGuidanceHeading">Before you start</h3>
+                                <p id="formGuidanceSummary">Loading guidance for this form.</p>
+                            </div>
+                            <div class="form-guidance-card__grid">
+                                <article class="form-guidance-item"><span class="overview-label">Step</span><strong id="formGuidanceStep">Loading</strong></article>
+                                <article class="form-guidance-item"><span class="overview-label">Estimated time</span><strong id="formGuidanceTime">Loading</strong></article>
+                                <article class="form-guidance-item"><span class="overview-label">Prepare first</span><strong id="formGuidancePrep">Loading</strong></article>
+                            </div>
+                        </section>
+                        <div class="post-approval-notice" id="postApprovalWorkspaceNotice">Loading mock form workspace...</div>
+                        <form id="postApprovalForm" class="post-approval-form is-hidden">
+                            <div class="post-approval-form__sections" id="postApprovalFormSections"></div>
+                            <div class="post-approval-form__staff" id="postApprovalStaffSections" hidden></div>
+                            <div class="form-actions post-approval-form__actions post-approval-form__actions--sticky">
+                                <button type="button" class="btn-outline" id="postApprovalSaveButton">Save progress</button>
+                                <button type="submit" class="btn-primary" id="postApprovalSubmitButton">Submit form</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+    <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+    <script src="../../assets/js/shared/notifications.js" defer></script>
+    <script src="mock-runtime.js" defer></script>
+    <script src="../../assets/js/dashboards/post-approval-form.js" defer></script>
+</body>
+</html>

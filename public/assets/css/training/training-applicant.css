@@ -1,0 +1,4 @@
+@import url("./training-shared.css");
+
+.training-theme-applicant .page-header h1 { color: #1f4368; }
+.training-theme-applicant .panel-card__header { align-items: flex-start; }

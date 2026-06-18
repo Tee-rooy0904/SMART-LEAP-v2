@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a pp li ca nt t ra in in g s ta tu s.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Applicant Training Status</title><link rel="stylesheet" href="../assets/css/training/training-applicant.css"></head>
+<body class="training-body training-theme-applicant">
+  <main class="training-page" data-page="applicant-training-status">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Applicant</li><li>/</li><li>Training</li></ol></nav><h1>Training Status</h1><p>Review your current training eligibility, assignment, seminar form access, and attendance state.</p></div></header>
+    <div id="applicant-training-banner" class="validation-banner validation-banner--warning" role="alert"></div>
+    <section class="panel-card"><div class="panel-card__header"><h2>Main Training Status</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-training-status-list"></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Assignment Details</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-assignment-details"></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Forms Access</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-forms-access"></div><div class="page-actions"><button class="btn" type="button">Open Seminar Forms</button></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Attendance and Completion</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-attendance-status"></div><p class="panel-card__meta">Form completion is separate from training completion.</p></div></section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/applicant-training-status.js"></script>
+</body>
+</html>

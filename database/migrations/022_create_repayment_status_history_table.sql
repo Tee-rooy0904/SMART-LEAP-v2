@@ -1,0 +1,1 @@
+-- Migration scaffold: 022_create_repayment_status_history_table.sql

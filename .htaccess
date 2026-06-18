@@ -1,0 +1,15 @@
+RewriteEngine On
+
+# Deny direct access to dotfiles and environment files if the project root
+# is ever exposed as a document root by mistake.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(?:\.env|composer\.(?:json|lock)|phpunit\.xml|README\.md)$">
+    Require all denied
+</FilesMatch>
+
+# Block direct access to application and storage folders from the project root.
+RewriteRule ^(?:app|storage|database|vendor|tmp)/ - [F,L,NC]
+

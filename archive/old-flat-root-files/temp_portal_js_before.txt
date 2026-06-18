@@ -1,0 +1,319 @@
+(function () {
+    const USERS_KEY = 'smartleap_users_v2';
+    const SESSION_KEY = 'smartleap_session_v1';
+    const PROFILE_KEY_PREFIX = 'smartleap_profile_';
+    const REQUIREMENTS_KEY_PREFIX = 'smartleap_requirements_';
+
+    const REQUIREMENTS = [
+        { key: 'barangayCert', label: 'Barangay Certification' },
+        { key: 'businessPlan', label: 'Business Plan' },
+        { key: 'validId', label: 'Valid Government ID' },
+        { key: 'cedula', label: 'Community Tax Certificate (CEDULA)' },
+        { key: 'photos', label: 'Business / Household Photos' },
+        { key: 'trainingCert', label: 'SMART LEAP Training Certificate' }
+    ];
+
+    let activeUser = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const session = getActiveSession();
+        if (!session) {
+            window.location.href = 'user.html';
+            return;
+        }
+
+        activeUser = getUserById(session.userId);
+        if (!activeUser || (activeUser.role || '').toLowerCase() !== 'applicant') {
+            clearSession();
+            window.location.href = 'user.html';
+            return;
+        }
+
+        hydrateAccountHeader(activeUser);
+        initialiseProfileForm();
+        renderRequirements();
+        updateStatus();
+        bindLogout();
+        greetIfWelcome();
+    });
+
+    function getStoredUsers() {
+        try {
+            const raw = localStorage.getItem(USERS_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function getUserById(id) {
+        return getStoredUsers().find(user => user.id === id);
+    }
+
+    function getActiveSession() {
+        try {
+            const raw = localStorage.getItem(SESSION_KEY);
+            if (!raw) return null;
+            const session = JSON.parse(raw);
+            if (!session?.token) return null;
+            if (new Date(session.expiresAt) <= new Date()) {
+                clearSession();
+                return null;
+            }
+            return session;
+        } catch {
+            return null;
+        }
+    }
+
+    function clearSession() {
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem('currentUser');
+    }
+
+    function hydrateAccountHeader(user) {
+        const avatar = document.getElementById('userAvatar');
+        const name = document.getElementById('userName');
+        const email = document.getElementById('userEmail');
+        if (avatar && user.fullName) {
+            avatar.textContent = user.fullName.charAt(0).toUpperCase();
+        }
+        if (name) name.textContent = user.fullName || 'Applicant';
+        if (email) email.textContent = user.email || '';
+    }
+
+    function getProfileKey() {
+        return `${PROFILE_KEY_PREFIX}${activeUser.id}`;
+    }
+
+    function getRequirementsKey() {
+        return `${REQUIREMENTS_KEY_PREFIX}${activeUser.id}`;
+    }
+
+    function readProfile() {
+        try {
+            const raw = localStorage.getItem(getProfileKey());
+            return raw ? JSON.parse(raw) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function persistProfile(profile) {
+        localStorage.setItem(getProfileKey(), JSON.stringify({
+            ...profile,
+            updatedAt: new Date().toISOString()
+        }));
+    }
+
+    function initialiseProfileForm() {
+        const form = document.getElementById('applicantProfileForm');
+        const feedback = document.getElementById('profileFeedback');
+        if (!form) return;
+
+        const stored = readProfile();
+        if (stored) {
+            form.profileName.value = stored.fullName || activeUser.fullName || '';
+            form.profileMobile.value = stored.mobile || activeUser.contactNumber || '';
+            form.profileBarangay.value = stored.barangay || '';
+            form.profileLivelihood.value = stored.livelihood || '';
+            form.profileHousehold.value = stored.household || '';
+            form.profileDescription.value = stored.description || '';
+        } else {
+            form.profileName.value = activeUser.fullName || '';
+            form.profileMobile.value = activeUser.contactNumber || '';
+        }
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            feedback?.setAttribute('hidden', 'hidden');
+            if (!form.reportValidity()) return;
+
+            const payload = {
+                fullName: form.profileName.value.trim(),
+                mobile: form.profileMobile.value.trim(),
+                barangay: form.profileBarangay.value.trim(),
+                livelihood: form.profileLivelihood.value.trim(),
+                household: Number(form.profileHousehold.value) || 0,
+                description: form.profileDescription.value.trim()
+            };
+            persistProfile(payload);
+            updateStatus();
+            if (feedback) {
+                feedback.textContent = 'Profile saved.';
+                feedback.dataset.tone = 'success';
+                feedback.removeAttribute('hidden');
+            }
+        });
+    }
+
+    function readRequirements() {
+        try {
+            const raw = localStorage.getItem(getRequirementsKey());
+            const parsed = raw ? JSON.parse(raw) : {};
+            return typeof parsed === 'object' && parsed !== null ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+
+    function persistRequirements(data) {
+        localStorage.setItem(getRequirementsKey(), JSON.stringify(data));
+    }
+
+    function renderRequirements() {
+        const list = document.getElementById('requirementsList');
+        if (!list) return;
+        const stored = readRequirements();
+        list.innerHTML = REQUIREMENTS.map(req => {
+            const entry = stored[req.key] || {};
+            const status = entry.files?.length ? 'Uploaded' : 'Pending';
+            const tone = status === 'Uploaded' ? 'success' : 'muted';
+            const filesMarkup = (entry.files || []).map(file => {
+                const meta = [];
+                if (file.name) meta.push(file.name);
+                if (file.sizeText) meta.push(file.sizeText);
+                if (file.uploadedAt) meta.push(new Date(file.uploadedAt).toLocaleString());
+                return `<li>${meta.join(' • ')}</li>`;
+            }).join('');
+            return `
+                <li data-key="${req.key}">
+                    <header>
+                        <h3>${req.label}</h3>
+                        <span class="badge-status" data-tone="${tone}">${status}</span>
+                    </header>
+                    <div class="upload-body">
+                        <p>${entry.notes || 'Upload clear PNG, JPG, or PDF files for this requirement.'}</p>
+                        <div class="upload-actions">
+                            <input type="file" data-uploader="${req.key}" accept=".pdf,.png,.jpg,.jpeg" multiple>
+                            <button type="button" class="btn-outline" data-clear="${req.key}">Clear files</button>
+                        </div>
+                        ${filesMarkup ? `<ul class="file-list">${filesMarkup}</ul>` : '<p class="file-empty">No files uploaded yet.</p>'}
+                    </div>
+                </li>`;
+        }).join('');
+
+        list.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', handleFileUpload);
+        });
+        list.querySelectorAll('button[data-clear]').forEach(button => {
+            button.addEventListener('click', handleClearFiles);
+        });
+    }
+
+    function handleFileUpload(event) {
+        const input = event.currentTarget;
+        const key = input.dataset.uploader;
+        if (!key || !input.files?.length) return;
+        const stored = readRequirements();
+        stored[key] = stored[key] || { files: [] };
+        const files = Array.from(input.files);
+        const readers = files.map(file => readFileAsDataUrl(file).then(dataUrl => ({
+            name: file.name,
+            size: file.size,
+            sizeText: formatBytes(file.size),
+            uploadedAt: new Date().toISOString(),
+            dataUrl
+        })));
+
+        Promise.all(readers)
+            .then(results => {
+                stored[key].files = results;
+                persistRequirements(stored);
+                renderRequirements();
+                updateStatus();
+            })
+            .catch(err => {
+                console.warn('Unable to read files', err);
+            })
+            .finally(() => {
+                input.value = '';
+            });
+    }
+
+    function handleClearFiles(event) {
+        const key = event.currentTarget.dataset.clear;
+        const stored = readRequirements();
+        if (stored[key]) {
+            stored[key].files = [];
+            persistRequirements(stored);
+            renderRequirements();
+            updateStatus();
+        }
+    }
+
+    function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function formatBytes(bytes) {
+        if (!bytes) return '';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / Math.pow(1024, exponent)).toFixed(2)} ${units[exponent]}`;
+    }
+
+    function updateStatus() {
+        const profileStatus = document.getElementById('profileStatus');
+        const requirementsStatus = document.getElementById('requirementsStatus');
+        const lastUpdated = document.getElementById('lastUpdated');
+        const profile = readProfile();
+        const requirements = readRequirements();
+
+        const profileComplete = profile &&
+            profile.fullName &&
+            profile.mobile &&
+            profile.barangay &&
+            profile.livelihood &&
+            profile.household;
+        if (profileStatus) {
+            profileStatus.textContent = profileComplete ? 'Complete' : 'Incomplete';
+        }
+
+        const total = REQUIREMENTS.length;
+        const uploaded = REQUIREMENTS.reduce((count, req) => {
+            const entry = requirements[req.key];
+            return count + (entry?.files?.length ? 1 : 0);
+        }, 0);
+        if (requirementsStatus) {
+            requirementsStatus.textContent = `${uploaded} / ${total}`;
+        }
+
+        if (lastUpdated) {
+            const profileTime = profile?.updatedAt;
+            const requirementTimes = Object.values(requirements).map(entry => entry.files?.[0]?.uploadedAt).filter(Boolean);
+            const timestamps = [...(profileTime ? [profileTime] : []), ...requirementTimes];
+            if (timestamps.length) {
+                const latest = timestamps.sort().pop();
+                lastUpdated.textContent = new Date(latest).toLocaleString();
+            } else {
+                lastUpdated.textContent = 'No updates yet';
+            }
+        }
+    }
+
+    function bindLogout() {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (!logoutBtn) return;
+        logoutBtn.addEventListener('click', () => {
+            clearSession();
+            window.location.href = 'user.html';
+        });
+    }
+
+    function greetIfWelcome() {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('welcome')) return;
+        const welcomeHeading = document.getElementById('welcomeHeading');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        if (welcomeHeading) welcomeHeading.textContent = `Welcome aboard, ${activeUser.fullName}!`;
+        if (welcomeMessage) welcomeMessage.textContent = 'Start by completing your profile below. When you are ready, fill out the forms and upload the documentary requirements for PDO review.';
+    }
+})();
+

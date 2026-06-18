@@ -1,0 +1,1 @@
+-- Migration scaffold: 005_create_staff_barangay_assignments_table.sql

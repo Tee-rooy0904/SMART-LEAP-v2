@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART LEAP Validation Form Fillable</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --ink: #111;
+      --muted: #4a4a4a;
+      --line: #111;
+      --page-bg: #dfe8f4;
+      --paper: #fff;
+      --blue: #114fa8;
+      --green: #198f52;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #edf4ff, #dfe8f4 55%, #d6e0ed 100%);
+      color: var(--ink);
+      font-family: "Times New Roman", Georgia, serif;
+      line-height: 1.16;
+      padding: 16px;
+    }
+
+    .sheet {
+      width: min(100%, 900px);
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid #d6dce4;
+      box-shadow: 0 18px 45px rgba(15, 41, 86, 0.12);
+      padding: 15px 24px 11px;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 80px 1fr 80px;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .seal {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .header-copy {
+      font-size: 14px;
+      line-height: 1.06;
+      margin-top: 9px;
+      padding-left: 1px;
+      max-width: 430px;
+    }
+
+    .header-copy strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: 0.01em;
+      margin: 2px 0 0;
+    }
+
+    .bar {
+      height: 14px;
+      background: linear-gradient(90deg, #0f3b93 0%, #1152ad 45%, #0f3b93 100%);
+      margin: 7px -24px 12px;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .title h1,
+    .title h2 {
+      margin: 0;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .title h1 {
+      font-size: 24px;
+      margin-top: 5px;
+    }
+
+    .title h2 {
+      font-size: 20px;
+    }
+
+    .line-row,
+    .line-pair {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      margin-bottom: 6px;
+      font-size: 17px;
+    }
+
+    .line-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .label {
+      white-space: nowrap;
+    }
+
+    .label strong {
+      font-weight: 700;
+    }
+
+    .name-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .under-field {
+      min-width: 0;
+    }
+
+    .under-caption {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .line-input,
+    .line-select {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      border-bottom: 1.5px solid var(--line);
+      background: transparent;
+      color: var(--ink);
+      padding: 0 0 3px;
+      font: inherit;
+      border-radius: 0;
+      appearance: none;
+    }
+
+    .line-input:focus,
+    .line-select:focus,
+    .recommendation-line:focus,
+    .statement-inline:focus {
+      outline: none;
+      border-bottom-color: var(--blue);
+      box-shadow: inset 0 -1px 0 var(--blue);
+    }
+
+    .line-input.short,
+    .line-select.short {
+      max-width: 132px;
+    }
+
+    .date-field {
+      max-width: 146px;
+    }
+
+    .contact-field {
+      max-width: 194px;
+    }
+
+    .purok-field {
+      max-width: 168px;
+    }
+
+    .barangay-field {
+      max-width: 238px;
+    }
+
+    .birthday-field {
+      max-width: 160px;
+    }
+
+    .education-field {
+      max-width: 270px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 9px 0 12px;
+      font-size: 16px;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      border: 1.5px solid var(--line);
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+
+    th {
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .check-col {
+      width: 62px;
+      text-align: center;
+    }
+
+    .subject-col {
+      width: 32%;
+    }
+
+    .specify-col {
+      width: 34%;
+    }
+
+    .table-radio {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--blue);
+    }
+
+    .table-input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      font: inherit;
+    }
+
+    .table-input:focus {
+      outline: none;
+    }
+
+    .recommendation {
+      margin: 8px 0 10px;
+      font-size: 16px;
+    }
+
+    .recommendation strong {
+      font-weight: 700;
+    }
+
+    .recommendation-line {
+      display: block;
+      width: 100%;
+      border: 0;
+      border-bottom: 1.5px solid var(--line);
+      background: transparent;
+      font: inherit;
+      padding: 1px 0;
+      margin-top: 4px;
+    }
+
+    .recommendation-line:first-of-type {
+      margin-top: 3px;
+    }
+
+    .statement {
+      font-size: 16px;
+      text-align: justify;
+      margin: 8px 0 12px;
+    }
+
+    .statement-inline {
+      display: inline-block;
+      min-width: 102px;
+      max-width: 100%;
+      border: 0;
+      border-bottom: 1.5px solid var(--line);
+      background: transparent;
+      font: inherit;
+      padding: 0 2px 1px;
+      vertical-align: baseline;
+    }
+
+    .statement-inline.small {
+      width: 74px;
+    }
+
+    .statement-inline.medium {
+      width: 172px;
+    }
+
+    .statement-inline.long {
+      width: 246px;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 10px;
+    }
+
+    .signature-block {
+      min-width: 0;
+    }
+
+    .signature-line {
+      border-bottom: 1.5px solid var(--line);
+      min-height: 24px;
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 1px;
+    }
+
+    .signature-upload {
+      width: 100%;
+      margin-top: 4px;
+      font: 12px/1.1 Arial, sans-serif;
+    }
+
+    .signature-label {
+      text-align: center;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .footer-copy {
+      line-height: 1.18;
+      padding-top: 8px;
+    }
+
+    .footer-brand {
+      text-align: right;
+      padding-top: 0;
+    }
+
+    .footer-brand img {
+      display: block;
+      width: 126px;
+      height: auto;
+      margin-left: auto;
+      transform: translateY(1px);
+    }
+
+    .footer-brand small {
+      display: block;
+      margin-top: 2px;
+      color: var(--ink);
+      font-weight: 400;
+      font-size: 11px;
+      letter-spacing: 0.01em;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 10px;
+      }
+
+      .sheet {
+        padding: 16px 14px 14px;
+      }
+
+      .header {
+        grid-template-columns: 64px 1fr 64px;
+      }
+
+      .seal {
+        width: 64px;
+        height: 64px;
+      }
+
+      .header-copy {
+        font-size: 12px;
+      }
+
+      .header-copy strong {
+        font-size: 17px;
+      }
+
+      .bar {
+        margin: 8px -14px 14px;
+        height: 12px;
+      }
+
+      .title h2 {
+        font-size: 18px;
+      }
+
+      .title h1 {
+        font-size: 22px;
+      }
+
+      .line-pair,
+      .name-row,
+      .signature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .line-row,
+      .field,
+      .recommendation,
+      .statement,
+      table,
+      .signature-label {
+        font-size: 15px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .footer-brand {
+        text-align: left;
+      }
+
+      .footer-brand img {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <header class="header">
+      <img class="seal" src="archive/old-flat-root-files/cityOfButuan.png" alt="City Government of Butuan seal">
+      <div class="header-copy">
+        Republic of the Philippines
+        <strong>CITY GOVERNMENT OF BUTUAN</strong>
+        City Social Welfare and Development Department<br>
+        J.P. Rosales Ave., Tandang Sora, Butuan City
+      </div>
+      <img class="seal" src="archive/old-flat-root-files/cswdd.png" alt="CSWDD seal">
+    </header>
+
+    <div class="bar" aria-hidden="true"></div>
+
+    <section class="title">
+      <h2>Sustainable Market and Technology and Employment Assistance Program</h2>
+      <h2>(SMART LEAP)</h2>
+      <h1>Validation Form</h1>
+    </section>
+
+    <div class="line-row">
+      <span class="label"><strong>Date of Validation:</strong></span>
+      <input class="line-input short date-field" type="date" aria-label="Date of Validation">
+    </div>
+
+    <div class="line-row">
+      <span class="label"><strong>Name :</strong></span>
+      <input class="line-input" type="text" aria-label="Full name">
+    </div>
+
+    <div class="name-row">
+      <div class="under-field">
+        <input class="line-input" type="text" aria-label="Last Name">
+        <div class="under-caption">Last Name</div>
+      </div>
+      <div class="under-field">
+        <input class="line-input" type="text" aria-label="First Name">
+        <div class="under-caption">First Name</div>
+      </div>
+      <div class="under-field">
+        <input class="line-input" type="text" aria-label="Middle Name">
+        <div class="under-caption">Middle Name</div>
+      </div>
+    </div>
+
+    <div class="line-pair">
+      <div class="field">
+        <span class="label"><strong>Address : Purok</strong></span>
+        <input class="line-input purok-field" type="text" aria-label="Purok">
+      </div>
+      <div class="field">
+        <span class="label"><strong>Barangay:</strong></span>
+        <input class="line-input barangay-field" type="text" aria-label="Barangay">
+      </div>
+    </div>
+
+    <div class="line-pair">
+      <div class="field">
+        <span class="label"><strong>Birthday :</strong></span>
+        <input class="line-input birthday-field" type="date" aria-label="Birthday">
+      </div>
+      <div class="field">
+        <span class="label"><strong>Educational Attainment:</strong></span>
+        <input class="line-input education-field" type="text" aria-label="Educational Attainment">
+      </div>
+    </div>
+
+    <div class="line-row">
+      <span class="label"><strong>Contact number :</strong></span>
+      <input class="line-input short contact-field" type="text" aria-label="Contact Number">
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="subject-col">Is He/She</th>
+          <th class="check-col">Yes</th>
+          <th class="check-col">No</th>
+          <th class="specify-col">Specify</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pantawid Member</td>
+          <td class="check-col"><input class="table-radio" type="radio" name="pantawid"></td>
+          <td class="check-col"><input class="table-radio" type="radio" name="pantawid"></td>
+          <td><input class="table-input" type="text" aria-label="Pantawid specify"></td>
+        </tr>
+        <tr>
+          <td>SLPA Member</td>
+          <td class="check-col"><input class="table-radio" type="radio" name="slpa"></td>
+          <td class="check-col"><input class="table-radio" type="radio" name="slpa"></td>
+          <td><input class="table-input" type="text" aria-label="SLPA specify"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="recommendation">
+      <strong>Validator's Recommendation:</strong>
+      <input class="recommendation-line" type="text" aria-label="Validator Recommendation line 1">
+      <input class="recommendation-line" type="text" aria-label="Validator Recommendation line 2">
+    </section>
+
+    <p class="statement">
+      Ako si
+      <input class="statement-inline medium" type="text" aria-label="Resident name">
+      ,
+      <input class="statement-inline small" type="text" aria-label="Age">
+      anyos, lumulopyo sa Barangay
+      <input class="statement-inline medium" type="text" aria-label="Barangay statement">
+      , Butuan City, Agusan Del Norte. Ako nakasabot sa tumong ug proseso niining Livelihood Assistance kung diin ako
+      <input class="statement-inline medium" type="text" aria-label="Eligibility result">
+      (ANGAYAN/DILI ANGAYAN) mamahimong benepisyo sa among program nga gidumala sa SMART LEAP ng City Social Welfare and Development Department (CSWDD).
+    </p>
+
+    <div class="signature-grid">
+      <div class="signature-block">
+        <div class="signature-line">
+          <input class="line-input" type="text" aria-label="Participant signature name">
+        </div>
+        <input class="signature-upload" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" aria-label="Participant signature upload">
+        <div class="signature-label">Ngalan/Perma sa Partisepante</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line">
+          <input class="line-input" type="text" aria-label="Validator signature name">
+        </div>
+        <input class="signature-upload" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" aria-label="Validator signature upload">
+        <div class="signature-label">Ngalan/Perma sa Validator</div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-copy">
+        Phone: +639562241679 / +639816016317<br>
+        Email: cswdobutuan@gmail.com<br>
+        Website: http://www.butuan.gov.ph
+      </div>
+      <div class="footer-brand">
+        <img src="archive/old-flat-root-files/Butuanon.png" alt="Butuanon branding">
+        <small>CSWDD.DPSD.F.60.REV00</small>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

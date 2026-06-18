@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Availment Form Print Preview</title>
+  <style>
+    :root {
+      --page-width: 210mm;
+      --page-min-height: 297mm;
+      --ink: #111111;
+      --line: #2a2a2a;
+      --border: #1f1f1f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: #d6d6d6;
+    }
+
+    .print-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .sheet {
+      width: var(--page-width);
+      min-height: var(--page-min-height);
+      height: var(--page-min-height);
+      padding: 13mm 11mm 10mm;
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+      position: relative;
+    }
+
+    .sheet-footer-band {
+      position: absolute;
+      left: -11mm;
+      right: -11mm;
+      bottom: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #2b66b1 0%, #1d5aa7 55%, #15448a 100%);
+      z-index: 1;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 26mm 1fr 26mm;
+      align-items: start;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .header-logo {
+      width: 23mm;
+      height: 23mm;
+      object-fit: contain;
+      justify-self: center;
+    }
+
+    .header-center {
+      text-align: center;
+      font-size: 9.5px;
+      line-height: 1.3;
+      padding-top: 1mm;
+    }
+
+    .header-center strong {
+      display: block;
+      font-size: 10.5px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      margin: 16px 0 8px;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+
+    .city-line {
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section {
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .section-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .subsection-title {
+      font-weight: 700;
+      margin: 4px 0 6px 24px;
+    }
+
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-left: 24px;
+      margin-bottom: 4px;
+      align-items: flex-end;
+      font-size: 12px;
+    }
+
+    .field {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field-label {
+      white-space: nowrap;
+    }
+
+    .field-value {
+      display: inline-block;
+      min-width: 90px;
+      border-bottom: 1px solid var(--line);
+      padding: 0 4px 1px;
+      line-height: 1.2;
+      min-height: 16px;
+    }
+
+    .w-xs { min-width: 44px; }
+    .w-sm { min-width: 90px; }
+    .w-md { min-width: 150px; }
+    .w-lg { min-width: 245px; }
+    .w-xl { min-width: 330px; }
+
+    .form-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 11.5px;
+    }
+
+    .form-table th,
+    .form-table td {
+      border: 1px solid var(--border);
+      padding: 4px 6px;
+      vertical-align: top;
+    }
+
+    .form-table th {
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .blank-row td {
+      height: 26px;
+    }
+
+    .paragraph {
+      margin: 10px 0 0 24px;
+      text-align: justify;
+      line-height: 1.45;
+      font-size: 12px;
+    }
+
+    .paragraph.center {
+      text-align: center;
+    }
+
+    .signature-block {
+      width: 265px;
+      margin: 18px 0 0 auto;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .signature-image-wrap {
+      height: 52px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+
+    .signature-image {
+      max-width: 180px;
+      max-height: 48px;
+      object-fit: contain;
+    }
+
+    .signature-line {
+      border-top: 1px solid var(--line);
+      padding-top: 3px;
+    }
+
+    .page-two {
+      padding-top: 4mm;
+      padding-bottom: 22mm;
+    }
+
+    .page-two .section {
+      margin-top: 4px;
+      font-size: 13px;
+    }
+
+    .page-two .section-title {
+      margin-bottom: 4px;
+    }
+
+    .page-two .subsection-title {
+      margin: 2px 0 3px 18px;
+      font-size: 13px;
+    }
+
+    .page-two .form-table {
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+    .page-two .form-table th,
+    .page-two .form-table td {
+      padding: 2px 4px;
+    }
+
+    .page-two .blank-row td {
+      height: 17px;
+    }
+
+    .page-two .paragraph {
+      margin: 4px 0 0 18px;
+      line-height: 1.24;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .page-two .signature-block {
+      width: 225px;
+      margin: 5px 0 0 auto;
+      font-size: 13px;
+    }
+
+    .page-two .signature-name,
+    .page-two .signature-line {
+      font-size: 13px;
+      line-height: 1.15;
+    }
+
+    .page-two .signature-image-wrap {
+      height: 22px;
+      margin-bottom: 1px;
+    }
+
+    .page-two .signature-image {
+      max-width: 140px;
+      max-height: 18px;
+    }
+
+    .page-two-subsection--b,
+    .page-two-subsection--c {
+      margin-top: 8px !important;
+    }
+
+    .section-c-block {
+      margin-top: 4px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .participant-signature-block,
+    .signature-block {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .page-two .section-c-paragraph {
+      max-width: 590px;
+      margin-top: 2px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .page-two .participant-signature-block {
+      margin-top: 4px;
+      margin-bottom: 0;
+    }
+
+    .footer {
+      position: absolute;
+      left: 11mm;
+      right: 11mm;
+      bottom: 4mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      font-size: 10px;
+    }
+
+    .footer-left {
+      line-height: 1.25;
+    }
+
+    .footer-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      text-align: right;
+    }
+
+    .footer-right img {
+      width: 26mm;
+      height: auto;
+    }
+
+    .page-break {
+      break-before: page;
+      page-break-before: always;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+
+      .print-shell {
+        gap: 0;
+      }
+
+      .sheet {
+        box-shadow: none;
+        margin: 0;
+        width: 210mm;
+        min-height: 297mm;
+        height: 297mm;
+      }
+
+      .page-two {
+        padding-top: 1mm !important;
+        padding-bottom: 14mm !important;
+      }
+
+      .page-two .section {
+        margin-top: 2px !important;
+        font-size: 11px !important;
+      }
+
+      .page-two .section-title {
+        margin-bottom: 3px !important;
+      }
+
+      .page-two .subsection-title,
+      .page-two .subsection-title.page-two-subsection--b,
+      .page-two .subsection-title.page-two-subsection--c {
+        margin: 1px 0 2px 18px !important;
+        font-size: 11px !important;
+      }
+
+      .page-two .form-table {
+        margin-top: 2px !important;
+        font-size: 11px !important;
+      }
+
+      .page-two .form-table th,
+      .page-two .form-table td {
+        padding: 1px 3px !important;
+      }
+
+      .page-two .blank-row td {
+        height: 14px !important;
+      }
+
+      .page-two .paragraph {
+        margin: 2px 0 0 18px !important;
+        line-height: 1.12 !important;
+        font-size: 11px !important;
+      }
+
+      .page-two .field-row,
+      .page-two .field-value {
+        font-size: 11px !important;
+        min-height: 14px !important;
+      }
+
+      .page-two .signature-block,
+      .page-two .participant-signature-block {
+        width: 240px !important;
+        margin: 2px 0 0 auto !important;
+        font-size: 11px !important;
+      }
+
+      .page-two .signature-name,
+      .page-two .signature-line {
+        font-size: 11px !important;
+        line-height: 1.05 !important;
+        padding-top: 1px !important;
+      }
+
+      .page-two .signature-image-wrap {
+        height: 14px !important;
+        margin-bottom: 0 !important;
+      }
+
+      .page-two .signature-image {
+        max-width: 118px !important;
+        max-height: 11px !important;
+      }
+
+      .page-two .section-c-block {
+        margin-top: 1px !important;
+        position: relative !important;
+        padding-bottom: 44mm !important;
+      }
+
+      .page-two .section-c-paragraph {
+        max-width: 520px !important;
+        margin-top: 0 !important;
+      }
+
+      .page-two .participant-signature-block {
+        position: absolute !important;
+        right: 0 !important;
+        bottom: 36mm !important;
+        width: 240px !important;
+        margin: 0 !important;
+      }
+
+      .page-two .footer {
+        bottom: 2mm !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="print-shell">
+    <section class="sheet">
+      <div class="sheet-footer-band" aria-hidden="true"></div>
+      <header class="header">
+        <img class="header-logo" src="assets/img/CSWD%20logo.png" alt="City Government of Butuan logo">
+        <div class="header-center">
+          <div>Republic of the Philippines</div>
+          <strong>CITY GOVERNMENT OF BUTUAN</strong>
+          <div>City Social Welfare and Development Department</div>
+          <div>J.P. Rosales Ave., Tandang Sora, Butuan City</div>
+        </div>
+        <img class="header-logo" src="assets/img/Butuanon.png" alt="Butuan logo">
+      </header>
+
+      <div class="title">SMART LEAP AVAILMENT FORM</div>
+      <div class="subtitle">CITY SOCIAL WELFARE AND DEVELOPMENT DEPARTMENT</div>
+      <div class="city-line"><strong>City:</strong> Butuan City</div>
+
+      <section class="section">
+        <div class="section-title">I. CLIENT IDENTIFYING DATA:</div>
+        <div class="field-row">
+          <div class="field">
+            <span class="field-label">Name :</span>
+            <span class="field-value w-lg">John Paul Reformado</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Age :</span>
+            <span class="field-value w-xs">21</span>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <span class="field-label">Address:</span>
+            <span class="field-value w-xl">P-7 CCF, Doongan</span>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <span class="field-label">Name of Spouse:</span>
+            <span class="field-value w-lg">Park Minju</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">II. TYPE OF PROJECT:</div>
+        <div class="subsection-title">A. Family Enterprise:</div>
+        <table class="form-table">
+          <thead>
+            <tr>
+              <th style="width: 52%;">FAMILY MEMBER PARTICIPATING</th>
+              <th style="width: 16%;">AGE</th>
+              <th style="width: 32%;">ACTIVITIES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Elijah Rheema Reformado</td>
+              <td style="text-align: center;">23</td>
+              <td>Storekeep</td>
+            </tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+
+        <div class="subsection-title" style="margin-top: 10px;">B. Individual Assistance:</div>
+        <div class="field-row">
+          <div class="field">
+            <span class="field-label">Clientele Category:</span>
+            <span class="field-value w-md">Idk</span>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field" style="width: 100%;">
+            <span class="field-label">Nature of difficult circumstances:</span>
+            <span class="field-value" style="flex: 1 1 auto;">Lisod</span>
+          </div>
+        </div>
+
+        <p class="paragraph center">
+          I certify that <span class="field-value w-md">John Paul Reformado</span>
+          is eligible to avail the Sustainable<br>
+          Market and Technology Driven Livelihood and Employment Assistance Program<br>
+          (SMART LEAP) based on the assessment.
+        </p>
+
+        <div class="signature-block">
+          <div class="signature-line">Direct Worker</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">III. INCOME ELIGIBILITY REQUIREMENT:</div>
+        <table class="form-table">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width: 34%;">NAME OF WORKING FAMILY MEMBERS</th>
+              <th colspan="3" style="width: 36%;">MONTHLY INCOME</th>
+              <th rowspan="2" style="width: 30%;">TOTAL FAMILY INCOME</th>
+            </tr>
+            <tr>
+              <th style="width: 12%;">CASH</th>
+              <th style="width: 12%;">NON-CASH</th>
+              <th style="width: 12%;">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hannah Iris Reformado</td>
+              <td style="text-align: right;">24,000</td>
+              <td style="text-align: right;">0</td>
+              <td style="text-align: right;">24,000</td>
+              <td style="text-align: right;">2,400</td>
+            </tr>
+            <tr class="blank-row"><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-left">
+          <div>Phone: &nbsp;&nbsp; +639562241679 / +639816016317</div>
+          <div>Email: &nbsp;&nbsp;&nbsp; cswdobutuan@gmail.com</div>
+          <div>Website: http://www.butuan.gov.ph</div>
+        </div>
+        <div class="footer-right">
+          <img src="assets/img/Butuanon.png" alt="Butuan logo footer">
+          <div>CSWDO.DPSD.F.61.REV00</div>
+        </div>
+      </footer>
+    </section>
+
+    <section class="sheet page-break page-two">
+      <div class="sheet-footer-band" aria-hidden="true"></div>
+      <header class="header">
+        <img class="header-logo" src="assets/img/CSWD%20logo.png" alt="City Government of Butuan logo">
+        <div class="header-center">
+          <div>Republic of the Philippines</div>
+          <strong>CITY GOVERNMENT OF BUTUAN</strong>
+          <div>City Social Welfare and Development Department</div>
+          <div>J.P. Rosales Ave., Tandang Sora, Butuan City</div>
+        </div>
+        <img class="header-logo" src="assets/img/Butuanon.png" alt="Butuan logo">
+      </header>
+
+      <section class="section" style="margin-top: 8px;">
+        <div class="section-title">IV. PHYSICAL REQUIREMENTS</div>
+        <div class="subsection-title">A. Health Age Requirements</div>
+        <table class="form-table">
+          <thead>
+            <tr>
+              <th style="width: 54%;">HEALTH AND AGE REQUIREMENTS</th>
+              <th style="width: 16%;">AGE</th>
+              <th style="width: 30%;">HEALTH STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+            <tr class="blank-row"><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+
+        <div class="paragraph" style="margin-left: 0; margin-top: 10px;">Food Related Projects:</div>
+
+        <p class="paragraph center">
+          I certify that <span class="field-value w-md"> </span> has undergone medical check-up and is physically<br>
+          fit to run a food related projects.
+        </p>
+
+        <div class="signature-block">
+          <div class="signature-line">Name and Signature of Certifying Officer</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-title">V. PSYCHO-SOCIAL REQUIREMENTS:</div>
+
+        <div class="subsection-title">A. Residency and Character (for barangay captain, parish priest, etc.)</div>
+        <p class="paragraph center">
+          I certify that <span class="field-value w-md"> </span> a bonafide resident of the barangay and<br>
+          is of good moral character and has no adverse reputation.
+        </p>
+        <div class="signature-block">
+          <div class="signature-line">Name and Signature of Certifying Officer</div>
+        </div>
+
+        <div class="subsection-title page-two-subsection--b">B. Family Relationships, Work Habits, Aspirations</div>
+        <p class="paragraph center">
+          I certify that through personal interview, home visit and collateral interview I<br>
+          have verified that <span class="field-value w-md"> </span> manifest positive relationships, good<br>
+          work habits and attitude as well as demonstrated capacity and adequate level of<br>
+          economic aspiration.
+        </p>
+        <div class="signature-block">
+          <div class="signature-line">Name and Signature of Direct Worker</div>
+        </div>
+
+        <div class="subsection-title page-two-subsection--c">C. Social Responsibility and willingness to save (client)</div>
+        <div class="section-c-block">
+          <p class="paragraph center section-c-paragraph">
+            I will abide by all the policies and guidelines set by CSWDD for the SMART<br>
+            LEAP and I promise to pay the roll-back at the time stipulated and to generate weekly<br>
+            savings to meet emergencies that may affect my family.
+          </p>
+
+          <div class="signature-block participant-signature-block">
+            <div class="signature-image-wrap">
+              <img class="signature-image" src="uploads/post-approval/signatures/applicant/applicant-signature_20260329175544_fda3de6559364dab.jpg" alt="Applicant signature">
+            </div>
+            <div class="signature-line">Name and Signature of Participant</div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-left">
+          <div>Phone: &nbsp;&nbsp; +639562241679 / +639816016317</div>
+          <div>Email: &nbsp;&nbsp;&nbsp; cswdobutuan@gmail.com</div>
+          <div>Website: http://www.butuan.gov.ph</div>
+        </div>
+        <div class="footer-right">
+          <img src="assets/img/Butuanon.png" alt="Butuan logo footer">
+          <div>CSWDO.DPSD.F.61.REV00</div>
+        </div>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

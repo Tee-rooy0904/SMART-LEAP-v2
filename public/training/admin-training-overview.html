@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in t ra in in g o ve rv ie w.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training Management</title>
+  <link rel="stylesheet" href="../assets/css/training/training-admin.css">
+</head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-training-overview">
+    <header class="page-header">
+      <div>
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <ol><li>Admin</li><li>/</li><li>Training</li></ol>
+        </nav>
+        <h1>Training Management</h1>
+        <p>Manage yearly batch capacity, training sessions, seminar forms, notices, and attendance.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn" type="button">Create Training Session</button>
+        <button class="btn-secondary" type="button">View Eligible Applicants</button>
+      </div>
+    </header>
+    <div id="page-error" class="validation-banner validation-banner--destructive" role="alert"></div>
+    <section id="summary-cards" class="stats-grid" aria-label="Summary cards"></section>
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>Current Year Batch Status</h2></div>
+      <div class="panel-card__body"><div class="label-value-list" id="batch-status-list"></div></div>
+    </section>
+    <section class="panel-card">
+      <div class="panel-card__header"><h2>Training Sessions</h2></div>
+      <div class="panel-card__body">
+        <form class="filter-toolbar" id="sessions-toolbar"></form>
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <caption>Training sessions table</caption>
+            <thead>
+              <tr>
+                <th>Session Title</th><th>Seminar Focus</th><th>Training Year</th><th>Session Status</th><th>Assigned Participants</th><th>Forms Status</th><th>Notice Status</th><th>Attendance Progress</th><th>Completion Progress</th><th>Start Date</th><th>End Date</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-table-body"></tbody>
+          </table>
+        </div>
+        <div id="sessions-empty" class="empty-state" hidden><h3>No training sessions created yet.</h3><p>Create the yearly session to begin assignment, forms, notice, and attendance operations.</p></div>
+      </div>
+    </section>
+    <section class="split-workspace">
+      <section class="panel-card"><div class="panel-card__header"><h2>Operational Alerts</h2></div><div class="panel-card__body" id="alerts-list"></div></section>
+      <div></div>
+      <section class="panel-card">
+        <div class="panel-card__header"><h2>Recent Activity</h2></div>
+        <div class="panel-card__body">
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <caption>Recent activity</caption>
+              <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Session</th><th>Result</th></tr></thead>
+              <tbody id="activity-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-training-overview.js"></script>
+</body>
+</html>

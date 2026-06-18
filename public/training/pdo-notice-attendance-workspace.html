@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for p do n ot ic e a tt en da nc e w or ks pa ce.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PDO Notice and Attendance Workspace</title><link rel="stylesheet" href="../assets/css/training/training-pdo.css"></head>
+<body class="training-body training-theme-pdo">
+  <main class="training-page" data-page="pdo-notice-attendance-workspace">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Project Officer</li><li>/</li><li>Training</li><li>/</li><li>Operations</li></ol></nav><h1>PDO Notice &amp; Attendance Workspace</h1></div></header>
+    <section class="panel-card"><div class="panel-card__header"><h2>Notices Section</h2></div><div class="panel-card__body"><div class="table-row-actions"><button class="btn-secondary" type="button">Send In-System Notice</button><button class="btn-secondary" type="button">Send Email Notice</button><button class="btn-ghost" type="button">Resend Failed Email</button></div><div class="data-table-wrap"><table class="data-table"><caption>PDO notice table</caption><thead><tr><th>Applicant Name</th><th>Group Number</th><th>In-System Status</th><th>Email Status</th><th>Last Sent At</th><th>Action</th></tr></thead><tbody id="pdo-notice-body"></tbody></table></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Attendance Section</h2></div><div class="panel-card__body"><div class="data-table-wrap"><table class="data-table"><caption>PDO attendance table</caption><thead><tr><th>Applicant Name</th><th>Group Number</th><th>Attendance Status</th><th>Time In</th><th>Remarks</th><th>Action</th></tr></thead><tbody id="pdo-attendance-body"></tbody></table></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Completion Section</h2></div><div class="panel-card__body"><div class="data-table-wrap"><table class="data-table"><caption>PDO completion table</caption><thead><tr><th>Applicant Name</th><th>Attendance Status</th><th>Form Completion Status</th><th>Completion Status</th><th>Action</th></tr></thead><tbody id="pdo-completion-body"></tbody></table></div></div></section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/pdo-notice-attendance-workspace.js"></script>
+</body>
+</html>

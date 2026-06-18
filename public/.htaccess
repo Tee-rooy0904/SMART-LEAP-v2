@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Do not allow direct access to dotfiles or common sensitive file names.
+RewriteRule "(^|/)\." - [F,L]
+RewriteRule "^(?:composer\.(?:json|lock)|\.env(?:\..*)?)$" - [F,L,NC]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L,QSA]

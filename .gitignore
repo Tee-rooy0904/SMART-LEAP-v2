@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+
+/vendor/
+/storage/logs/*.log
+/storage/logs/*.txt
+/storage/cache/
+/tmp/
+
+/.vscode/
+

@@ -1,0 +1,4 @@
+@import url("./training-shared.css");
+
+.training-theme-pdo .page-header h1 { color: #204c57; }
+.training-theme-pdo .rules-panel { border-left: 4px solid #2b6878; }

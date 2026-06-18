@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART LEAP Validation Form Duplicate</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --ink: #111111;
+      --muted: #434343;
+      --line: #151515;
+      --blue: #114fa8;
+      --paper: #ffffff;
+      --page: #dfe8f4;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top, #eef5ff, #dfe8f4 58%, #d4dfed 100%);
+      color: var(--ink);
+      font-family: "Times New Roman", Georgia, serif;
+      line-height: 1.28;
+      padding: 24px;
+    }
+
+    .page {
+      width: min(100%, 960px);
+      margin: 0 auto;
+      background: var(--paper);
+      padding: 30px 34px 22px;
+      border: 1px solid #d5dce6;
+      box-shadow: 0 14px 40px rgba(19, 42, 87, 0.12);
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 92px 1fr 92px;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .seal {
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+    }
+
+    .header-copy {
+      font-size: 15px;
+      text-align: left;
+    }
+
+    .header-copy strong {
+      display: block;
+      font-size: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .bar {
+      height: 18px;
+      background: linear-gradient(90deg, #0f3f95 0%, #1367c1 65%, #0f3f95 100%);
+      margin: 10px -34px 18px;
+    }
+
+    .program {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .program h1,
+    .program h2 {
+      margin: 0;
+      font-size: 25px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .program h1 {
+      margin-top: 8px;
+      font-size: 28px;
+    }
+
+    .form-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .form-line .label {
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .blank {
+      display: inline-block;
+      min-height: 24px;
+      border-bottom: 1.5px solid var(--line);
+      flex: 1 1 120px;
+    }
+
+    .blank.short { flex-basis: 150px; max-width: 180px; }
+    .blank.medium { flex-basis: 280px; }
+    .blank.long { flex-basis: 100%; }
+
+    .name-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      margin: 4px 0 14px;
+    }
+
+    .under-label {
+      border-bottom: 1.5px solid var(--line);
+      min-height: 24px;
+      padding-bottom: 3px;
+    }
+
+    .under-label small {
+      display: block;
+      text-align: center;
+      font-size: 15px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .pair-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 10px;
+    }
+
+    .pair-row .field {
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 18px;
+    }
+
+    th,
+    td {
+      border: 1.5px solid var(--line);
+      padding: 7px 8px;
+      vertical-align: middle;
+    }
+
+    th {
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .check-col {
+      width: 95px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 14px 0 10px;
+    }
+
+    .recommendation {
+      margin: 16px 0 18px;
+      font-size: 18px;
+    }
+
+    .line-block {
+      display: block;
+      width: 100%;
+      border-bottom: 1.5px solid var(--line);
+      height: 24px;
+      margin-top: 6px;
+    }
+
+    .paragraph {
+      margin: 18px 0 18px;
+      font-size: 18px;
+      text-align: justify;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 26px;
+    }
+
+    .signature {
+      text-align: center;
+    }
+
+    .signature .sig-line {
+      border-bottom: 1.5px solid var(--line);
+      height: 32px;
+      margin-bottom: 8px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-top: 26px;
+      font-size: 16px;
+    }
+
+    .footer-copy {
+      line-height: 1.4;
+    }
+
+    .footer-brand {
+      text-align: right;
+      font-weight: 700;
+      color: #0c3f96;
+      letter-spacing: 0.02em;
+    }
+
+    .footer-brand span {
+      display: block;
+      color: #0f6e36;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .page {
+        padding: 18px 16px;
+      }
+
+      .header {
+        grid-template-columns: 64px 1fr 64px;
+      }
+
+      .seal {
+        width: 64px;
+        height: 64px;
+      }
+
+      .header-copy {
+        font-size: 12px;
+      }
+
+      .header-copy strong {
+        font-size: 16px;
+      }
+
+      .bar {
+        margin: 10px -16px 14px;
+        height: 12px;
+      }
+
+      .program h1 {
+        font-size: 21px;
+      }
+
+      .program h2 {
+        font-size: 19px;
+      }
+
+      .name-row,
+      .pair-row,
+      .signature-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .form-line,
+      .pair-row .field,
+      .paragraph,
+      table,
+      .recommendation {
+        font-size: 15px;
+      }
+
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .footer-brand {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <img class="seal" src="archive/old-flat-root-files/cityOfButuan.png" alt="City Government of Butuan seal">
+      <div class="header-copy">
+        Republic of the Philippines
+        <strong>CITY GOVERNMENT OF BUTUAN</strong>
+        City Social Welfare and Development Department<br>
+        J.P. Rosales Ave., Tandang Sora, Butuan City
+      </div>
+      <img class="seal" src="archive/old-flat-root-files/cswdd.png" alt="CSWDD seal">
+    </header>
+
+    <div class="bar" aria-hidden="true"></div>
+
+    <section class="program">
+      <h2>Sustainable Market and Technology and Employment Assistance Program</h2>
+      <h2>(SMART LEAP)</h2>
+      <h1>Validation Form</h1>
+    </section>
+
+    <div class="form-line">
+      <span class="label">Date of Validation:</span>
+      <span class="blank medium"></span>
+    </div>
+
+    <div class="form-line">
+      <span class="label">Name :</span>
+      <span class="blank long"></span>
+    </div>
+
+    <div class="name-row">
+      <div class="under-label"><small>Last Name</small></div>
+      <div class="under-label"><small>First Name</small></div>
+      <div class="under-label"><small>Middle Name</small></div>
+    </div>
+
+    <div class="pair-row">
+      <div class="field">
+        <span class="label">Address : Purok</span>
+        <span class="blank"></span>
+      </div>
+      <div class="field">
+        <span class="label">Barangay:</span>
+        <span class="blank"></span>
+      </div>
+    </div>
+
+    <div class="pair-row">
+      <div class="field">
+        <span class="label">Birthday :</span>
+        <span class="blank"></span>
+      </div>
+      <div class="field">
+        <span class="label">Educational Attainment:</span>
+        <span class="blank"></span>
+      </div>
+    </div>
+
+    <div class="form-line">
+      <span class="label">Contact number :</span>
+      <span class="blank medium"></span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Is He/She</th>
+          <th class="check-col">Yes</th>
+          <th class="check-col">No</th>
+          <th>Specify</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pantawid Member</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>SLPA Member</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="recommendation">
+      <span class="label">Validator's Recommendation:</span>
+      <span class="line-block"></span>
+      <span class="line-block"></span>
+    </section>
+
+    <p class="paragraph">
+      Ako si <span class="blank short"></span>, <span class="blank short"></span> anyos, lumulopyo sa
+      Barangay <span class="blank medium"></span>, Butuan City, Agusan Del Norte. Ako nakasabot sa tumong ug
+      proseso niining Livelihood Assistance kung diin ako <span class="blank medium"></span>
+      (ANGAYAN/DILI ANGAYAN) mamahimong benepisyo sa among program nga gidumala sa
+      SMART LEAP ng City Social Welfare and Development Department (CSWDD).
+    </p>
+
+    <div class="signature-grid">
+      <div class="signature">
+        <div class="sig-line"></div>
+        <div>Ngalan/Perma sa Partisepante</div>
+      </div>
+      <div class="signature">
+        <div class="sig-line"></div>
+        <div>Ngalan/Perma sa Validator</div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-copy">
+        Phone: +639562241679 / +639816016317<br>
+        Email: cswdobutuan@gmail.com<br>
+        Website: http://www.butuan.gov.ph
+      </div>
+      <div class="footer-brand">
+        BUTUAN<span>on a City Accenting</span>
+        <div style="font-size:14px; color:#111; margin-top:6px;">CSWDD.DPSD.F.60.REV00</div>
+      </div>
+    </footer>
+  </main>
+</body>
+</html>

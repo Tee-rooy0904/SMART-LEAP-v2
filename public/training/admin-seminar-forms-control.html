@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in s em in ar f or ms c on tr ol.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Seminar Forms Control</title><link rel="stylesheet" href="../assets/css/training/training-admin.css"></head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-seminar-forms-control">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Admin</li><li>/</li><li>Training</li><li>/</li><li>Forms Control</li></ol></nav><h1>Seminar Forms Control Panel</h1></div><div class="page-actions"><button class="btn-ghost" type="button">Back to Session</button><button class="btn-secondary" type="button">Go to Notice Panel</button></div></header>
+    <section class="panel-card"><div class="panel-card__body"><div class="label-value-list" id="forms-session-context"></div></div></section>
+    <section class="rules-panel"><h3>Seminar Focus Guidance</h3><ul class="list-clean"><li>Form sets are opened during training based on seminar focus.</li><li>Forms are visible only to assigned applicants when the session is open for forms.</li><li>Forms are not post-training-only requirements.</li></ul></section>
+    <div id="forms-banner" class="validation-banner validation-banner--warning" role="alert"></div>
+    <section class="split-workspace">
+      <section class="panel-card"><div class="panel-card__header"><h2>Available Form Sets</h2></div><div class="panel-card__body" id="form-options-list"></div></section>
+      <div></div>
+      <section class="summary-rail">
+        <section class="panel-card"><div class="panel-card__header"><h2>Form Access Timing Controls</h2></div><div class="panel-card__body"><form class="form-grid form-grid--single" id="form-access-controls"></form></div></section>
+        <section class="panel-card"><div class="panel-card__header"><h2>Applicant Visibility Preview</h2></div><div class="panel-card__body"><div id="form-visibility-summary" class="stats-grid"></div><div class="data-table-wrap"><table class="data-table"><caption>Applicant visibility preview</caption><thead><tr><th>Applicant Name</th><th>Group Number</th><th>Assigned Status</th><th>Form Access Status</th><th>Form Completion Summary</th></tr></thead><tbody id="form-visibility-body"></tbody></table></div></div></section>
+      </section>
+    </section>
+    <footer class="sticky-action-bar"><strong id="forms-footer-text">Select the seminar forms to open for assigned participants.</strong><div class="page-actions"><button class="btn" type="button" id="save-form-access">Save Form Access Settings</button><button class="btn-secondary" type="button" id="open-selected-forms">Open Selected Forms</button><button class="btn-destructive" type="button" id="close-all-forms">Close All Forms</button></div></footer>
+  </main>
+  <div class="modal" id="close-forms-modal" aria-hidden="true"><div class="modal__dialog"><div class="modal__header"><h2>Close all forms</h2></div><div class="modal__body"><p>All applicant seminar form access for this session will be closed.</p></div><div class="modal__footer"><button class="btn-ghost" type="button" data-close-modal>Cancel</button><button class="btn-destructive" type="button">Close All Forms</button></div></div></div>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-seminar-forms-control.js"></script>
+</body>
+</html>

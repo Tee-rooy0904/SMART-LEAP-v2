@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a pp li ca nt s em in ar f or ms.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Applicant Seminar Forms</title><link rel="stylesheet" href="../assets/css/training/training-applicant.css"></head>
+<body class="training-body training-theme-applicant">
+  <main class="training-page" data-page="applicant-seminar-forms">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Applicant</li><li>/</li><li>Training</li><li>/</li><li>Seminar Forms</li></ol></nav><h1>Seminar Forms</h1></div></header>
+    <section class="panel-card"><div class="panel-card__header"><h2>Session Context</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-forms-session-context"></div></div></section>
+    <div id="forms-availability-banner" class="validation-banner validation-banner--warning" role="alert"></div>
+    <section class="panel-card"><div class="panel-card__header"><h2>Forms List</h2></div><div class="panel-card__body"><div class="data-table-wrap"><table class="data-table"><caption>Applicant seminar forms</caption><thead><tr><th>Form Name</th><th>Availability</th><th>Submission Status</th><th>Last Saved At</th><th>Action</th></tr></thead><tbody id="applicant-forms-body"></tbody></table></div></div></section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/applicant-seminar-forms.js"></script>
+</body>
+</html>

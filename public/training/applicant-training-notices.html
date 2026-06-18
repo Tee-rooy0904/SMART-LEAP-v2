@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a pp li ca nt t ra in in g n ot ic es.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Applicant Training Notices</title><link rel="stylesheet" href="../assets/css/training/training-applicant.css"></head>
+<body class="training-body training-theme-applicant">
+  <main class="training-page" data-page="applicant-training-notices">
+    <header class="page-header"><div><nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Applicant</li><li>/</li><li>Training</li><li>/</li><li>Notices</li></ol></nav><h1>Training Notices and Schedule</h1></div></header>
+    <section class="panel-card"><div class="panel-card__header"><h2>Schedule Summary</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-notice-schedule"></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Latest Notice</h2></div><div class="panel-card__body"><div class="label-value-list" id="applicant-latest-notice"></div></div></section>
+    <section class="panel-card"><div class="panel-card__header"><h2>Notice History</h2></div><div class="panel-card__body"><div class="data-table-wrap"><table class="data-table"><caption>Notice history</caption><thead><tr><th>Subject</th><th>In-System Status</th><th>Email Status</th><th>Sent At</th></tr></thead><tbody id="applicant-notice-history"></tbody></table></div></div></section>
+  </main>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/applicant-training-notices.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+-- Migration scaffold: 018_create_post_approval_submissions_table.sql

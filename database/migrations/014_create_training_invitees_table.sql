@@ -1,0 +1,1 @@
+-- Migration scaffold: 014_create_training_invitees_table.sql

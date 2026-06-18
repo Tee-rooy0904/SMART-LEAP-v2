@@ -1,0 +1,1 @@
+-- Migration scaffold: 015_create_attendance_records_table.sql

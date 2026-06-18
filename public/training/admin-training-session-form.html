@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--
+  SMART LEAP FILE GUIDE
+  Training workspace page for a dm in t ra in in g s es si on f or m.
+  Provides the static HTML shell that is injected into the authenticated training workspace wrapper.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Training Session</title>
+  <link rel="stylesheet" href="../assets/css/training/training-admin.css">
+</head>
+<body class="training-body training-theme-admin">
+  <main class="training-page" data-page="admin-training-session-form">
+    <header class="page-header">
+      <div>
+        <nav class="breadcrumb" aria-label="Breadcrumb"><ol><li>Admin</li><li>/</li><li>Training</li><li>/</li><li>Session Form</li></ol></nav>
+        <h1 id="form-page-title">Create Training Session</h1>
+      </div>
+      <div class="page-actions"><button class="btn-ghost" type="button">Back to Training Overview</button></div>
+    </header>
+    <div id="session-form-banner" class="validation-banner validation-banner--destructive" role="alert"></div>
+    <section class="split-workspace">
+      <form class="panel-card" id="session-form">
+        <div class="panel-card__header"><h2>Session Details</h2></div>
+        <div class="panel-card__body">
+          <fieldset class="form-grid">
+            <legend class="visually-hidden">Session identity</legend>
+            <div class="field"><label for="training_year">Training Year</label><input id="training_year" name="training_year"></div>
+            <div class="field"><label for="session_title">Session Title</label><input id="session_title" name="session_title"></div>
+            <div class="field"><label for="seminar_focus">Seminar Focus</label><input id="seminar_focus" name="seminar_focus"></div>
+            <div class="field"><label for="session_code">Session Code</label><input id="session_code" name="session_code"></div>
+            <div class="field"><label for="session_status">Session Status</label><select id="session_status" name="session_status"></select></div>
+          </fieldset>
+          <hr>
+          <fieldset class="form-grid">
+            <legend class="visually-hidden">Schedule and venue</legend>
+            <div class="field"><label for="start_date">Start Date</label><input id="start_date" name="start_date" type="date"></div>
+            <div class="field"><label for="end_date">End Date</label><input id="end_date" name="end_date" type="date"></div>
+            <div class="field"><label for="start_time">Start Time</label><input id="start_time" name="start_time" type="time"></div>
+            <div class="field"><label for="end_time">End Time</label><input id="end_time" name="end_time" type="time"></div>
+            <div class="field"><label for="venue_name">Venue Name</label><input id="venue_name" name="venue_name"></div>
+            <div class="field"><label for="venue_address">Venue Address</label><input id="venue_address" name="venue_address"></div>
+            <div class="field"><label for="speaker_name">Speaker Name</label><input id="speaker_name" name="speaker_name"></div>
+            <div class="field"><label for="speaker_title">Speaker Title</label><input id="speaker_title" name="speaker_title"></div>
+          </fieldset>
+          <hr>
+          <fieldset class="form-grid form-grid--single">
+            <legend class="visually-hidden">Descriptions</legend>
+            <div class="field"><label for="session_description">Session Description</label><textarea id="session_description" name="session_description"></textarea></div>
+            <div class="field"><label for="what_to_bring">What to Bring</label><textarea id="what_to_bring" name="what_to_bring"></textarea></div>
+            <div class="field"><label for="participant_instructions">Participant Instructions</label><textarea id="participant_instructions" name="participant_instructions"></textarea></div>
+            <div class="field"><label for="internal_admin_notes">Internal Admin Notes</label><textarea id="internal_admin_notes" name="internal_admin_notes"></textarea></div>
+          </fieldset>
+        </div>
+      </form>
+      <div></div>
+      <aside class="summary-rail">
+        <section class="rules-panel"><h3>Session Controls Summary</h3><div class="label-value-list" id="session-controls-summary"></div></section>
+        <section class="audit-block"><h3>Audit Rail</h3><div class="label-value-list" id="audit-rail"></div></section>
+      </aside>
+    </section>
+    <footer class="sticky-action-bar">
+      <strong id="session-form-status">Draft changes are not yet saved.</strong>
+      <div class="page-actions">
+        <button class="btn-secondary" type="button" id="save-draft">Save Draft</button>
+        <button class="btn" type="submit" form="session-form" id="save-session">Save Session</button>
+        <button class="btn-ghost" type="button" id="cancel-session">Cancel</button>
+      </div>
+    </footer>
+  </main>
+  <div class="modal" id="session-confirm-modal" aria-hidden="true">
+    <div class="modal__dialog">
+      <div class="modal__header"><h2>Confirm status change</h2></div>
+      <div class="modal__body"><p>Attendance is still incomplete. Do you want to continue marking this session as completed?</p></div>
+      <div class="modal__footer"><button class="btn-ghost" data-close-modal type="button">Cancel</button><button class="btn" type="button">Confirm</button></div>
+    </div>
+  </div>
+  <script src="../assets/js/training/training-shared.js"></script>
+  <script src="../assets/js/training/admin-training-session-form.js"></script>
+</body>
+</html>

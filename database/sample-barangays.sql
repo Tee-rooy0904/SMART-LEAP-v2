@@ -1,0 +1,1 @@
+-- SQL scaffold: sample-barangays.sql

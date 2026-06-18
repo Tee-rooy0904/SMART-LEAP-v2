@@ -1,0 +1,1 @@
+-- Migration scaffold: 019_create_repayments_table.sql

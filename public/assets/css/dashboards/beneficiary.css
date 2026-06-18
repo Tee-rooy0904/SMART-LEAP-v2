@@ -1,0 +1,3517 @@
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.beneficiary-contextbar {
+    position: sticky;
+    top: 0;
+    z-index: 520;
+    isolation: isolate;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--indigo-900);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.beneficiary-contextbar__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.beneficiary-contextbar__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.beneficiary-contextbar__notifications {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+.beneficiary-contextbar__logo {
+    display: none;
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.12));
+}
+
+.portal-language-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(15, 27, 61, 0.08);
+    flex: 0 0 auto;
+}
+
+.portal-language-toggle__button {
+    border: 0;
+    background: transparent;
+    color: var(--slate-700);
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.76rem;
+    line-height: 1;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.portal-language-toggle__button.is-active {
+    background: #fff;
+    color: var(--indigo-700);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+.dash-content {
+    background:
+        radial-gradient(140% 120% at 0% 0%, rgba(51, 103, 214, 0.08), transparent 56%),
+        radial-gradient(120% 120% at 100% 0%, rgba(29, 191, 159, 0.08), transparent 48%),
+        linear-gradient(180deg, #f6f8fc 0%, #eef3fb 100%);
+}
+
+.dash-main {
+    gap: 18px;
+}
+
+.dash-page {
+    gap: 18px;
+}
+
+#overview .panel,
+#repayments .panel,
+#support-feedback .panel,
+#activity-log .panel,
+#profile .panel {
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 252, 255, 0.94));
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.07);
+}
+
+.beneficiary-contextbar .mobile-topbar__menu {
+    display: none;
+}
+
+.beneficiary-contextbar .mobile-topbar__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.38rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.beneficiary-contextbar .mobile-topbar__avatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 999px;
+    touch-action: manipulation;
+}
+
+.beneficiary-contextbar__name {
+    display: inline-block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--slate-700);
+}
+
+
+.beneficiary-command-band {
+    margin: 0;
+    padding: 0;
+    display: block;
+    overflow: visible;
+    position: relative;
+}
+
+.beneficiary-summary-card {
+    min-height: 112px;
+    padding: 18px 20px;
+    border-radius: 22px;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 250, 255, 0.95));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 16px 28px rgba(15, 23, 42, 0.05);
+    display: grid;
+    gap: 8px;
+    align-content: start;
+}
+
+.beneficiary-summary-card strong {
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+    line-height: 1.08;
+    color: #13264d;
+}
+
+#overview .panel.beneficiary-balance-card {
+    display: grid;
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    min-height: 132px;
+    padding: 22px 24px;
+    gap: 10px;
+    border-radius: 26px;
+    color: #f8fbff;
+    background:
+        radial-gradient(120% 180% at 100% 0%, rgba(79, 209, 197, 0.26), transparent 38%),
+        radial-gradient(120% 160% at 0% 100%, rgba(72, 123, 255, 0.26), transparent 42%),
+        linear-gradient(135deg, #0f1b3d 0%, #173472 54%, #1b6385 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 22px 40px rgba(8, 19, 48, 0.24);
+    overflow: hidden;
+}
+
+#overview .panel.beneficiary-balance-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.1), transparent 32%),
+        radial-gradient(50% 90% at 100% 100%, rgba(255, 255, 255, 0.08), transparent 70%);
+    pointer-events: none;
+}
+
+#overview .panel.beneficiary-balance-card .beneficiary-balance-card__body {
+    position: relative;
+    z-index: 1;
+}
+
+#overview .panel.beneficiary-balance-card .beneficiary-balance-card__body {
+    display: grid;
+    gap: 10px;
+    align-content: center;
+    min-height: 100%;
+}
+
+.beneficiary-balance-card__actions {
+    display: none;
+}
+
+#overview .panel.beneficiary-balance-card .label {
+    display: block;
+    margin: 0;
+    color: rgba(221, 232, 255, 0.82);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+#overview .panel.beneficiary-balance-card strong {
+    display: block;
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    text-shadow: 0 6px 14px rgba(7, 18, 42, 0.14);
+    line-height: 1.08;
+}
+
+.beneficiary-summary-card__meta {
+    font-size: 0.82rem;
+    color: var(--slate-500);
+    line-height: 1.35;
+}
+
+.beneficiary-summary-card .label,
+.beneficiary-repayment-hero .overview-label {
+    font-size: 0.76rem;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--slate-600);
+}
+
+.beneficiary-repayment-hero .overview-card {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(120% 180% at 100% 0%, rgba(79, 209, 197, 0.22), transparent 38%),
+        radial-gradient(120% 160% at 0% 100%, rgba(72, 123, 255, 0.22), transparent 42%),
+        linear-gradient(135deg, #10224a 0%, #173c79 56%, #1b6a87 100%);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 30px rgba(8, 19, 48, 0.18);
+}
+
+.beneficiary-repayment-hero .overview-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 34%),
+        radial-gradient(48% 80% at 100% 100%, rgba(255, 255, 255, 0.08), transparent 70%);
+    pointer-events: none;
+}
+
+.beneficiary-repayment-hero .overview-card .overview-label,
+.beneficiary-repayment-hero .overview-card .overview-value {
+    position: relative;
+    z-index: 1;
+}
+
+.beneficiary-repayment-hero .overview-card .overview-label {
+    color: rgba(226, 236, 255, 0.76);
+}
+
+.beneficiary-repayment-hero .overview-card .overview-value {
+    color: #ffffff;
+    text-shadow: 0 6px 14px rgba(7, 18, 42, 0.14);
+}
+
+.beneficiary-summary-card--progress {
+    background:
+        radial-gradient(120% 140% at 100% 0%, rgba(79, 209, 197, 0.12), transparent 46%),
+        linear-gradient(180deg, rgba(243, 247, 255, 1), rgba(255, 255, 255, 0.98));
+    border-color: rgba(51, 103, 214, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(51, 103, 214, 0.06), 0 18px 30px rgba(27, 59, 135, 0.06);
+}
+
+.beneficiary-summary-card--progress strong {
+    color: var(--indigo-900);
+}
+
+.beneficiary-progress-row {
+    margin-top: 10px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.beneficiary-progress-row__main {
+    display: grid;
+    gap: 10px;
+}
+
+.beneficiary-progress-row__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.beneficiary-progress-row__label {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slate-500);
+}
+
+.beneficiary-progress-row__value,
+.beneficiary-repayment-hero .overview-value {
+    font-size: 1.45rem;
+    line-height: 1.15;
+    color: #11244a;
+}
+
+.beneficiary-progress-row__meta,
+.beneficiary-progress-row__note {
+    margin: 0;
+    color: var(--slate-500);
+    line-height: 1.3;
+    font-size: 0.84rem;
+}
+
+.beneficiary-progress-row__actions {
+    display: grid;
+    align-items: center;
+}
+
+.beneficiary-progress-row__actions .btn-primary {
+    min-width: 188px;
+    min-height: 52px;
+    border: none;
+    background: linear-gradient(135deg, var(--indigo-500), var(--teal-500));
+    box-shadow: 0 18px 28px rgba(27, 59, 135, 0.18);
+}
+
+.beneficiary-progress-row__track {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(203, 213, 225, 0.65);
+}
+
+.beneficiary-progress-row__fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(20, 184, 166, 0.92), rgba(6, 182, 212, 0.94), rgba(51, 103, 214, 0.94));
+}
+
+.beneficiary-overview-lower-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.beneficiary-update-stack {
+    display: grid;
+    gap: 10px;
+}
+
+.beneficiary-update-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgba(251, 253, 255, 0.98), rgba(245, 249, 255, 0.94));
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.beneficiary-update-row p {
+    margin: 0;
+    color: #41536f;
+    line-height: 1.42;
+    font-size: 0.95rem;
+}
+
+.beneficiary-update-row .chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(51, 103, 214, 0.1);
+    color: #3f6bda;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+.beneficiary-support-mini {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.beneficiary-support-mini__copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.beneficiary-support-mini__hint {
+    margin: 2px 0 0;
+    color: var(--slate-500);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.beneficiary-support-preview {
+    padding: 20px;
+}
+
+.beneficiary-updates-panel,
+.beneficiary-support-preview {
+    margin-top: 12px;
+}
+
+.beneficiary-repayment-stack {
+    display: grid;
+    gap: 14px;
+}
+
+.repayment-actions {
+    order: 1;
+}
+
+.beneficiary-repayment-tracker {
+    order: 2;
+}
+
+.repayment-history-block {
+    order: 3;
+    min-width: 0;
+}
+
+.beneficiary-inline-metrics {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.beneficiary-inline-metrics--hero {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.beneficiary-inline-metrics .overview-card {
+    min-height: 100%;
+}
+
+.beneficiary-inline-metrics .overview-card,
+.repayment-tracker-metric,
+.history-metric,
+.beneficiary-next-step-card,
+.feedback-list li,
+.support-card__section {
+    background:
+        linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(247, 250, 255, 0.95));
+    border-color: rgba(15, 23, 42, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.beneficiary-repayment-hero .overview-card {
+    min-height: 112px;
+    padding: 18px 20px;
+    gap: 10px;
+}
+
+#overview .beneficiary-repayment-hero .overview-card,
+#repayments .beneficiary-repayment-hero .overview-card {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(120% 180% at 100% 0%, rgba(79, 209, 197, 0.22), transparent 38%),
+        radial-gradient(120% 160% at 0% 100%, rgba(72, 123, 255, 0.22), transparent 42%),
+        linear-gradient(135deg, #10224a 0%, #173c79 56%, #1b6a87 100%);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 30px rgba(8, 19, 48, 0.18);
+}
+
+#overview .beneficiary-repayment-hero .overview-card::before,
+#repayments .beneficiary-repayment-hero .overview-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 34%),
+        radial-gradient(48% 80% at 100% 100%, rgba(255, 255, 255, 0.08), transparent 70%);
+    pointer-events: none;
+}
+
+#overview .beneficiary-repayment-hero .overview-card .overview-label,
+#overview .beneficiary-repayment-hero .overview-card .overview-value,
+#repayments .beneficiary-repayment-hero .overview-card .overview-label,
+#repayments .beneficiary-repayment-hero .overview-card .overview-value {
+    position: relative;
+    z-index: 1;
+}
+
+#overview .beneficiary-repayment-hero .overview-card .overview-label,
+#repayments .beneficiary-repayment-hero .overview-card .overview-label {
+    color: rgba(226, 236, 255, 0.76);
+}
+
+#overview .beneficiary-repayment-hero .overview-card .overview-value,
+#repayments .beneficiary-repayment-hero .overview-card .overview-value {
+    color: #ffffff;
+    text-shadow: 0 6px 14px rgba(7, 18, 42, 0.14);
+}
+
+.beneficiary-next-line {
+    margin: 0;
+    color: var(--slate-600);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.beneficiary-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.beneficiary-action-row .btn-primary,
+.beneficiary-action-row .btn-outline {
+    min-width: 150px;
+}
+
+.beneficiary-updates-panel,
+.beneficiary-repayment-focus,
+.beneficiary-repayment-tracker {
+    min-width: 0;
+}
+
+.beneficiary-profile-workspace {
+    gap: 18px;
+}
+
+.beneficiary-profile-guidance {
+    padding: 16px 18px;
+}
+
+.beneficiary-profile-card {
+    display: grid;
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.beneficiary-profile-photo {
+    width: 100%;
+    align-self: start;
+    position: sticky;
+    top: 20px;
+}
+
+.beneficiary-profile-photo .profile-photo__frame {
+    max-width: 260px;
+    margin-inline: auto;
+}
+
+.beneficiary-profile-photo .profile-photo__upload {
+    width: 100%;
+    justify-content: center;
+}
+
+.beneficiary-profile-form {
+    display: grid;
+    gap: 14px;
+}
+
+.beneficiary-profile-panel {
+    box-shadow: none;
+}
+
+.beneficiary-profile-actions {
+    justify-content: flex-end;
+}
+
+.portal-select {
+    position: relative;
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.portal-select__native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.portal-select__trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 12px 44px 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #fff;
+    color: var(--slate-900);
+    font: inherit;
+    text-align: left;
+    position: relative;
+}
+
+.portal-select__trigger::after {
+    content: "";
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid rgba(15, 23, 42, 0.55);
+    border-bottom: 2px solid rgba(15, 23, 42, 0.55);
+    transform: translateY(-65%) rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.portal-select.is-open .portal-select__trigger {
+    border-color: rgba(51, 103, 214, 0.46);
+    box-shadow: 0 0 0 3px rgba(51, 103, 214, 0.18);
+}
+
+.portal-select.is-open .portal-select__trigger::after {
+    transform: translateY(-35%) rotate(-135deg);
+}
+
+.portal-select__label {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portal-select__menu {
+    display: none;
+    width: 100%;
+    max-height: min(280px, 42vh);
+    overflow-y: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: #fff;
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+    padding: 6px;
+}
+
+.portal-select.is-open .portal-select__menu {
+    display: grid;
+    gap: 4px;
+}
+
+.portal-select__option {
+    width: 100%;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--slate-900);
+    font: inherit;
+    text-align: left;
+}
+
+.portal-select__option:hover,
+.portal-select__option:focus-visible {
+    outline: none;
+    background: rgba(51, 103, 214, 0.08);
+}
+
+.portal-select__option.is-selected {
+    background: rgba(51, 103, 214, 0.12);
+    color: var(--indigo-700);
+    font-weight: 700;
+}
+
+.beneficiary-repayment-hero {
+    display: grid;
+    gap: 12px;
+    align-items: start;
+    padding: 16px;
+}
+
+.beneficiary-repayment-hero__heading {
+    display: grid;
+    gap: 4px;
+}
+
+.beneficiary-repayment-hero__note {
+    margin: 0;
+    color: var(--slate-600);
+    line-height: 1.4;
+    font-size: 0.9rem;
+}
+
+.repayment-actions__grid--single {
+    grid-template-columns: 1fr;
+}
+
+.repayment-action-card {
+    display: grid;
+    gap: 14px;
+    padding: 20px;
+    border-radius: 24px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 251, 255, 0.96));
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.06);
+}
+
+.repayment-action-card--form {
+    gap: 16px;
+    padding: 22px;
+    background:
+        radial-gradient(120% 150% at 100% 0%, rgba(79, 209, 197, 0.09), transparent 42%),
+        linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 1));
+    border-color: rgba(51, 103, 214, 0.08);
+    box-shadow: 0 24px 42px rgba(15, 23, 42, 0.06);
+}
+
+.repayment-action-card__intro {
+    margin: 0;
+    width: fit-content;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--indigo-700);
+    line-height: 1.3;
+    font-size: 0.84rem;
+    font-weight: 600;
+    background: rgba(51, 103, 214, 0.08);
+    border: 1px solid rgba(51, 103, 214, 0.1);
+}
+
+.repayment-flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.repayment-flow-step {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.05);
+    color: var(--slate-600);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.repayment-flow-step.is-active {
+    background: rgba(51, 103, 214, 0.12);
+    color: var(--indigo-700);
+}
+
+.repayment-due-list {
+    display: grid;
+    gap: 10px;
+}
+
+.repayment-due-list__empty,
+.repayment-due-item {
+    border-radius: 18px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.86);
+}
+
+.repayment-due-list__empty {
+    padding: 14px 16px;
+    color: var(--slate-600);
+    font-size: 0.9rem;
+}
+
+.repayment-due-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+}
+
+.repayment-due-item.is-overdue {
+    border-color: rgba(239, 68, 68, 0.22);
+    background: rgba(254, 242, 242, 0.72);
+}
+
+.repayment-due-item__label {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--slate-500);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.repayment-due-item strong {
+    color: var(--slate-900);
+}
+
+.repayment-due-item small,
+.repayment-due-list__locked {
+    color: var(--slate-600);
+    font-size: 0.84rem;
+}
+
+.repayment-mode-switch {
+    display: grid;
+    gap: 14px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(247, 250, 255, 0.8);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.repayment-mode-switch .form-field {
+    gap: 8px;
+}
+
+.repayment-mode-switch.is-single-field {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.repayment-form-mode {
+    display: grid;
+    gap: 16px 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+    grid-column: 1 / -1;
+}
+
+.repayment-upload-form {
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+}
+
+.repayment-upload-form > .repayment-form-mode,
+.repayment-upload-form > .form-actions {
+    grid-column: 1 / -1;
+}
+
+.repayment-upload-form .form-field {
+    gap: 8px;
+}
+
+.repayment-upload-form .form-field > span {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--slate-700);
+}
+
+.custom-select {
+    position: relative;
+    min-width: 0;
+}
+
+.custom-select__native {
+    position: absolute;
+    inset: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.custom-select__trigger {
+    width: 100%;
+    min-height: 52px;
+    padding: 13px 48px 13px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: rgba(248, 250, 252, 0.78);
+    color: var(--slate-900);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.custom-select__trigger:hover {
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.custom-select__trigger:focus-visible,
+.custom-select.is-open .custom-select__trigger {
+    outline: none;
+    background: #fff;
+    border-color: rgba(51, 103, 214, 0.46);
+    box-shadow: 0 0 0 4px rgba(51, 103, 214, 0.12);
+}
+
+.custom-select__caret {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid var(--slate-600);
+    border-bottom: 2px solid var(--slate-600);
+    transform: translateY(-65%) rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.custom-select.is-open .custom-select__caret {
+    transform: translateY(-35%) rotate(-135deg);
+}
+
+.custom-select__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: none;
+    padding: 8px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+}
+
+.custom-select.is-open .custom-select__menu {
+    display: grid;
+    gap: 4px;
+}
+
+.custom-select__option {
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--slate-800);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.custom-select__option:hover,
+.custom-select__option:focus-visible {
+    outline: none;
+    background: rgba(51, 103, 214, 0.08);
+}
+
+.custom-select__option.is-selected {
+    background: rgba(51, 103, 214, 0.12);
+    color: var(--indigo-700);
+    font-weight: 700;
+}
+
+.repayment-upload-form .form-field.full {
+    grid-column: 1 / -1;
+}
+
+.repayment-upload-form input,
+.repayment-upload-form textarea {
+    padding: 13px 14px;
+    border-radius: 18px;
+    border-color: rgba(15, 23, 42, 0.1);
+    background: rgba(248, 250, 252, 0.78);
+}
+
+.repayment-upload-form input:focus,
+.repayment-upload-form textarea:focus {
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(51, 103, 214, 0.12);
+}
+
+.repayment-upload-form input[type="file"] {
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.98);
+    border-style: dashed;
+}
+
+.repayment-upload-form input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 9px 14px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(51, 103, 214, 0.12);
+    color: var(--indigo-700);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.repayment-upload-form .form-actions {
+    margin-top: 6px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.repayment-upload-form textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.repayment-upload-form .field-helper {
+    font-size: 0.82rem;
+    color: var(--slate-500);
+}
+
+.repayment-upload-form__file {
+    gap: 10px;
+}
+
+.repayment-upload-form__notes textarea {
+    line-height: 1.45;
+}
+
+.repayment-upload-form__submit {
+    min-width: 190px;
+    min-height: 48px;
+    padding-inline: 26px;
+}
+
+.repayment-batch-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(248, 250, 252, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+#catchUpBatchFields {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+}
+
+.repayment-batch-toolbar strong,
+.repayment-batch-row__head strong {
+    color: var(--slate-900);
+}
+
+.repayment-batch-toolbar p {
+    margin: 4px 0 0;
+    color: var(--slate-500);
+    font-size: 0.84rem;
+}
+
+.repayment-batch-rows {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
+.repayment-batch-row {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 22px;
+    background: rgba(248, 250, 252, 0.78);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.repayment-batch-row__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.repayment-batch-row__grid {
+    display: grid;
+    gap: 14px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+}
+
+.repayment-batch-row__grid .form-field.full {
+    grid-column: 1 / -1;
+}
+
+.repayment-batch-row .form-field,
+.repayment-upload-form .form-field {
+    min-width: 0;
+}
+
+.repayment-batch-row input,
+.repayment-batch-row textarea,
+.repayment-batch-row select,
+.repayment-upload-form input,
+.repayment-upload-form textarea,
+.repayment-upload-form select {
+    width: 100%;
+    min-width: 0;
+}
+
+.progress-body {
+    display: grid;
+    gap: 14px;
+}
+
+.repayment-tracker-metrics {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.repayment-tracker-metric {
+    display: grid;
+    gap: 4px;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(248, 250, 252, 0.78);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.beneficiary-next-step-card {
+    display: grid;
+    gap: 6px;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(248, 250, 252, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.beneficiary-next-step-card--tracker {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px 12px;
+}
+
+.beneficiary-next-step-card--tracker .overview-meta {
+    grid-column: 1 / -1;
+}
+
+.history-header {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.history-summary-line {
+    margin: 0;
+    color: var(--slate-500);
+    font-size: 0.9rem;
+}
+
+.history-filters {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 16px;
+}
+
+.history-filters label {
+    display: grid;
+    gap: 6px;
+    min-width: 180px;
+    color: var(--slate-600);
+    font-size: 0.9rem;
+}
+
+.history-filters select,
+.history-filters input {
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    font: inherit;
+}
+
+.history-metrics {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 16px;
+}
+
+.history-metric {
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(248, 250, 252, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    display: grid;
+    gap: 4px;
+}
+
+.history-metric__label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--slate-500);
+}
+
+.history-metric__value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--slate-900);
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 22px;
+    background: rgba(248, 250, 252, 0.76);
+    padding: 8px;
+    scrollbar-width: thin;
+}
+
+.repayment-history-cards {
+    display: none;
+}
+
+.history-table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.history-table thead th,
+.history-table tbody td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.history-table thead th {
+    background: rgba(248, 250, 252, 0.92);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    color: var(--slate-500);
+}
+
+.history-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.history-card {
+    display: grid;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.94));
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 18px 28px rgba(15, 23, 42, 0.05);
+}
+
+.history-card--empty {
+    color: var(--slate-500);
+    text-align: center;
+    font-style: italic;
+}
+
+.history-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.history-card__grid {
+    display: grid;
+    gap: 12px;
+}
+
+.history-card__label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--slate-500);
+}
+
+.history-card__value {
+    font-size: 1.05rem;
+    color: #13264d;
+}
+
+.history-card__remarks p {
+    margin: 0;
+    color: var(--slate-600);
+    line-height: 1.45;
+}
+
+.history-card__review p,
+.history-review-note {
+    margin: 0;
+    color: #173c79;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.history-remarks-note {
+    margin-top: 4px;
+    color: var(--slate-600);
+    line-height: 1.45;
+}
+
+.history-followup {
+    margin-top: 8px;
+    display: grid;
+    gap: 6px;
+}
+
+.history-card__followup {
+    display: grid;
+    gap: 6px;
+}
+
+.history-followup-hint {
+    margin: 0;
+    color: var(--slate-500);
+    font-size: 0.8rem;
+    line-height: 1.35;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.status-verified {
+    background: rgba(34, 197, 94, 0.14);
+    color: #166534;
+}
+
+.status-uploaded,
+.status-pending {
+    background: rgba(59, 130, 246, 0.12);
+    color: #1d4ed8;
+}
+
+.status-overdue {
+    background: rgba(239, 68, 68, 0.14);
+    color: #b91c1c;
+}
+
+.muted {
+    color: var(--slate-500);
+    font-size: 0.86rem;
+}
+
+.beneficiary-support-grid {
+    align-items: start;
+}
+
+.feedback-list {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.feedback-list li {
+    display: grid;
+    gap: 4px;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: rgba(248, 250, 252, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.feedback-list li span {
+    color: var(--slate-500);
+    font-size: 0.82rem;
+}
+
+.feedback-list li.empty {
+    color: var(--slate-500);
+    font-style: italic;
+    text-align: center;
+}
+
+.support-chat-panel {
+    display: grid;
+    gap: 14px;
+}
+
+.support-chat__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.support-chat__header h2 {
+    margin: 4px 0 0;
+}
+
+.support-chat__tabs {
+    display: inline-flex;
+    gap: 6px;
+    padding: 5px;
+    border-radius: 999px;
+    background: rgba(226, 232, 240, 0.62);
+}
+
+.support-chat__tab {
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 13px;
+    background: transparent;
+    color: var(--slate-600);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.support-chat__tab.is-active {
+    background: #fff;
+    color: var(--indigo-700);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.support-chat__stream {
+    min-height: 220px;
+    max-height: 360px;
+    overflow-y: auto;
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(248, 250, 252, 0.84);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.support-chat__empty,
+.support-chat__status {
+    margin: 0;
+    color: var(--slate-500);
+    font-size: 0.86rem;
+}
+
+.support-chat__message {
+    width: fit-content;
+    max-width: min(78%, 560px);
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.support-chat__message.is-own {
+    justify-self: end;
+    background: linear-gradient(135deg, var(--indigo-500), var(--teal-500));
+    color: #fff;
+    border-color: transparent;
+}
+
+.support-chat__message strong {
+    font-size: 0.78rem;
+}
+
+.support-chat__message span {
+    font-size: 0.74rem;
+    color: inherit;
+    opacity: 0.76;
+}
+
+.support-chat__message p {
+    margin: 0;
+    line-height: 1.45;
+}
+
+.support-chat__form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.support-chat__form textarea {
+    width: 100%;
+    min-height: 52px;
+    resize: vertical;
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    border-radius: 16px;
+    padding: 12px 14px;
+    font: inherit;
+    color: var(--slate-900);
+    background: #fff;
+}
+
+.beneficiary-mobile-tabbar {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .repayment-due-item {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .repayment-due-item .btn-outline {
+        width: 100%;
+    }
+
+    .beneficiary-contextbar {
+        gap: 10px;
+        overflow: visible;
+        z-index: 620;
+    }
+
+    .beneficiary-contextbar__brand {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .beneficiary-contextbar__notifications,
+    .beneficiary-contextbar .mobile-topbar__account {
+        flex: 0 0 auto;
+        align-self: center;
+    }
+
+    .beneficiary-contextbar__notifications {
+        margin-left: 0;
+        position: relative;
+        z-index: 660;
+    }
+
+    .beneficiary-contextbar__actions {
+        gap: 8px;
+    }
+
+    .beneficiary-contextbar .smart-notification-toggle,
+    .beneficiary-contextbar .mobile-topbar__avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        position: relative;
+        z-index: 661;
+        pointer-events: auto;
+        touch-action: manipulation;
+    }
+
+    .beneficiary-contextbar .smart-notification-toggle__text {
+        display: none;
+    }
+
+    .beneficiary-contextbar .smart-notification-panel {
+        position: fixed;
+        inset: 4.35rem 0.85rem auto 0.85rem;
+        width: auto;
+        max-height: calc(100vh - 5.5rem);
+        z-index: 760;
+        pointer-events: auto;
+    }
+
+    .beneficiary-contextbar .mobile-topbar__account {
+        position: relative;
+        z-index: 670;
+        pointer-events: auto;
+    }
+
+    .beneficiary-contextbar .mobile-account-menu {
+        position: fixed;
+        top: 4.35rem;
+        right: 0.85rem;
+        min-width: 190px;
+        max-width: calc(100vw - 1.7rem);
+        z-index: 770;
+        transform: translateY(-6px);
+        pointer-events: auto;
+    }
+}
+
+@media (min-width: 961px) {
+    .dash-main {
+        gap: 16px;
+        padding-inline: clamp(24px, 3vw, 42px);
+        padding-bottom: 42px;
+    }
+
+    .dash-page {
+        gap: 14px;
+    }
+
+    #overview,
+    #repayments,
+    #support-feedback,
+    #activity-log {
+        width: 100%;
+        margin-inline: auto;
+    }
+
+    #overview {
+        max-width: 1180px;
+    }
+
+    #repayments,
+    #support-feedback,
+    #activity-log {
+        max-width: 1180px;
+    }
+
+    #repayments {
+        gap: 12px;
+    }
+
+    #overview .beneficiary-command-band {
+        width: min(100%, 1080px);
+    }
+
+    #overview .panel.beneficiary-balance-card {
+        min-height: 122px;
+        padding: 20px 26px;
+    }
+
+    #overview .panel.beneficiary-balance-card .beneficiary-balance-card__body {
+        gap: 8px;
+    }
+
+    #overview .panel.beneficiary-balance-card strong {
+        font-size: clamp(1.78rem, 2.5vw, 2.08rem);
+    }
+
+    #overview .beneficiary-repayment-hero,
+    #overview .beneficiary-progress-row,
+    #overview .beneficiary-updates-panel,
+    #overview .beneficiary-support-preview {
+        width: min(100%, 1080px);
+    }
+
+    #overview .beneficiary-repayment-hero {
+        margin-top: -2px;
+        padding: 11px 14px;
+        gap: 0;
+    }
+
+    #overview .beneficiary-repayment-hero .beneficiary-inline-metrics--hero {
+        gap: 9px;
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card {
+        min-height: 88px;
+        padding: 13px 15px;
+        gap: 7px;
+        align-content: start;
+    }
+
+    #overview .beneficiary-repayment-hero .overview-label {
+        letter-spacing: 0.12em;
+    }
+
+    #overview .beneficiary-repayment-hero .overview-value {
+        font-size: 1.12rem;
+        line-height: 1.2;
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:first-child {
+        background:
+            radial-gradient(120% 180% at 100% 0%, rgba(79, 209, 197, 0.26), transparent 36%),
+            radial-gradient(120% 160% at 0% 100%, rgba(72, 123, 255, 0.28), transparent 40%),
+            linear-gradient(135deg, #102550 0%, #184383 60%, #1c738f 100%);
+        border-color: rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 28px rgba(8, 19, 48, 0.2);
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:first-child .overview-label {
+        color: rgba(233, 241, 255, 0.84);
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:first-child .overview-value {
+        font-size: 1.22rem;
+        color: #ffffff;
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(2),
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(3),
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(4) {
+        background:
+            radial-gradient(120% 180% at 100% 0%, rgba(79, 209, 197, 0.22), transparent 38%),
+            radial-gradient(120% 160% at 0% 100%, rgba(72, 123, 255, 0.22), transparent 42%),
+            linear-gradient(135deg, #10224a 0%, #173c79 56%, #1b6a87 100%);
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 30px rgba(8, 19, 48, 0.18);
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(2) .overview-label,
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(3) .overview-label,
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(4) .overview-label {
+        color: rgba(226, 236, 255, 0.76);
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(2) .overview-value,
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(3) .overview-value,
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(4) .overview-value {
+        color: #ffffff;
+    }
+
+    #overview .beneficiary-repayment-hero .overview-card:nth-child(4).has-follow-up {
+        background:
+            radial-gradient(120% 180% at 100% 0%, rgba(245, 158, 11, 0.22), transparent 38%),
+            radial-gradient(120% 160% at 0% 100%, rgba(217, 119, 6, 0.22), transparent 42%),
+            linear-gradient(135deg, #5e2e06 0%, #8a4b08 56%, #b45309 100%);
+        border-color: rgba(255, 237, 213, 0.12);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 30px rgba(120, 53, 15, 0.18);
+    }
+
+    #overview .beneficiary-progress-row {
+        margin-top: 2px;
+    }
+
+    .beneficiary-progress-row {
+        margin-top: 8px;
+        padding: 14px 18px;
+        gap: 14px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+    }
+
+    .beneficiary-progress-row__main {
+        gap: 8px;
+    }
+
+    .beneficiary-progress-row__head {
+        align-items: center;
+        gap: 12px;
+        flex-wrap: nowrap;
+    }
+
+    .beneficiary-progress-row__head > div {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .beneficiary-progress-row__meta {
+        white-space: nowrap;
+        align-self: flex-end;
+    }
+
+    .beneficiary-progress-row__track {
+        height: 10px;
+    }
+
+    .beneficiary-progress-row__actions {
+        align-self: stretch;
+    }
+
+    .beneficiary-progress-row__actions .btn-primary {
+        min-width: 176px;
+        min-height: 48px;
+        padding-inline: 24px;
+    }
+
+    .beneficiary-updates-panel {
+        padding: 14px 16px;
+    }
+
+    .beneficiary-update-stack {
+        gap: 7px;
+    }
+
+    .beneficiary-update-row {
+        grid-template-columns: 112px minmax(0, 1fr);
+        gap: 10px;
+        padding: 10px 13px;
+        border-radius: 16px;
+    }
+
+    .beneficiary-update-row .chip {
+        justify-self: start;
+        padding: 7px 12px;
+        font-size: 0.79rem;
+    }
+
+    .beneficiary-update-row p {
+        font-size: 0.9rem;
+        line-height: 1.36;
+    }
+
+    .beneficiary-support-preview {
+        padding: 14px 16px;
+    }
+
+    #overview .beneficiary-overview-lower-grid {
+        width: min(100%, 1080px);
+        grid-template-columns: minmax(0, 1.58fr) minmax(360px, 0.98fr);
+        gap: 12px;
+        align-items: start;
+    }
+
+    #overview .beneficiary-updates-panel,
+    #overview .beneficiary-support-preview {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .beneficiary-support-mini {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .beneficiary-support-mini .btn-outline.small {
+        min-width: 144px;
+    }
+
+    #overview .beneficiary-support-preview {
+        min-height: 0;
+        display: grid;
+        align-content: center;
+        gap: 6px;
+        padding: 14px 16px;
+        align-self: start;
+    }
+
+    #overview .beneficiary-support-preview .panel-header {
+        margin-bottom: 0;
+    }
+
+    #overview .beneficiary-support-preview .beneficiary-support-mini__copy {
+        gap: 2px;
+    }
+
+    #overview .beneficiary-support-preview .support-card__primary {
+        line-height: 1.18;
+    }
+
+    #overview .beneficiary-support-preview .support-card__meta {
+        margin: 0;
+        line-height: 1.32;
+    }
+
+    #overview .beneficiary-support-preview .btn-outline.small {
+        align-self: center;
+    }
+
+    #overview .beneficiary-support-mini {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+    }
+
+    #overview .beneficiary-support-mini__hint {
+        margin-top: 4px;
+        max-width: 28ch;
+    }
+
+    .beneficiary-repayment-stack {
+        gap: 12px;
+    }
+
+    .beneficiary-repayment-hero,
+    .beneficiary-repayment-tracker,
+    .repayment-history-block,
+    .repayment-actions {
+        width: min(100%, 1120px);
+    }
+
+    .beneficiary-repayment-hero {
+        gap: 10px;
+        padding: 18px;
+    }
+
+    .beneficiary-inline-metrics--hero {
+        gap: 12px;
+    }
+
+    .beneficiary-repayment-hero .overview-card {
+        min-height: 104px;
+        padding: 16px 18px;
+    }
+
+    .repayment-actions {
+        padding: 18px;
+    }
+
+    .repayment-actions__grid--single {
+        justify-items: stretch;
+    }
+
+    .repayment-action-card--form {
+        width: 100%;
+        max-width: 1080px;
+        gap: 12px;
+        padding: 17px 18px;
+    }
+
+    .repayment-action-card__intro {
+        padding: 7px 11px;
+        font-size: 0.8rem;
+    }
+
+    .repayment-flow-steps {
+        gap: 7px;
+    }
+
+    .repayment-flow-step {
+        padding: 6px 11px;
+        font-size: 0.76rem;
+    }
+
+    .repayment-mode-switch {
+        gap: 10px 14px;
+        padding: 11px 13px;
+    }
+
+    .repayment-upload-form > .repayment-form-mode {
+        width: 100%;
+    }
+
+    .repayment-upload-form {
+        gap: 12px 16px;
+    }
+
+    .repayment-batch-toolbar {
+        padding: 12px 14px;
+    }
+
+    .repayment-batch-row {
+        padding: 14px;
+        gap: 10px;
+    }
+
+    .repayment-batch-row__grid {
+        gap: 12px 14px;
+    }
+
+    .repayment-upload-form .form-actions {
+        margin-top: -2px;
+    }
+
+    .repayment-upload-form textarea {
+        min-height: 100px;
+    }
+
+    .repayment-upload-form__submit {
+        min-width: 176px;
+        min-height: 46px;
+    }
+
+    .beneficiary-repayment-tracker {
+        padding: 18px;
+    }
+
+    .progress-body {
+        gap: 12px;
+    }
+
+    .repayment-tracker-metrics {
+        gap: 12px;
+    }
+
+    .repayment-tracker-metric {
+        padding: 14px 16px;
+    }
+
+    .repayment-history-block {
+        padding: 18px;
+    }
+
+    .history-header {
+        margin-bottom: 10px;
+    }
+
+    .history-filters {
+        gap: 10px 14px;
+        margin-bottom: 12px;
+    }
+
+    .history-metrics {
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .history-metric {
+        padding: 14px 16px;
+    }
+
+    .table-responsive {
+        padding: 6px;
+    }
+
+    .history-table thead th,
+    .history-table tbody td {
+        padding: 13px 14px;
+    }
+
+    #support-feedback .beneficiary-support-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
+        gap: 14px;
+        align-items: stretch;
+        max-width: 1120px;
+        margin-inline: auto;
+    }
+
+    #support-feedback .feedback,
+    #support-feedback .support-page-panel {
+        padding: 16px;
+        height: 100%;
+    }
+
+    #support-feedback .feedback textarea {
+        min-height: 140px;
+    }
+
+    #support-feedback .feedback .form-actions {
+        justify-content: flex-end;
+    }
+
+    #support-feedback .feedback .btn-primary {
+        min-width: 170px;
+    }
+
+    #support-feedback .feedback-list {
+        margin-top: 10px;
+        gap: 7px;
+    }
+
+    #support-feedback .feedback-list li {
+        padding: 12px 14px;
+        border-radius: 16px;
+    }
+
+    #support-feedback .support-card {
+        display: grid;
+        gap: 12px;
+        height: 100%;
+        align-content: start;
+    }
+
+    #support-feedback .support-card__grid--triple {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    #support-feedback .support-card__section {
+        padding: 12px 14px;
+        border-radius: 18px;
+        gap: 5px;
+    }
+
+    #support-feedback .support-card__section--checklist {
+        margin-top: 0;
+    }
+
+    #support-feedback .support-card__list {
+        margin: 2px 0 0;
+        gap: 5px;
+    }
+
+    #activity-log {
+        max-width: 1080px;
+    }
+
+    #activity-log > .panel {
+        padding: 16px;
+    }
+
+    #activity-log .activity-summary-panel {
+        padding-bottom: 12px;
+    }
+
+    #activity-log .beneficiary-inline-metrics {
+        grid-template-columns: minmax(0, 0.88fr) minmax(0, 0.88fr) minmax(0, 1.24fr);
+        gap: 10px;
+    }
+
+    #activity-log .overview-card {
+        min-height: 84px;
+        padding: 12px 14px;
+    }
+
+    #activity-log .activity-latest-card {
+        min-height: 80px;
+    }
+
+    #activity-log .activity-latest-card.is-empty {
+        min-height: 68px;
+    }
+
+    #activity-log .activity-timeline-panel {
+        padding-top: 14px;
+        padding-bottom: 12px;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty {
+        padding-bottom: 8px;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty .timeline-list {
+        margin-top: 0;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty .timeline-list .empty {
+        text-align: left;
+        padding: 2px 0 0;
+        min-height: 0;
+    }
+}
+
+@media (max-width: 1200px) {
+    .beneficiary-inline-metrics,
+    .beneficiary-inline-metrics--hero,
+    .history-metrics,
+    .repayment-tracker-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .beneficiary-repayment-hero .beneficiary-inline-metrics--hero {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 960px) {
+    .beneficiary-overview-lower-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body.mobile-select-open .beneficiary-mobile-tabbar {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .beneficiary-repayment-hero,
+    .beneficiary-profile-card {
+        grid-template-columns: 1fr;
+    }
+
+    .beneficiary-contextbar {
+        padding: 12px 14px;
+        border-radius: 0;
+        margin: 0 0 4px;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    .beneficiary-contextbar__brand {
+        gap: 8px;
+    }
+
+    .beneficiary-contextbar__logo {
+        display: block;
+        width: 38px;
+        height: 38px;
+    }
+
+    .beneficiary-contextbar .mobile-topbar__menu {
+        display: inline-flex;
+    }
+
+    .beneficiary-contextbar .mobile-topbar__avatar {
+        padding-left: 0;
+    }
+
+    .portal-language-toggle {
+        gap: 4px;
+        padding: 3px;
+    }
+
+    .portal-language-toggle__button {
+        padding: 7px 10px;
+        font-size: 0.72rem;
+    }
+
+    .beneficiary-support-mini {
+        align-items: flex-start;
+    }
+
+    .support-chat__header {
+        display: grid;
+    }
+
+    .support-chat__tabs {
+        width: 100%;
+    }
+
+    .support-chat__tab {
+        flex: 1;
+    }
+
+    .support-chat__form {
+        grid-template-columns: 1fr;
+    }
+
+    .custom-select.is-open .custom-select__menu {
+        position: static;
+        margin-top: 8px;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .beneficiary-mobile-tabbar {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 44;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        padding: 8px;
+        border-radius: 22px;
+        background: rgba(15, 27, 61, 0.94);
+        box-shadow: 0 18px 30px rgba(15, 23, 42, 0.22);
+        backdrop-filter: blur(20px);
+    }
+
+    .beneficiary-tabbar__link {
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+        padding: 8px 6px 7px;
+        border-radius: 16px;
+        color: rgba(226, 232, 240, 0.78);
+        text-decoration: none;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+
+    .beneficiary-tabbar__link:hover,
+    .beneficiary-tabbar__link:focus-visible {
+        text-decoration: none;
+        color: #fff;
+        outline: none;
+    }
+
+    .beneficiary-tabbar__link.is-active {
+        background: linear-gradient(135deg, rgba(51, 103, 214, 0.96), rgba(29, 191, 159, 0.96));
+        color: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .beneficiary-tabbar__icon {
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .beneficiary-tabbar__icon svg {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        fill: none;
+    }
+
+    .beneficiary-tabbar__label {
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+
+    .beneficiary-profile-photo {
+        position: static;
+    }
+
+    .repayment-mode-switch,
+    .repayment-form-mode,
+    .repayment-upload-form,
+    .repayment-batch-row__grid {
+        grid-template-columns: 1fr;
+    }
+
+    #catchUpBatchFields {
+        gap: 14px;
+    }
+
+    .beneficiary-repayment-stack {
+        gap: 12px;
+    }
+
+    .beneficiary-repayment-hero {
+        padding: 14px;
+    }
+
+    .repayment-action-card--form {
+        padding: 16px;
+    }
+
+    .repayment-upload-form .form-actions {
+        justify-content: stretch;
+    }
+
+    .repayment-upload-form__submit {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .history-filters,
+    .history-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dash-main {
+        gap: 14px;
+        padding-bottom: 100px;
+    }
+
+    .dash-page {
+        gap: 14px;
+    }
+
+    #overview .panel,
+    #repayments .panel,
+    #support-feedback .panel,
+    #activity-log .panel,
+    #profile .panel {
+        border-radius: 24px;
+    }
+}
+
+@media (max-width: 720px) {
+    .beneficiary-repayment-hero {
+        gap: 10px;
+    }
+
+    .beneficiary-repayment-hero__note {
+        display: none;
+    }
+
+    .beneficiary-inline-metrics--hero {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        overflow: visible;
+        padding-bottom: 0;
+    }
+
+    .beneficiary-inline-metrics,
+    .history-metrics,
+    .repayment-tracker-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .repayment-batch-toolbar,
+    .repayment-batch-row__head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .beneficiary-support-mini {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .beneficiary-action-row,
+    .beneficiary-profile-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .beneficiary-command-band,
+    .beneficiary-support-preview,
+    .repayment-action-card,
+    .beneficiary-next-step-card {
+        padding: 14px;
+    }
+
+    .beneficiary-progress-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 14px;
+    }
+
+    .beneficiary-progress-row__actions .btn-primary {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .beneficiary-repayment-hero .overview-card {
+        min-height: 82px;
+        padding: 13px 14px;
+    }
+
+    .repayment-upload-form .form-actions {
+        justify-content: stretch;
+    }
+
+    .beneficiary-summary-card strong,
+    .beneficiary-progress-row__value,
+    .beneficiary-repayment-hero .overview-value {
+        font-size: 1.2rem;
+    }
+
+    .beneficiary-support-mini .btn-outline {
+        width: 100%;
+    }
+
+    .history-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .history-filters label {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .history-table {
+        min-width: 560px;
+    }
+
+    .beneficiary-repayment-hero {
+        gap: 8px;
+        padding: 13px;
+    }
+
+    .repayment-action-card--form {
+        border-radius: 24px;
+        padding: 14px;
+    }
+
+    .repayment-flow-steps {
+        gap: 5px;
+    }
+
+    .repayment-flow-step {
+        font-size: 0.7rem;
+        padding: 5px 9px;
+    }
+
+    .repayment-batch-toolbar,
+    .repayment-mode-switch {
+        background: rgba(244, 248, 255, 0.88);
+    }
+
+    .beneficiary-repayment-hero .overview-card,
+    .repayment-tracker-metric,
+    .history-metric {
+        min-height: 80px;
+        align-content: start;
+    }
+
+    .repayment-mode-switch,
+    .repayment-batch-toolbar,
+    .repayment-batch-row,
+    .repayment-upload-form {
+        gap: 10px;
+    }
+
+    .repayment-batch-row {
+        padding: 12px;
+        border-radius: 18px;
+    }
+
+    .repayment-batch-row__head strong {
+        font-size: 0.95rem;
+    }
+
+    .repayment-batch-toolbar p {
+        font-size: 0.84rem;
+        line-height: 1.35;
+    }
+
+    .repayment-batch-row__head .btn-outline,
+    .repayment-batch-toolbar .btn-outline {
+        width: 100%;
+    }
+
+    .repayment-upload-form input,
+    .repayment-upload-form textarea,
+    .custom-select__trigger,
+    .history-filters select,
+    .history-filters input {
+        font-size: 16px;
+    }
+
+    .repayment-upload-form .form-field,
+    .repayment-batch-row .form-field {
+        gap: 6px;
+    }
+
+    .repayment-upload-form .form-field > span,
+    .repayment-batch-row .form-field > span {
+        font-size: 0.84rem;
+    }
+
+    .custom-select__trigger,
+    .repayment-upload-form input,
+    .repayment-upload-form textarea,
+    .repayment-batch-row input,
+    .repayment-batch-row textarea {
+        min-height: 46px;
+        padding: 11px 12px;
+        border-radius: 14px;
+    }
+
+    .repayment-upload-form textarea,
+    .repayment-batch-row textarea {
+        min-height: 88px;
+    }
+
+    .repayment-upload-form input[type="file"]::file-selector-button {
+        width: 100%;
+        margin: 0 0 10px;
+        display: block;
+    }
+
+    .beneficiary-mobile-tabbar {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .beneficiary-update-stack {
+        gap: 8px;
+    }
+
+    .beneficiary-update-row {
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+    }
+
+    .beneficiary-update-row p {
+        font-size: 0.88rem;
+        line-height: 1.3;
+    }
+
+    .beneficiary-update-row .chip {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .beneficiary-support-preview {
+        padding: 14px;
+    }
+
+    .beneficiary-support-mini {
+        gap: 10px;
+    }
+
+    .beneficiary-support-mini__copy {
+        gap: 2px;
+    }
+
+    .history-card {
+        gap: 10px;
+        padding: 13px 14px;
+        border-radius: 18px;
+    }
+
+    .history-card__grid {
+        gap: 10px;
+    }
+
+    .history-card__label {
+        margin-bottom: 3px;
+        font-size: 0.68rem;
+    }
+
+    .history-card__value {
+        font-size: 0.96rem;
+    }
+
+    .history-card__remarks p,
+    .history-card__review p,
+    .history-followup-hint,
+    .muted {
+        font-size: 0.8rem;
+        line-height: 1.35;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        font-size: 0.66rem;
+    }
+
+    #support-feedback .panel-header,
+    #activity-log .panel-header {
+        gap: 4px;
+    }
+
+    #support-feedback .panel-subtitle,
+    #activity-log .panel-subtitle {
+        font-size: 0.86rem;
+        line-height: 1.35;
+    }
+
+    #support-feedback textarea {
+        min-height: 110px;
+    }
+
+    .feedback-list {
+        margin-top: 12px;
+        gap: 8px;
+    }
+
+    .feedback-list li {
+        padding: 12px 14px;
+        border-radius: 16px;
+    }
+
+    .support-card__grid--triple {
+        gap: 10px;
+    }
+
+    .support-card__section {
+        padding: 12px 14px;
+        border-radius: 16px;
+    }
+
+    .support-card__list {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 0.88rem;
+        line-height: 1.45;
+    }
+
+    .support-card__meta {
+        font-size: 0.88rem;
+        line-height: 1.35;
+    }
+
+    #activity-log .beneficiary-inline-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    #activity-log .activity-summary-panel {
+        padding-top: 12px;
+        padding-bottom: 10px;
+    }
+
+    #activity-log .activity-latest-card {
+        grid-column: 1 / -1;
+        gap: 5px;
+    }
+
+    #activity-log .overview-card,
+    #activity-log .panel--review {
+        min-height: 0;
+    }
+
+    #activity-log .activity-latest-card.is-empty {
+        min-height: 62px;
+    }
+
+    #activity-log .activity-timeline-panel {
+        padding-top: 11px;
+        padding-bottom: 10px;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty {
+        padding-bottom: 6px;
+    }
+
+    #activity-log .timeline-list {
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty .timeline-list {
+        gap: 0;
+    }
+
+    #activity-log .timeline-list .empty {
+        padding: 0;
+        min-height: 0;
+        font-size: 0.88rem;
+        line-height: 1.3;
+        text-align: left;
+    }
+
+    #support-feedback .beneficiary-support-grid {
+        gap: 10px;
+    }
+
+    #support-feedback .feedback {
+        padding: 14px;
+    }
+
+    #support-feedback .feedback .panel-header {
+        gap: 3px;
+        margin-bottom: 10px;
+    }
+
+    #support-feedback .feedback .panel-subtitle {
+        max-width: 34ch;
+    }
+
+    #support-feedback .feedback .form-grid {
+        gap: 10px;
+    }
+
+    #support-feedback .feedback .form-field {
+        gap: 6px;
+    }
+
+    #support-feedback .feedback textarea {
+        min-height: 96px;
+        border-radius: 16px;
+    }
+
+    #support-feedback .feedback .btn-primary {
+        min-height: 46px;
+    }
+
+    #support-feedback .feedback-list li.empty {
+        padding: 12px 14px;
+        border-style: dashed;
+    }
+
+    #support-feedback .support {
+        padding: 14px;
+    }
+
+    #support-feedback .support-card {
+        display: grid;
+        gap: 12px;
+    }
+
+    #support-feedback .support-card__header {
+        gap: 3px;
+        margin-bottom: 0;
+    }
+
+    #support-feedback .support-card__grid--triple {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    #support-feedback .support-card__grid--triple .support-card__section:last-child {
+        grid-column: 1 / -1;
+    }
+
+    #support-feedback .support-card__section {
+        gap: 5px;
+    }
+
+    #support-feedback .support-card__eyebrow {
+        font-size: 0.68rem;
+        letter-spacing: 0.1em;
+    }
+
+    #support-feedback .support-card__primary {
+        font-size: 1.02rem;
+        line-height: 1.2;
+    }
+
+    #support-feedback .support-card__meta {
+        font-size: 0.82rem;
+        line-height: 1.32;
+    }
+
+    #support-feedback .support-card__section--checklist {
+        margin-top: 2px;
+    }
+
+    #support-feedback .support-card__list {
+        margin-top: 4px;
+        row-gap: 4px;
+    }
+
+    #activity-log > .panel {
+        padding: 14px;
+    }
+
+    #activity-log .panel-header--compact {
+        gap: 3px;
+        margin-bottom: 10px;
+    }
+
+    #activity-log .beneficiary-inline-metrics {
+        gap: 8px;
+    }
+
+    #activity-log .overview-card {
+        padding: 12px 13px;
+        min-height: 76px;
+    }
+
+    #activity-log .overview-value {
+        font-size: 1rem;
+        line-height: 1.15;
+    }
+
+    #activity-log .overview-meta {
+        font-size: 0.8rem;
+        line-height: 1.3;
+    }
+
+    #activity-log .panel--review {
+        min-height: 0;
+    }
+
+    #activity-log .timeline-list {
+        gap: 8px;
+    }
+
+    #activity-log .timeline-list .empty {
+        padding: 6px 0 0;
+        min-height: 0;
+    }
+}
+
+@media (max-width: 540px) {
+    .beneficiary-contextbar {
+        gap: 10px;
+        padding: 10px 12px;
+    }
+
+    .beneficiary-contextbar .mobile-topbar__title {
+        font-size: 1.06rem;
+    }
+
+    .beneficiary-command-band {
+        padding: 0;
+    }
+
+    #overview .panel.beneficiary-balance-card {
+        min-height: 138px;
+        padding: 15px;
+    }
+
+    #overview .panel.beneficiary-balance-card strong {
+        font-size: 1.58rem;
+    }
+
+    .beneficiary-balance-card__actions {
+        display: grid;
+        position: relative;
+        z-index: 1;
+        margin-top: 2px;
+    }
+
+    .beneficiary-balance-card__actions .btn-primary {
+        width: 100%;
+        min-width: 0;
+        min-height: 44px;
+    }
+
+    .beneficiary-progress-row__actions.is-relocated {
+        display: none;
+    }
+
+    .beneficiary-update-row,
+    .history-metric {
+        padding: 10px 11px;
+    }
+
+    .beneficiary-repayment-hero,
+    .repayment-action-card--form,
+    .repayment-batch-toolbar,
+    .repayment-batch-row,
+    .beneficiary-repayment-tracker,
+    .repayment-history-block {
+        padding: 13px;
+    }
+
+    .beneficiary-repayment-hero .beneficiary-inline-metrics--hero,
+    .repayment-tracker-metrics,
+    .history-metrics {
+        gap: 8px;
+    }
+
+    .beneficiary-inline-metrics--hero {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .beneficiary-repayment-hero .overview-card,
+    .repayment-tracker-metric,
+    .history-metric {
+        padding: 11px 12px;
+        min-height: 76px;
+    }
+
+    .repayment-action-card__intro {
+        width: 100%;
+        border-radius: 14px;
+        padding: 7px 10px;
+        font-size: 0.78rem;
+    }
+
+    .repayment-mode-switch {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .repayment-upload-form {
+        gap: 10px;
+    }
+
+    .repayment-batch-row__grid {
+        gap: 10px;
+    }
+
+    .repayment-upload-form textarea {
+        min-height: 82px;
+    }
+
+    .custom-select__menu {
+        left: 0;
+        right: 0;
+        width: auto;
+        max-width: 100%;
+    }
+
+    .repayment-upload-form__submit {
+        min-height: 46px;
+    }
+
+    .table-responsive {
+        display: none;
+    }
+
+    .repayment-history-cards {
+        display: grid;
+        gap: 12px;
+    }
+
+    .beneficiary-action-row .btn-primary,
+    .beneficiary-action-row .btn-outline,
+    .beneficiary-progress-row__actions .btn-primary {
+        width: 100%;
+    }
+
+    .beneficiary-mobile-tabbar {
+        border-radius: 20px;
+        padding: 7px;
+    }
+
+    .beneficiary-tabbar__label {
+        font-size: 0.62rem;
+    }
+
+    .history-card {
+        padding: 12px 13px;
+        border-radius: 16px;
+    }
+
+    .history-card__top {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .history-filters,
+    .history-metrics,
+    .repayment-tracker-metrics,
+    #activity-log .beneficiary-inline-metrics,
+    .beneficiary-inline-metrics--hero {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .history-filters label,
+    .history-metrics article,
+    .repayment-tracker-metric,
+    .beneficiary-inline-metrics--hero .overview-card {
+        min-width: 0;
+    }
+
+    #support-feedback .beneficiary-support-grid {
+        gap: 8px;
+    }
+
+    #support-feedback .feedback,
+    #support-feedback .support,
+    #activity-log > .panel {
+        padding: 12px;
+    }
+
+    #support-feedback .feedback .panel-header,
+    #support-feedback .support-card__header,
+    #activity-log .panel-header--compact {
+        margin-bottom: 8px;
+    }
+
+    #support-feedback .feedback textarea {
+        min-height: 88px;
+    }
+
+    #support-feedback .feedback-list {
+        margin-top: 10px;
+        gap: 6px;
+    }
+
+    #support-feedback .feedback-list li {
+        padding: 10px 12px;
+        border-radius: 14px;
+    }
+
+    #support-feedback .support-card {
+        gap: 10px;
+    }
+
+    #support-feedback .support-card__grid--triple {
+        gap: 7px;
+    }
+
+    #support-feedback .support-card__section {
+        padding: 10px 12px;
+        border-radius: 14px;
+    }
+
+    #support-feedback .support-card__primary {
+        font-size: 0.98rem;
+    }
+
+    #support-feedback .support-card__meta,
+    #support-feedback .support-card__list {
+        font-size: 0.8rem;
+    }
+
+    #support-feedback .support-card__section--checklist .support-card__list {
+        line-height: 1.38;
+    }
+
+    #activity-log .beneficiary-inline-metrics {
+        gap: 7px;
+    }
+
+    #activity-log .activity-summary-panel {
+        padding-top: 10px;
+        padding-bottom: 8px;
+    }
+
+    #activity-log .overview-card {
+        padding: 10px 11px;
+        min-height: 60px;
+        border-radius: 14px;
+    }
+
+    #activity-log .activity-latest-card.is-empty {
+        min-height: 52px;
+    }
+
+    #activity-log .timeline-list {
+        gap: 3px;
+        margin: 0;
+        padding: 0;
+    }
+
+    #activity-log .timeline-list .empty {
+        padding: 0;
+        font-size: 0.84rem;
+    }
+
+    #activity-log .activity-timeline-panel {
+        padding-top: 9px;
+        padding-bottom: 8px;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty {
+        padding-bottom: 4px;
+    }
+
+    #activity-log .activity-timeline-panel.is-empty .timeline-list .empty {
+        padding-top: 0;
+    }
+}
+
+@media (max-width: 720px) {
+    html,
+    body,
+    .dash-content,
+    .dash-main,
+    .dash-page,
+    .beneficiary-contextbar,
+    #overview,
+    #repayments,
+    #support-feedback,
+    #activity-log {
+        max-width: 100vw;
+        overflow-x: hidden !important;
+    }
+
+    .dash-main {
+        padding-inline: 14px;
+        padding-bottom: 96px;
+        gap: 14px;
+    }
+
+    .dash-page {
+        gap: 12px;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .beneficiary-contextbar {
+        width: 100%;
+        max-width: 100vw;
+    }
+
+    .beneficiary-contextbar__brand {
+        max-width: calc(100vw - 72px);
+    }
+
+    .panel,
+    .beneficiary-command-band,
+    .beneficiary-support-preview,
+    .repayment-action-card,
+    .repayment-action-card--form,
+    .beneficiary-repayment-tracker,
+    .repayment-history-block,
+    .feedback,
+    .support-page-panel,
+    .activity-summary-panel,
+    .activity-timeline-panel {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .mobile-account-menu,
+    .beneficiary-mobile-tabbar {
+        max-width: calc(100vw - 16px);
+    }
+
+    .beneficiary-support-mini {
+        width: 100%;
+    }
+
+    .beneficiary-support-mini__copy,
+    .beneficiary-support-mini__hint {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 540px) {
+    .history-filters {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .history-filters label span {
+        margin-bottom: 4px;
+    }
+
+    .repayment-batch-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .repayment-batch-toolbar .btn-outline,
+    .repayment-batch-toolbar .btn-primary,
+    .repayment-batch-row .btn-outline.small {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .dash-main {
+        padding-inline: 12px;
+        padding-bottom: 94px;
+        gap: 12px;
+    }
+
+    .beneficiary-contextbar {
+        padding: 10px 12px;
+        gap: 8px;
+        max-width: 100vw;
+        overflow: visible;
+    }
+
+    .beneficiary-contextbar__brand {
+        gap: 7px;
+        max-width: calc(100vw - 144px);
+    }
+
+    .beneficiary-contextbar__logo {
+        width: 34px;
+        height: 34px;
+    }
+
+    .beneficiary-contextbar .mobile-topbar__title {
+        font-size: 0.98rem;
+        line-height: 1.1;
+    }
+
+    .beneficiary-contextbar .mobile-topbar__avatar {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+    }
+
+    .beneficiary-inline-metrics--hero,
+    .history-metrics,
+    .repayment-tracker-metrics,
+    #activity-log .beneficiary-inline-metrics {
+        gap: 7px;
+    }
+
+    .beneficiary-progress-row__head {
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .beneficiary-progress-row__meta {
+        white-space: normal;
+    }
+
+    .beneficiary-update-row,
+    .history-card,
+    .repayment-tracker-metric,
+    .history-metric,
+    .beneficiary-repayment-hero .overview-card {
+        border-radius: 15px;
+    }
+
+    .beneficiary-mobile-tabbar {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        padding: 6px;
+        gap: 4px;
+        border-radius: 18px;
+    }
+
+    .beneficiary-tabbar__link {
+        padding: 7px 4px 6px;
+        gap: 3px;
+    }
+
+.beneficiary-tabbar__label {
+        font-size: 0.6rem;
+    }
+}
+
+.mobile-topbar .smart-notification-center,
+.beneficiary-contextbar .smart-notification-center {
+    position: relative;
+    z-index: 640;
+    flex-shrink: 0;
+}
+
+.mobile-topbar__account {
+    position: relative;
+    flex-shrink: 0;
+    z-index: 650;
+}
+
+.beneficiary-contextbar .mobile-account-menu {
+    z-index: 770;
+}
+
+.mobile-account-menu.mobile-account-menu--floating {
+    position: fixed !important;
+    z-index: 4300 !important;
+    max-width: calc(100vw - 24px);
+    box-shadow: 0 24px 40px rgba(15, 23, 42, 0.22);
+}
+
+.beneficiary-contextbar .smart-notification-panel {
+    z-index: 760;
+}
+
+.beneficiary-contextbar .smart-notification-toggle,
+.beneficiary-contextbar .mobile-topbar__avatar {
+    position: relative;
+    z-index: 681;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+
+.beneficiary-contextbar__actions,
+.beneficiary-contextbar__notifications,
+.mobile-topbar__account {
+    position: relative;
+    z-index: 680;
+    pointer-events: auto;
+}
+
+.mobile-account-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 190px;
+    padding: 8px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+    pointer-events: none;
+}
+
+.mobile-account-menu.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.mobile-account-menu__item {
+    width: 100%;
+    min-height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #152238;
+    text-align: left;
+    padding: 0 12px;
+    font: inherit;
+    font-weight: 700;
+}
+
+.mobile-account-menu__item:hover,
+.mobile-account-menu__item:focus-visible {
+    background: rgba(15, 118, 110, 0.1);
+    color: #0f766e;
+    outline: none;
+}
+
+.mobile-account-menu.mobile-account-menu--floating {
+    z-index: 4300 !important;
+}
+
+.mobile-account-menu.mobile-account-menu--floating.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.beneficiary-contextbar .smart-notification-panel {
+    z-index: 4310 !important;
+}
+
+.beneficiary-profile-back {
+    width: fit-content;
+}
+
+#activity-log #auditList.timeline-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+}
+
+#activity-log #auditList.timeline-list > li.timeline-item {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(203, 213, 225, 0.72);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.72) !important;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+#activity-log #auditList.timeline-list > li.timeline-item .timeline-item__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+#activity-log #auditList.timeline-list > li.timeline-item .timeline-title {
+    display: block;
+    color: var(--slate-900);
+    font-size: 1rem;
+    line-height: 1.35;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#activity-log #auditList.timeline-list > li.timeline-item .timeline-copy {
+    display: block;
+    margin: 0;
+    color: var(--slate-700);
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+#activity-log #auditList.timeline-list > li.timeline-item .timeline-meta {
+    display: block;
+    flex-shrink: 0;
+    color: var(--slate-500);
+    font-size: 0.82rem;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.beneficiary-centered-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+.beneficiary-centered-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.52);
+}
+
+.beneficiary-centered-modal__card {
+    position: relative;
+    width: min(480px, 100%);
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    box-shadow: 0 28px 50px rgba(15, 23, 42, 0.2);
+    padding: 24px;
+}
+
+.beneficiary-centered-modal__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    border-radius: 999px;
+    background: #fff;
+    font-size: 1.35rem;
+    cursor: pointer;
+}
+
+.beneficiary-centered-modal__header {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.beneficiary-centered-modal__header h3,
+.beneficiary-centered-modal__header p {
+    margin: 0;
+}
+
+.beneficiary-centered-modal__header p {
+    color: var(--slate-600);
+}
+
+.beneficiary-centered-modal__form {
+    display: grid;
+    gap: 14px;
+}
+
+.beneficiary-centered-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@media (max-width: 720px) {
+    #activity-log #auditList.timeline-list > li.timeline-item .timeline-item__head {
+        display: grid;
+        gap: 6px;
+    }
+
+    #activity-log #auditList.timeline-list > li.timeline-item .timeline-meta {
+        white-space: normal;
+        text-align: left;
+    }
+
+    .beneficiary-centered-modal__actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+}
