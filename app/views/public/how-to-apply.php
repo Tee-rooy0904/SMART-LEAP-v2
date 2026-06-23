@@ -20,7 +20,7 @@
                 <div class="container content-hero__inner">
                     <span class="section-kicker">How to Apply</span>
                     <h1 class="section-title">Follow the SMART LEAP application process step by step.</h1>
-                    <p class="page-intro">SMART LEAP starts with one complete Stage 1 application. Once selected for the current batch, qualified applicants activate their private portal account through email.</p>
+                    <p class="page-intro">SMART LEAP starts with one complete Stage 1 application and email-code verification. Once selected for the current batch, qualified applicants receive an approval email so they can set their private portal password.</p>
                 </div>
             </section>
 
@@ -38,11 +38,11 @@
                         <span class="timeline-item__number">3</span>
                         <div><h2>Current Batch or Next Batch</h2><p>Selected applicants proceed to the current batch, while others may be deferred to the next batch.</p></div>
                     </article>
-                    <article class="timeline-item" tabindex="0" data-timeline-item data-detail-title="Account Activation Email" data-detail-copy="Applicants selected for the current batch receive an email notice with the secure link they need to activate their applicant portal account.">
+                    <article class="timeline-item" tabindex="0" data-timeline-item data-detail-title="Approval Email" data-detail-copy="Applicants selected for the current batch receive an email notice with the secure link they need to set their applicant portal password.">
                         <span class="timeline-item__number">4</span>
-                        <div><h2>Account Activation Email</h2><p>Selected applicants are notified through their Gmail account with the secure activation link.</p></div>
+                        <div><h2>Approval Email</h2><p>Selected applicants are notified through their email account with the secure password setup link.</p></div>
                     </article>
-                    <article class="timeline-item" tabindex="0" data-timeline-item data-detail-title="Activate Applicant Portal Account" data-detail-copy="Selected applicants verify their email, set their password, and activate their private SMART LEAP applicant portal account.">
+                    <article class="timeline-item" tabindex="0" data-timeline-item data-detail-title="Open Applicant Portal" data-detail-copy="Selected applicants set their password and continue directly to their private SMART LEAP applicant portal account.">
                         <span class="timeline-item__number">5</span>
                         <div><h2>Activate Applicant Portal Account</h2><p>Verify your email, set your password, and enter the private applicant portal.</p></div>
                     </article>

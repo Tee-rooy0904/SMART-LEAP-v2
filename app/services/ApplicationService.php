@@ -667,7 +667,16 @@ class ApplicationService
             (int) $actor['id']
         );
 
-        return ['ok' => true, 'application' => $this->getApplicationDetail($applicationId, $actor)];
+        $autoApprovedForTraining = false;
+        if ($normalizedStatus === 'verified') {
+            $autoApprovedForTraining = $this->autoApproveForTrainingWhenUploadsVerified($applicationId, $actor);
+        }
+
+        return [
+            'ok' => true,
+            'application' => $this->getApplicationDetail($applicationId, $actor),
+            'autoApprovedForTraining' => $autoApprovedForTraining,
+        ];
     }
 
     public function uploadFormRequirement(int $applicationId, string $requirementKey, array $file, array $actor): array
@@ -779,8 +788,8 @@ class ApplicationService
         if ($decision === 'approve') {
             $nextStatus = APPLICATION_STATUS_APPROVED;
         }
-        if ($decision === 'approve_for_training' && str_contains($actorRole, 'project')) {
-            $nextStatus = APPLICATION_STATUS_APPROVED_FOR_TRAINING;
+        if ($decision === 'approve_for_training') {
+            return ['ok' => false, 'errors' => ['decision' => 'Training approval is automatic once all uploaded requirements are approved.']];
         }
 
         if ($nextStatus === null) {
@@ -792,11 +801,7 @@ class ApplicationService
         if ($decision === 'approve' && !$receivedAssistance) {
             return ['ok' => false, 'errors' => ['receivedAssistance' => 'Confirm that the applicant has already received assistance before final approval.']];
         }
-        if ($decision === 'approve_for_training' && is_array($detail) && !($detail['trainingApprovalReadiness']['canApproveForTraining'] ?? false)) {
-            return ['ok' => false, 'errors' => ['decision' => 'This applicant is not yet ready for training approval.']];
-        }
-        if ($nextStatus === APPLICATION_STATUS_APPROVED_FOR_TRAINING
-            && !($decision === 'approve_for_training' && str_contains($actorRole, 'project'))) {
+        if ($nextStatus === APPLICATION_STATUS_APPROVED_FOR_TRAINING) {
             $assessment = $detail['assessment'] ?? null;
             if (!is_array($assessment) || strtolower((string) ($assessment['recommendation'] ?? '')) !== 'approved') {
                 return ['ok' => false, 'errors' => ['decision' => 'A completed approved assessment is required before training approval.']];
@@ -831,13 +836,6 @@ class ApplicationService
                         $remarks !== ''
                     );
                     $nextStatus = APPLICATION_STATUS_COMPLETED;
-                }
-            } elseif ($decision === 'approve_for_training' && str_contains($actorRole, 'project')) {
-                $applicantProfileId = $this->findApplicantProfileIdForApplication($applicationId);
-                $beneficiaryService = new BeneficiaryProfileService();
-                $beneficiaryProfileId = $beneficiaryService->ensureWorkspaceProfileForApplicantProfile($applicantProfileId);
-                if ($beneficiaryProfileId === null || $beneficiaryProfileId <= 0) {
-                    throw new \RuntimeException('Unable to prepare the beneficiary profile for this applicant.');
                 }
             }
 
@@ -2623,6 +2621,7 @@ class ApplicationService
         if ($beneficiaryProfileId === null) {
             return [];
         }
+        (new PostApprovalTaskProvisioningService())->ensureFundReleaseEvidenceTask($beneficiaryProfileId);
 
         $params = ['beneficiary_profile_id' => $beneficiaryProfileId];
         $scopeJoin = '';
@@ -2657,8 +2656,8 @@ class ApplicationService
              INNER JOIN beneficiary_profiles ON beneficiary_profiles.id = post_approval_tasks.beneficiary_profile_id'
              . $scopeJoin .
             ' WHERE post_approval_tasks.beneficiary_profile_id = :beneficiary_profile_id
-              AND post_approval_task_types.code IN ("availment_form", "validation_form", "mungkahing_proyekto", "business_plan", "buhat_sa_pagpanumpa")
-             ORDER BY FIELD(post_approval_task_types.code, "availment_form", "validation_form", "mungkahing_proyekto", "business_plan", "buhat_sa_pagpanumpa"), post_approval_tasks.id ASC'
+              AND post_approval_task_types.code IN ("availment_form", "validation_form", "mungkahing_proyekto", "business_plan", "buhat_sa_pagpanumpa", "fund_release_evidence")
+             ORDER BY FIELD(post_approval_task_types.code, "availment_form", "validation_form", "mungkahing_proyekto", "business_plan", "buhat_sa_pagpanumpa", "fund_release_evidence"), post_approval_tasks.id ASC'
         );
         $statement->execute($params);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -2666,19 +2665,23 @@ class ApplicationService
         return array_map(function (array $row): array {
             $status = (string) ($row['status'] ?? POST_APPROVAL_STATUS_UNLOCKED);
             $payload = $this->decodeFormRequirementPayload($row['form_payload'] ?? null);
+            $code = (string) $row['code'];
+            $isFundReleaseEvidence = $code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE;
             return [
                 'id' => (int) $row['id'],
-                'key' => (string) $row['code'],
-                'label' => (string) $row['label'],
-                'type' => 'form',
-                'typeLabel' => 'Fill-up Form Requirement',
+                'key' => $code,
+                'label' => $isFundReleaseEvidence ? 'Proof of Assistance Received' : (string) $row['label'],
+                'type' => $isFundReleaseEvidence ? 'final_assistance_proof' : 'form',
+                'typeLabel' => $isFundReleaseEvidence ? 'Final Assistance Proof' : 'Fill-up Form Requirement',
                 'isRequired' => true,
                 'gatesApproval' => true,
                 'status' => $status,
                 'reviewerRemarks' => $row['reviewer_remarks'] ?? null,
                 'submittedAt' => $row['applicant_submitted_at'] ?? null,
                 'reviewedAt' => $row['reviewed_at'] ?? null,
-                'file' => $this->normalizePostApprovalUploadMetadata($payload['staffReview']['reviewAttachment'] ?? null),
+                'file' => $isFundReleaseEvidence
+                    ? $this->normalizePostApprovalUploadMetadata($payload['fundReleaseEvidence']['releaseAttachment'] ?? null)
+                    : $this->normalizePostApprovalUploadMetadata($payload['staffReview']['reviewAttachment'] ?? null),
                 'canReview' => in_array($status, [POST_APPROVAL_STATUS_SUBMITTED, POST_APPROVAL_STATUS_NEEDS_CORRECTION, POST_APPROVAL_STATUS_REJECTED, POST_APPROVAL_STATUS_VERIFIED], true),
                 'reviewUrl' => app_url('post-approval-review?task_id=' . (int) $row['id'] . '&embed=1'),
             ];
@@ -3066,6 +3069,80 @@ class ApplicationService
             'canApproveForTraining' => $canApproveForTraining,
             'overallStatus' => $canApproveForTraining ? 'Ready for Training Approval' : 'Training Approval Blocked',
         ];
+    }
+
+    private function autoApproveForTrainingWhenUploadsVerified(int $applicationId, array $actor): bool
+    {
+        $application = $this->findApplicationRow($applicationId, $actor);
+        if ($application === null) {
+            return false;
+        }
+
+        $normalizedStatus = strtolower(trim($this->normalizeStatusLabel((string) ($application['status'] ?? ''))));
+        if (in_array($normalizedStatus, array_map('strtolower', [
+            APPLICATION_STATUS_APPROVED_FOR_TRAINING,
+            APPLICATION_STATUS_TRAINING_ONGOING,
+            APPLICATION_STATUS_COMPLETED,
+            APPLICATION_STATUS_APPROVED,
+        ]), true)) {
+            return false;
+        }
+
+        if (!$this->areAllRequiredUploadsApproved($applicationId)) {
+            return false;
+        }
+
+        try {
+            $statusService = new ApplicationStatusService();
+            $statusService->transition(
+                $applicationId,
+                APPLICATION_STATUS_APPROVED_FOR_TRAINING,
+                (int) ($actor['id'] ?? 0),
+                'All uploaded requirements were approved. Applicant automatically approved for training.',
+                false
+            );
+
+            $applicantProfileId = $this->findApplicantProfileIdForApplication($applicationId);
+            if ($applicantProfileId > 0) {
+                (new BeneficiaryProfileService())->ensureWorkspaceProfileForApplicantProfile($applicantProfileId);
+            }
+
+            $this->notifyApplicantApplicationReviewed(
+                $applicationId,
+                APPLICATION_STATUS_APPROVED_FOR_TRAINING,
+                'All uploaded requirements were approved.',
+                $actor
+            );
+
+            return true;
+        } catch (\Throwable $exception) {
+            log_database_query_failure('application.auto_approve_for_training', $exception, [
+                'application_id' => $applicationId,
+                'actor_user_id' => (int) ($actor['id'] ?? 0),
+            ]);
+            return false;
+        }
+    }
+
+    private function areAllRequiredUploadsApproved(int $applicationId): bool
+    {
+        $requirements = $this->fetchRequirementFiles($applicationId);
+        $requirementsByKey = [];
+        foreach ($requirements as $requirement) {
+            if (!empty($requirement['key'])) {
+                $requirementsByKey[(string) $requirement['key']] = $requirement;
+            }
+        }
+
+        foreach (self::REQUIREMENT_LABELS as $frontendKey => $_label) {
+            $requirement = $requirementsByKey[$frontendKey] ?? null;
+            $status = strtolower(trim((string) ($requirement['status'] ?? 'missing')));
+            if (empty($requirement['file']['path']) || !in_array($status, ['verified', 'approved'], true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function fetchLatestAssessment(int $applicationId): ?array
@@ -4025,7 +4102,6 @@ class ApplicationService
     {
         return match ($decision) {
             'approve' => str_contains($actorRole, 'project') ? APPLICATION_STATUS_REQUIREMENTS_VERIFIED : APPLICATION_STATUS_APPROVED_FOR_TRAINING,
-            'approve_for_training' => APPLICATION_STATUS_APPROVED_FOR_TRAINING,
             'reject' => APPLICATION_STATUS_REJECTED,
             'flag' => APPLICATION_STATUS_FLAGGED,
             'needs_correction' => APPLICATION_STATUS_NEEDS_CORRECTION,

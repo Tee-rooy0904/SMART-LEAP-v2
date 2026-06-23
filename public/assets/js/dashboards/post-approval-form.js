@@ -159,7 +159,18 @@
             state.task = state.reviewerMode
                 ? normalizeReviewerTask(payload.task || null)
                 : (payload.task || null);
-            state.activePayload = structuredCloneSafe(state.task?.payload || {});
+            // Only reset activePayload on the very first load (when it's empty).
+            // Subsequent reloads (after uploads/signatures) preserve the in-memory
+            // edited state so in-progress field values aren't wiped by the refresh.
+            const incomingPayload = structuredCloneSafe(state.task?.payload || {});
+            const hasInMemoryEdits = state.activePayload && Object.keys(state.activePayload).length > 0;
+            if (!hasInMemoryEdits) {
+                state.activePayload = incomingPayload;
+            } else {
+                // Merge: DB payload provides the base (uploaded files, server-side fields),
+                // in-memory edits layer on top so user-typed values are not lost.
+                state.activePayload = deepMergePayloads(incomingPayload, state.activePayload);
+            }
             state.formErrors = {};
             state.guidedSectionOpen = {};
             renderTask();
@@ -170,6 +181,28 @@
 
     function normalizeFieldReference(reference) {
         return String(reference || '').trim();
+    }
+
+    /**
+     * Deep-merges two plain objects. `base` is the DB-loaded payload (contains server-
+     * side values like uploaded file metadata). `overrides` is the in-memory user edits.
+     * Overrides win for scalar values; arrays are replaced entirely by the override.
+     */
+    function deepMergePayloads(base, overrides) {
+        if (!base || typeof base !== 'object' || Array.isArray(base)) return overrides;
+        if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) return base;
+        const result = Object.assign({}, base);
+        for (const key of Object.keys(overrides)) {
+            const overrideVal = overrides[key];
+            const baseVal = base[key];
+            if (overrideVal && typeof overrideVal === 'object' && !Array.isArray(overrideVal)
+                && baseVal && typeof baseVal === 'object' && !Array.isArray(baseVal)) {
+                result[key] = deepMergePayloads(baseVal, overrideVal);
+            } else {
+                result[key] = overrideVal;
+            }
+        }
+        return result;
     }
 
     function cssEscape(value) {
@@ -2763,6 +2796,8 @@
 
             state.formErrors = {};
             showToast('Application form saved.', 'success');
+            // Clear in-memory payload before reload so loadTask pulls a clean DB copy.
+            state.activePayload = null;
             await loadTask();
         } catch (error) {
             showToast(error.message || 'Unable to save this form right now.', 'warning');
@@ -2818,6 +2853,7 @@
 
             state.formErrors = {};
             showToast(state.reviewerMode ? 'Review decision saved.' : 'Application form submitted.', 'success');
+            state.activePayload = null;
             await loadTask();
         } catch (error) {
             const errors = error?.payload?.errors;

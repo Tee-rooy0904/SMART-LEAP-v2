@@ -668,8 +668,8 @@
         const overview = window.SMARTLEAP_ADMIN_OVERVIEW || {};
         const roster = Array.isArray(overview.beneficiaryRoster) ? overview.beneficiaryRoster : [];
         return roster.filter((beneficiary) => {
-          const approvalDate = String(beneficiary?.approvalDate || '').trim();
-          return approvalDate !== '';
+          const repaymentAnchor = String(beneficiary?.firstRepaymentDueDate || beneficiary?.approvedAt || beneficiary?.approvalDate || '').trim();
+          return repaymentAnchor !== '';
         });
       },
       ids: {
@@ -731,6 +731,9 @@
       emptyColspan: 12,
       emptyRosterMessage: 'No approved beneficiaries with repayment records available yet.',
       bodyModalClass: 'admin-repayment-modal-open',
+      detailAnchorId: 'adminRepaymentReviewDetail',
+      recordModalId: 'adminRepaymentRecordModal',
+      recordCloseId: 'adminRepaymentRecordClose',
     });
   }
 

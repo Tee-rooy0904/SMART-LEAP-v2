@@ -41,11 +41,7 @@ class AttendanceService
             }
         }
 
-        if ($status === TRAINING_STATUS_EXCUSED && empty($proofMeta['file_path'])) {
-            return ['ok' => false, 'errors' => ['proofAttachment' => 'Upload proof before marking this participant as excused.']];
-        }
-
-        if ($status !== TRAINING_STATUS_EXCUSED) {
+        if ($status === TRAINING_STATUS_ATTENDED) {
             $proofMeta = [
                 'file_path' => null,
                 'original_name' => null,

@@ -9,6 +9,7 @@ $e = static fn(mixed $value): string => htmlspecialchars((string) $value, ENT_QU
 $generatedAt = (string) ($report['generatedAt'] ?? date(DATE_ATOM));
 $periodLabel = (string) (($report['filters']['periodLabel'] ?? $filters['period'] ?? '') ?: 'Selected period');
 $repaymentMetrics = $report['repaymentAnalytics']['periodMetrics'] ?? ($report['summary']['repaymentPerformance'] ?? []);
+$trainingRows = is_array($report['trainingAnalytics']['rows'] ?? null) ? $report['trainingAnalytics']['rows'] : [];
 $adminReportsCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-reports.css')) ?: time();
 $reportPayload = json_encode($report, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 $distributionColor = static function (mixed $label, int $index = 0): string {
@@ -479,6 +480,43 @@ $summary = $report['summary'] ?? [];
             text-transform: uppercase;
             text-align: center;
         }
+        .report-table-card {
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            background: #ffffff;
+            overflow: hidden;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5px;
+            color: #102347;
+        }
+        .report-table th,
+        .report-table td {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.26);
+            padding: 7px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .report-table th {
+            background: #eff6ff;
+            color: #526b8f;
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .report-table tbody tr:nth-child(even) td {
+            background: #f8fbff;
+        }
+        .report-table__empty {
+            padding: 18px 12px;
+            text-align: center;
+            color: #64748b;
+            font-weight: 700;
+        }
         @page {
             size: 8.5in 13in portrait;
             margin: 0;
@@ -605,6 +643,63 @@ $summary = $report['summary'] ?? [];
                             </div>
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <div class="standard-footer-wrap">
+                <img class="standard-footer" src="<?= $e($assetBase) ?>/assets/img/report-footer-2026.jpg" alt="City Government of Butuan report footer">
+            </div>
+        </section>
+
+        <section class="sheet">
+            <div class="standard-header-wrap">
+                <img class="standard-header" src="<?= $e($assetBase) ?>/assets/img/report-header-2026.jpg" alt="City Government of Butuan report header">
+            </div>
+
+            <div class="report-body">
+                <div class="report-heading">
+                    <h1>SMART LEAP TRAINING ATTENDANCE</h1>
+                    <p>City Social Welfare and Development Department</p>
+                </div>
+                <p class="report-page-subtitle">Session and Group Attendance Records</p>
+
+                <div class="report-table-card">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Participant</th>
+                                <th>Business</th>
+                                <th>Session</th>
+                                <th>Group</th>
+                                <th>Activity</th>
+                                <th>Location</th>
+                                <th>Starts</th>
+                                <th>Ends</th>
+                                <th>Attendance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($trainingRows === []): ?>
+                                <tr>
+                                    <td class="report-table__empty" colspan="9">No training attendance rows for the selected filters.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($trainingRows as $row): ?>
+                                    <tr>
+                                        <td><?= $e($row['participantName'] ?? '') ?></td>
+                                        <td><?= $e($row['businessName'] ?? '') ?></td>
+                                        <td><?= $e($row['sessionNumber'] ?? '') ?></td>
+                                        <td><?= $e($row['groupNumber'] ?? '') ?></td>
+                                        <td><?= $e($row['activityName'] ?? '') ?></td>
+                                        <td><?= $e($row['location'] ?? '') ?></td>
+                                        <td><?= $e($row['startsAt'] ?? '') ?></td>
+                                        <td><?= $e($row['endsAt'] ?? '') ?></td>
+                                        <td><?= $e($row['status'] ?? '') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -819,7 +914,17 @@ $summary = $report['summary'] ?? [];
                     }
                     return amount.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                 };
-                const xAxisTitle = period === 'quarterly' ? 'Quarters' : period === 'yearly' ? 'Years' : 'Months';
+                const xAxisTitle = period === 'daily'
+                    ? 'Days'
+                    : period === 'weekly'
+                        ? 'Weeks'
+                        : period === 'quarterly'
+                            ? 'Quarters'
+                            : period === 'yearly'
+                                ? 'Years'
+                                : period === 'custom'
+                                    ? 'Selected Range'
+                                    : 'Months';
                 const shortenLabel = (row) => {
                     const label = String(row.label || row.period || '').toUpperCase();
                     if (period === 'monthly') {
@@ -940,10 +1045,10 @@ $summary = $report['summary'] ?? [];
                     scopedBeneficiaries: items.length,
                     obligationCount: 0,
                 };
-                const period = report.filters?.period || 'monthly';
-                const repaymentBreakdown = period === 'monthly'
-                    ? (Array.isArray(report.repaymentAnalytics?.monthlyBreakdown) ? report.repaymentAnalytics.monthlyBreakdown : [])
-                    : (Array.isArray(report.repaymentAnalytics?.breakdown) ? report.repaymentAnalytics.breakdown : []);
+                const period = report.filters?.period || 'all';
+                const repaymentBreakdown = Array.isArray(report.repaymentAnalytics?.breakdown)
+                    ? report.repaymentAnalytics.breakdown
+                    : [];
                 const genderDistribution = Array.isArray(summary.genderDistribution) ? summary.genderDistribution : [];
                 const serviceTypeDistribution = Array.isArray(summary.serviceTypeDistribution) ? summary.serviceTypeDistribution : [];
                 const sectorDistribution = Array.isArray(summary.sectorDistribution) ? summary.sectorDistribution : [];

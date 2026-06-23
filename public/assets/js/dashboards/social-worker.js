@@ -1064,7 +1064,7 @@
     if (!state.beneficiaries.length) {
       const expected = safeNumber(overview.beneficiarySummary?.total);
       if (expected > 0 && !state.overviewLoadPromise) {
-        body.innerHTML = '<tr><td colspan="10">Loading beneficiaries...</td></tr>';
+        body.innerHTML = '<tr><td colspan="12">Loading beneficiaries...</td></tr>';
         void loadOverviewData();
       }
     }
@@ -1103,7 +1103,7 @@
     }
 
     if (!filtered.length) {
-      body.innerHTML = '<tr><td colspan="10">No beneficiaries matched the current filters.</td></tr>';
+      body.innerHTML = '<tr><td colspan="12">No beneficiaries matched the current filters.</td></tr>';
       renderDashboardSummary();
       return;
     }
@@ -1112,6 +1112,9 @@
       const repayment = beneficiary.repayment || {};
       const payer = responsiblePayerForBeneficiary(beneficiary);
       const rate = Number.isFinite(Number(repayment.repaymentRate)) ? `${Number(repayment.repaymentRate)}%` : '0%';
+      const monthsPassed = safeNumber(repayment.monthsPassed);
+      const monthsPaid = safeNumber(repayment.monthsPaid);
+      const fraction = repayment.monthsPaidFraction || `${monthsPaid}/${monthsPassed}`;
       const verified = money(repayment.paidAmount || repayment.verifiedAmount || 0);
       return `
         <tr>
@@ -1129,7 +1132,9 @@
           <td>${escapeHtml(beneficiary.assignedPdo || 'Unassigned')}</td>
           <td><span class="sw-status ${statusClass(repayment.label || repayment.key)}">${escapeHtml(repayment.label || 'No Upload Yet')}</span></td>
           <td>${escapeHtml(verified)}</td>
-          <td>${escapeHtml(rate)}</td>
+          <td>${escapeHtml(String(monthsPassed))}</td>
+          <td>${escapeHtml(String(monthsPaid))}</td>
+          <td>${escapeHtml(`${rate} (${fraction})`)}</td>
           <td class="actions"><button type="button" class="app-btn-outline" data-open-beneficiary="${Number(beneficiary.id || beneficiary.beneficiaryId || 0)}">View</button></td>
         </tr>
       `;

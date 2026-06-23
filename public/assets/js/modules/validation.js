@@ -102,7 +102,7 @@
   };
 
   const emailStatusLabel = (record) => {
-    if (record.selectionEmailNeedsResend) return 'Needs Resend';
+    if (record.selectionEmailNeedsResend) return 'Failed';
     if (record.selectionEmailReady) return 'Sent';
     return 'Not Required';
   };
@@ -114,7 +114,7 @@
     if (record.selectionEmailFailedAt) {
       return `Last failed ${formatDate(record.selectionEmailFailedAt)}`;
     }
-    return record.statusKey === 'selected' ? 'Waiting for resend' : 'No Stage 2 email needed';
+    return record.statusKey === 'selected' ? 'Approval notice not sent' : 'No approval email needed';
   };
 
   const emailStatusMarkup = (record, compact = false) => {
@@ -247,13 +247,13 @@
     const emailFailureCount = Number(summary.selectionEmailFailures || 0);
     const emailMeta = document.getElementById('validationEmailFailureMeta');
     if (emailMeta) {
-      emailMeta.textContent = emailFailureCount > 0 ? `${emailFailureCount} need resend` : 'All selected emails are up to date';
+      emailMeta.textContent = emailFailureCount > 0 ? `${emailFailureCount} failed notices` : 'Approval emails are up to date';
     }
 
     const emailBadge = document.getElementById('validationSelectedEmailBadge');
     if (emailBadge) {
       emailBadge.hidden = emailFailureCount <= 0;
-      emailBadge.textContent = `${emailFailureCount} need resend`;
+      emailBadge.textContent = `${emailFailureCount} failed`;
     }
 
     const navBadge = document.querySelector('[data-section-badge="validation"]');
@@ -421,7 +421,7 @@
             </article>
             ${record.statusKey === 'selected' ? `
             <article class="validation-record-card validation-email-card">
-              <span class="validation-record-card__label">Account Activation Email</span>
+              <span class="validation-record-card__label">Approval Email</span>
               ${emailStatusMarkup(record)}
             </article>` : ''}
             <article class="validation-record-card validation-record-card--wide">
@@ -440,11 +440,7 @@
         <div class="modal-footer validation-review-modal__footer">
           <button type="button" class="btn btn-outline-secondary" data-close-validation-modal>Close</button>
           ${record.statusKey === 'pending'
-            ? `<button type="button" class="btn btn-warning" data-validation-action="hold" data-registration-id="${record.id}">Hold / Save for Next Batch</button>
-          <button type="button" class="btn btn-success" data-validation-action="approve" data-registration-id="${record.id}">Approve for Current Batch</button>`
-            : ''}
-          ${record.statusKey === 'selected'
-            ? `<button type="button" class="btn btn-outline-primary" data-validation-action="resend-email" data-registration-id="${record.id}">${record.selectionEmailNeedsResend ? 'Resend Activation Email' : 'Send Activation Email Again'}</button>`
+            ? `<button type="button" class="btn btn-success" data-validation-action="approve" data-registration-id="${record.id}">Approve for Current Batch</button>`
             : ''}
         </div>
       </div>
@@ -538,9 +534,7 @@
     if (!registrationId || !action) return;
 
     button.disabled = true;
-    const response = action === 'resend-email'
-      ? await apiPost('api/validation/resend-selection-email', { registrationId })
-      : await apiPost('api/validation/review', {
+    const response = await apiPost('api/validation/review', {
         registrationId,
         action,
       });
@@ -556,19 +550,6 @@
     renderTables();
     setActiveTab(state.activeTab);
     renderNotice(response.message || 'Validation decision saved.', 'info');
-
-    if (action === 'resend-email') {
-      if (state.activeId === registrationId) {
-        const refreshed = await apiGet('api/validation/show', { id: registrationId });
-        if (refreshed.ok && refreshed.registration) {
-          const root = qs('#modal-root');
-          if (root) {
-            setHTML(root, buildModalMarkup(refreshed.registration));
-          }
-        }
-      }
-      return;
-    }
 
     closeModal();
   };

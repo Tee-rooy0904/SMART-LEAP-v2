@@ -42,6 +42,7 @@
     let supportRecipient = 'social_worker';
     let supportChatTimer = null;
     let portalSelectsBound = false;
+    let repaymentScheduleExpanded = false;
 
     const REQUIREMENT_ITEMS = [
         { key: 'validId', label: 'Valid ID' },
@@ -287,6 +288,11 @@
         document.getElementById('historyCardList')?.addEventListener('click', handleHistoryTableClick);
         document.getElementById('repaymentDueList')?.addEventListener('click', handleRepaymentDueAction);
         document.getElementById('uploadMonth')?.addEventListener('change', syncRepaymentMode);
+        document.getElementById('repaymentUploadModal')?.addEventListener('click', (event) => {
+            if (event.target.closest('[data-repayment-modal-close]')) {
+                closeRepaymentUploadModal();
+            }
+        });
         document.getElementById('overviewRepaymentsBtn')?.addEventListener('click', () => {
             routeToRepayments(document.getElementById('overviewRepaymentsBtn')?.dataset.target || 'upload');
         });
@@ -315,6 +321,11 @@
             }
         });
         document.addEventListener('keydown', handleCustomSelectKeydown);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeRepaymentUploadModal();
+            }
+        });
         document.addEventListener('smartleap:notifications-toggle', (event) => {
             if (event.detail?.open) {
                 closeMobileAccountMenu();
@@ -646,12 +657,12 @@
     function getRepaymentMetrics() {
         const scheduleItems = getRepaymentScheduleItems();
         const displayPayments = getDisplayPayments();
-        const verifiedPayments = displayPayments.filter((p) => mapPaymentStage(p.stage) === 'verified');
         const pendingPayments = displayPayments.filter((p) => mapPaymentStage(p.stage) === 'pending');
         const uploadedPayments = displayPayments.filter((p) => mapPaymentStage(p.stage) === 'uploaded');
-        const totalVerifiedAmount = verifiedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const verifiedAllocation = getVerifiedRepaymentAllocation(displayPayments);
+        const totalVerifiedAmount = verifiedAllocation.totalVerifiedAmount;
         const outstanding = Math.max(TOTAL_REPAYMENT_AMOUNT - totalVerifiedAmount, 0);
-        const verifiedMonths = verifiedPayments.length;
+        const verifiedMonths = scheduleItems.filter((item) => item.state === 'verified').length;
         const repaymentRate = Math.round((verifiedMonths / REPAYMENT_PLAN_MONTHS) * 100);
         const rateDisplay = Math.min(100, Math.max(0, repaymentRate));
         const actionItems = scheduleItems.filter((item) => item.actionable);
@@ -662,7 +673,7 @@
         const uploadedCount = uploadedPayments.length;
         const pendingVerificationCount = pendingCount + uploadedCount;
         const percent = Math.round((verifiedMonths / REPAYMENT_PLAN_MONTHS) * 100);
-        const nextAmount = nextPending ? formatCurrency(nextPending.amount || MONTHLY_REPAYMENT_AMOUNT) : formatCurrency(0);
+        const nextAmount = nextPending ? formatCurrency(nextPending.amount ?? MONTHLY_REPAYMENT_AMOUNT) : formatCurrency(0);
 
         let statusLabel = 'Active beneficiary';
         let heroTitle = 'Upload your latest receipt';
@@ -839,32 +850,61 @@
     function renderRepaymentDueList(items = getRepaymentScheduleItems()) {
         const root = document.getElementById('repaymentDueList');
         if (!root) return;
-        const visible = items.filter((item) => item.state !== 'verified').slice(0, 6);
+        const compactLimit = 6;
+        const visible = repaymentScheduleExpanded ? items : compactRepaymentScheduleItems(items, compactLimit);
         if (!visible.length) {
-            root.innerHTML = '<div class="repayment-due-list__empty">No repayment due items need action right now.</div>';
+            root.innerHTML = '<div class="repayment-due-list__empty">No repayment schedule is available yet.</div>';
             return;
         }
 
-        root.innerHTML = visible.map((item) => {
+        const rows = visible.map((item) => {
             const payment = item.payment || null;
             const status = repaymentScheduleStatus(item);
-            const action = item.actionable
-                ? `<button type="button" class="btn-outline small" data-repayment-due-action="${escapeHtml(item.month)}">${item.isOverdue ? (item.state === 'needs_correction' ? 'Submit New Late Receipt' : 'Submit Late Payment') : (item.state === 'needs_correction' ? 'Submit New Receipt' : 'Submit Payment')}</button>`
-                : payment
+            const canSubmit = ['overdue', 'due', 'needs_correction', 'upcoming'].includes(item.state);
+            const action = canSubmit
+                ? `<button type="button" class="btn-outline small" data-repayment-due-action="${escapeHtml(item.month)}">${item.isOverdue ? (item.state === 'needs_correction' ? 'Submit New Late Receipt' : 'Submit Late Payment') : (item.state === 'needs_correction' ? 'Submit New Receipt' : (item.state === 'upcoming' ? 'Pay in Advance' : 'Submit Payment'))}</button>`
+                : item.state === 'pending_review' && payment
                     ? '<span class="repayment-due-list__locked">Awaiting review</span>'
                     : '';
+            const label = item.state === 'verified'
+                ? 'Paid month'
+                : item.state === 'upcoming'
+                    ? 'Upcoming month'
+                    : item.isOverdue
+                        ? 'Overdue month'
+                        : 'Due month';
             return `
-                <article class="repayment-due-item ${item.isOverdue ? 'is-overdue' : ''}">
+                <article class="repayment-due-item repayment-due-item--${escapeHtml(item.state)} ${item.isOverdue ? 'is-overdue' : ''}">
                     <div>
-                        <span class="repayment-due-item__label">${item.isOverdue ? 'Overdue month' : 'Due month'}</span>
+                        <span class="repayment-due-item__label">${escapeHtml(label)}</span>
                         <strong>${escapeHtml(formatMonth(padMonth(item.month)))}</strong>
                         <small>${escapeHtml(status.helper)}</small>
+                        <small>Amount due: ${escapeHtml(formatCurrency(item.amount ?? MONTHLY_REPAYMENT_AMOUNT))}</small>
                     </div>
                     <span class="status-badge ${status.className}">${escapeHtml(status.label)}</span>
                     ${action}
                 </article>
             `;
         }).join('');
+        const toggle = items.length > compactLimit
+            ? `<div class="repayment-due-list__footer">
+                    <button type="button" class="btn-outline small repayment-due-list__toggle" data-repayment-schedule-toggle>
+                        ${repaymentScheduleExpanded ? 'Show fewer months' : `See all ${items.length} months`}
+                    </button>
+               </div>`
+            : '';
+        root.innerHTML = rows + toggle;
+    }
+
+    function compactRepaymentScheduleItems(items, limit = 6) {
+        const safeItems = Array.isArray(items) ? items : [];
+        if (safeItems.length <= limit) {
+            return safeItems;
+        }
+        const firstActionIndex = safeItems.findIndex((item) => ['overdue', 'due', 'needs_correction', 'pending_review'].includes(item.state));
+        const startIndex = firstActionIndex >= 0 ? firstActionIndex : safeItems.findIndex((item) => item.state !== 'verified');
+        const safeStart = Math.max(0, startIndex >= 0 ? startIndex : safeItems.length - limit);
+        return safeItems.slice(safeStart, safeStart + limit);
     }
 
     function renderHistory() {
@@ -1758,32 +1798,77 @@
         const submitButton = document.querySelector('#uploadForm button[type="submit"]');
         const month = normalizeMonthValue(document.getElementById('uploadMonth')?.value || '');
         const scheduleItem = getRepaymentScheduleItems().find((item) => item.month === month);
+        const amountInput = document.getElementById('uploadAmount');
+        const modalCopy = document.getElementById('repaymentUploadModalCopy');
         singleFields?.classList.remove('is-hidden');
         toggleFieldGroup(singleFields, true);
 
+        if (amountInput && !amountInput.value && scheduleItem) {
+            amountInput.value = String(scheduleItem.amount ?? MONTHLY_REPAYMENT_AMOUNT);
+        }
+        if (modalCopy && scheduleItem) {
+            modalCopy.textContent = `${formatMonth(padMonth(scheduleItem.month))} expected amount: ${formatCurrency(scheduleItem.amount ?? MONTHLY_REPAYMENT_AMOUNT)}.`;
+        }
         if (submitButton) {
             submitButton.textContent = scheduleItem?.isOverdue ? 'Submit late payment' : 'Submit receipt';
         }
     }
 
-    function handleRepaymentDueAction(event) {
-        const button = event.target.closest('[data-repayment-due-action]');
-        if (!button) return;
-        const month = normalizeMonthValue(button.dataset.repaymentDueAction || '');
-        if (!month) return;
+    function openRepaymentUploadModal(month = '') {
+        const modal = document.getElementById('repaymentUploadModal');
+        if (!modal) return;
+        const scheduleItems = getRepaymentScheduleItems();
+        const targetMonth = normalizeMonthValue(month)
+            || scheduleItems.find((item) => ['overdue', 'due', 'needs_correction'].includes(item.state))?.month
+            || scheduleItems.find((item) => item.state === 'upcoming')?.month
+            || '';
+        if (!targetMonth) {
+            showToast('No repayment month is available for upload yet.', 'info');
+            return;
+        }
+        const scheduleItem = scheduleItems.find((item) => item.month === targetMonth);
+        if (['verified', 'pending_review'].includes(scheduleItem?.state || '')) {
+            showToast('This repayment month is already locked or waiting for review.', 'info');
+            return;
+        }
+
+        const form = document.getElementById('uploadForm');
         const monthInput = document.getElementById('uploadMonth');
         const amountInput = document.getElementById('uploadAmount');
         const dateInput = document.getElementById('uploadDate');
         const notesInput = document.getElementById('uploadNotes');
-        if (monthInput) monthInput.value = month;
-        if (amountInput && !amountInput.value) amountInput.value = String(MONTHLY_REPAYMENT_AMOUNT);
-        if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
-        if (notesInput && !notesInput.value && isMonthOverdue(month)) {
-            notesInput.value = `Late payment for ${formatMonth(padMonth(month))}.`;
+        form?.reset();
+        if (monthInput) monthInput.value = targetMonth;
+        if (amountInput) amountInput.value = String(scheduleItem?.amount ?? MONTHLY_REPAYMENT_AMOUNT);
+        if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
+        if (notesInput && scheduleItem?.isOverdue) {
+            notesInput.value = `Late payment for ${formatMonth(padMonth(targetMonth))}.`;
         }
+        modal.hidden = false;
+        document.body.classList.add('repayment-modal-open');
         syncRepaymentMode();
-        document.getElementById('uploadForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        monthInput?.focus();
+        window.setTimeout(() => document.getElementById('uploadOr')?.focus(), 50);
+    }
+
+    function closeRepaymentUploadModal() {
+        const modal = document.getElementById('repaymentUploadModal');
+        if (!modal || modal.hidden) return;
+        modal.hidden = true;
+        document.body.classList.remove('repayment-modal-open');
+    }
+
+    function handleRepaymentDueAction(event) {
+        const toggleButton = event.target.closest('[data-repayment-schedule-toggle]');
+        if (toggleButton) {
+            repaymentScheduleExpanded = !repaymentScheduleExpanded;
+            renderRepaymentDueList();
+            return;
+        }
+        const button = event.target.closest('[data-repayment-due-action]');
+        if (!button) return;
+        const month = normalizeMonthValue(button.dataset.repaymentDueAction || '');
+        if (!month) return;
+        openRepaymentUploadModal(month);
     }
 
     function toggleFieldGroup(container, enabled) {
@@ -1850,6 +1935,7 @@
             renderOverview();
             showToast('Receipt uploaded. Pending verification.', 'info');
             form.reset();
+            closeRepaymentUploadModal();
             syncRepaymentMode();
         } catch (error) {
             showToast(error?.message || 'Unable to submit the repayment record.', 'warning');
@@ -1982,12 +2068,12 @@
                 return;
             }
             if (target === 'repayments') {
-                const repaymentTarget = document.getElementById('repaymentActionsHeading') || document.getElementById('uploadForm');
+                const repaymentTarget = document.getElementById('repaymentActionsHeading');
                 repaymentTarget?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
             }
-            document.getElementById('uploadForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.getElementById('uploadMonth')?.focus();
+            document.getElementById('repaymentActionsHeading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            openRepaymentUploadModal();
         }, 0);
     }
 
@@ -2276,12 +2362,13 @@
         if (!month) {
             return null;
         }
+        const stage = mapPaymentStage(payment.stage);
         return {
             id: payment.id || createSubmissionId('PAY'),
             month,
             paymentDate: String(payment.paymentDate || payment.date || ''),
             amount: roundCurrency(payment.amount || payment.allocatedAmount || 0),
-            stage: mapPaymentStage(payment.stage),
+            stage,
             verifiedBy: String(payment.verifiedBy || ''),
             verifiedAt: String(payment.verifiedAt || ''),
             notes: String(payment.notes || payment.adminRemarks || ''),
@@ -2302,9 +2389,9 @@
             parentSubmissionId: payment.parentSubmissionId || null,
             coverageFrom: normalizeMonthValue(payment.coverageFrom || payment.month || ''),
             coverageTo: normalizeMonthValue(payment.coverageTo || payment.month || ''),
-            allocatedAmount: roundCurrency(payment.allocatedAmount ?? payment.amount ?? 0),
-            creditApplied: roundCurrency(payment.creditApplied || 0),
-            remainingCredit: roundCurrency(payment.remainingCredit || 0)
+            allocatedAmount: stage === 'verified' ? roundCurrency(payment.allocatedAmount ?? payment.amount ?? 0) : 0,
+            creditApplied: stage === 'verified' ? roundCurrency(payment.creditApplied || 0) : 0,
+            remainingCredit: stage === 'verified' ? roundCurrency(payment.remainingCredit || 0) : 0
         };
     }
 
@@ -2397,13 +2484,8 @@
 
     function validatePaymentDateAgainstMonth(paymentDate, referenceMonth) {
         const date = new Date(paymentDate || '');
-        const monthDate = parseMonth(referenceMonth);
-        if (Number.isNaN(date.getTime()) || !monthDate) {
+        if (Number.isNaN(date.getTime()) || !normalizeMonthValue(referenceMonth)) {
             return 'Enter a valid payment date.';
-        }
-        const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-        if (date < monthStart) {
-            return `The payment date cannot be earlier than ${formatMonth(padMonth(referenceMonth))}.`;
         }
         return '';
     }
@@ -2436,6 +2518,65 @@
     function getDisplayPayments() {
         const validMonths = new Set(getRepaymentWindowMonths());
         return payments.filter((payment) => validMonths.has(normalizeMonthValue(payment.month)));
+    }
+
+    function getVerifiedRepaymentAllocation(paymentList = getDisplayPayments()) {
+        const months = getRepaymentWindowMonths();
+        const allocationByMonth = new Map(months.map((month) => [month, {
+            month,
+            expectedAmount: MONTHLY_REPAYMENT_AMOUNT,
+            paidAmount: 0,
+            remainingAmount: MONTHLY_REPAYMENT_AMOUNT,
+            sourcePayments: []
+        }]));
+        const paymentCredits = new Map();
+        let totalVerifiedAmount = 0;
+
+        const verifiedPayments = (Array.isArray(paymentList) ? paymentList : [])
+            .filter((payment) => mapPaymentStage(payment.stage) === 'verified')
+            .slice()
+            .sort((left, right) => {
+                const leftMonth = normalizeMonthValue(left.month);
+                const rightMonth = normalizeMonthValue(right.month);
+                if (leftMonth !== rightMonth) return leftMonth.localeCompare(rightMonth);
+                const leftTime = new Date(left.paymentDate || left.verifiedAt || left.submittedAt || padMonth(leftMonth)).getTime();
+                const rightTime = new Date(right.paymentDate || right.verifiedAt || right.submittedAt || padMonth(rightMonth)).getTime();
+                if (leftTime !== rightTime) return leftTime - rightTime;
+                return String(left.id || '').localeCompare(String(right.id || ''));
+            });
+
+        verifiedPayments.forEach((payment) => {
+            let remainingPayment = roundCurrency(payment.amount || 0);
+            let allocatedAmount = 0;
+            totalVerifiedAmount = roundCurrency(totalVerifiedAmount + remainingPayment);
+
+            for (const month of months) {
+                if (remainingPayment <= 0) {
+                    break;
+                }
+                const bucket = allocationByMonth.get(month);
+                if (!bucket || bucket.remainingAmount <= 0) {
+                    continue;
+                }
+                const applied = roundCurrency(Math.min(bucket.remainingAmount, remainingPayment));
+                bucket.paidAmount = roundCurrency(bucket.paidAmount + applied);
+                bucket.remainingAmount = roundCurrency(Math.max(0, MONTHLY_REPAYMENT_AMOUNT - bucket.paidAmount));
+                bucket.sourcePayments.push(payment);
+                allocatedAmount = roundCurrency(allocatedAmount + applied);
+                remainingPayment = roundCurrency(remainingPayment - applied);
+            }
+
+            paymentCredits.set(payment.id, {
+                allocatedAmount,
+                remainingCredit: remainingPayment
+            });
+        });
+
+        return {
+            months: allocationByMonth,
+            paymentCredits,
+            totalVerifiedAmount: Math.min(TOTAL_REPAYMENT_AMOUNT, roundCurrency(totalVerifiedAmount))
+        };
     }
 
     function addMonths(month, offset) {
@@ -2480,21 +2621,31 @@
 
     function getRepaymentScheduleItems() {
         const months = getRepaymentWindowMonths();
+        const verifiedAllocation = getVerifiedRepaymentAllocation();
         return months.map((month) => {
+            const allocation = verifiedAllocation.months.get(month) || {
+                paidAmount: 0,
+                remainingAmount: MONTHLY_REPAYMENT_AMOUNT,
+                sourcePayments: []
+            };
             const payment = bestPaymentForMonth(month);
             const stage = payment ? mapPaymentStage(payment.stage) : 'unpaid';
             const isOverdue = isMonthOverdue(month);
             let state = 'upcoming';
-            if (stage === 'verified') state = 'verified';
+            if (allocation.remainingAmount <= 0) state = 'verified';
             else if (['uploaded', 'pending'].includes(stage)) state = 'pending_review';
             else if (['needs_correction', 'rejected'].includes(stage)) state = 'needs_correction';
             else if (isOverdue) state = 'overdue';
             else if (month === currentMonthValue()) state = 'due';
             return {
                 month,
-                payment,
+                payment: state === 'verified'
+                    ? allocation.sourcePayments[allocation.sourcePayments.length - 1] || payment
+                    : payment,
                 stage,
                 state,
+                amount: roundCurrency(allocation.remainingAmount ?? MONTHLY_REPAYMENT_AMOUNT),
+                paidAmount: roundCurrency(allocation.paidAmount || 0),
                 isOverdue,
                 actionable: ['overdue', 'due', 'needs_correction'].includes(state),
             };
@@ -2512,10 +2663,19 @@
             return { label: item.isOverdue ? 'Late Payment Requires New Receipt' : 'Requires New Receipt', className: 'status-pending', helper: 'Upload a new receipt for this month.' };
         }
         if (item.state === 'overdue') {
-            return { label: 'Overdue', className: 'status-overdue', helper: 'Submit late payment proof for this month.' };
+            const helper = item.paidAmount > 0
+                ? `Submit proof for the remaining ${formatCurrency(item.amount)}.`
+                : 'Submit late payment proof for this month.';
+            return { label: 'Overdue', className: 'status-overdue', helper };
         }
         if (item.state === 'due') {
-            return { label: 'Due Now', className: 'status-uploaded', helper: 'Submit payment proof for this month.' };
+            const helper = item.paidAmount > 0
+                ? `Only ${formatCurrency(item.amount)} remains for this month.`
+                : 'Submit payment proof for this month.';
+            return { label: 'Due Now', className: 'status-uploaded', helper };
+        }
+        if (item.paidAmount > 0) {
+            return { label: 'Partially Covered', className: 'status-uploaded', helper: `${formatCurrency(item.amount)} remains when this month becomes due.` };
         }
         return { label: 'Upcoming', className: 'status-uploaded', helper: 'No action needed yet.' };
     }
@@ -2621,8 +2781,8 @@
         const excluded = new Set(excludedPaymentIds);
         return paymentList
             .filter((payment) => !excluded.has(payment.id))
+            .filter((payment) => mapPaymentStage(payment.stage) === 'verified')
             .filter((payment) => Number(payment.remainingCredit || 0) > 0)
-            .filter((payment) => mapPaymentStage(payment.stage) !== 'rejected')
             .sort((a, b) => {
                 const dateA = new Date(a.paymentDate || padMonth(a.month)).getTime();
                 const dateB = new Date(b.paymentDate || padMonth(b.month)).getTime();
@@ -2762,8 +2922,6 @@
         if (duplicateOr) {
             throw new Error('That OR number already exists in your repayment records.');
         }
-        const creditApplied = consumeCarryOver(paymentList, MONTHLY_REPAYMENT_AMOUNT, replacement.paymentIdsToRemove);
-        const remainingCredit = roundCurrency(Math.max(0, Number(data.amount || 0) + creditApplied - MONTHLY_REPAYMENT_AMOUNT));
         return {
             payments: [
                 buildMonthlyPaymentRecord({
@@ -2777,9 +2935,9 @@
                     proofType: data.proofType,
                     submittedAt,
                     ...meta,
-                    allocatedAmount: roundCurrency(Number(data.amount || 0) + creditApplied),
-                    creditApplied,
-                    remainingCredit
+                    allocatedAmount: 0,
+                    creditApplied: 0,
+                    remainingCredit: 0
                 })
             ],
             submissions: [],
@@ -3011,14 +3169,3 @@
         return div.innerHTML;
     }
 })();
-
-
-
-
-
-
-
-
-
-
-

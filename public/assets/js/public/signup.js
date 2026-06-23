@@ -158,8 +158,8 @@
     function disableForm(state) {
         submitBtn.disabled = state;
         submitBtn.textContent = state
-            ? (isCoMakerMode ? 'Saving co-maker account...' : 'Activating account...')
-            : (isCoMakerMode ? 'Create co-maker account' : 'Activate account');
+            ? (isCoMakerMode ? 'Saving co-maker account...' : 'Opening portal...')
+            : (isCoMakerMode ? 'Create co-maker account' : 'Continue to portal');
         if (confirmSubmitBtn) {
             confirmSubmitBtn.disabled = state;
             confirmSubmitBtn.textContent = state ? 'Saving...' : 'Yes, save and continue';
@@ -251,12 +251,12 @@
             : [
                 ['Email address', values.email],
                 ['Password', 'Ready to set'],
-                ['Verification', 'Email code required after saving']
+                ['Verification', 'Already completed during registration']
             ];
 
         confirmName.textContent = isCoMakerMode
             ? (summaryItems[0][1] || '--')
-            : 'Applicant account activation';
+            : 'Applicant portal setup';
         confirmEmail.textContent = values.email || '--';
 
         if (isCoMakerMode || !photoDataUrl) {
@@ -409,7 +409,7 @@
 
     async function submitSignup() {
         disableForm(true);
-        setAuthLoading(true, 'Creating your SMART LEAP account...');
+        setAuthLoading(true, isCoMakerMode ? 'Creating your SMART LEAP account...' : 'Opening your SMART LEAP applicant portal...');
         let isRedirecting = false;
 
         try {

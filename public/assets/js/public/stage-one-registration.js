@@ -36,6 +36,11 @@
     const profilePreview = document.getElementById('stageOneProfilePhotoPreview');
     const profilePlaceholder = document.getElementById('stageOneProfilePhotoPlaceholder');
     const sectorOtherWrap = document.getElementById('stageOneSectorOtherWrap');
+    const codeModal = document.getElementById('stageOneCodeModal');
+    const codeInput = document.getElementById('stageOneEmailCode');
+    const codeFeedback = document.getElementById('stageOneCodeFeedback');
+    const codeSubmitBtn = document.getElementById('stageOneVerifySubmit');
+    const codeResendBtn = document.getElementById('stageOneResendCode');
 
     function publicBase() {
         const match = window.location.pathname.match(/^(.*\/public)(?:\/.*)?$/);
@@ -167,9 +172,95 @@
         feedback.textContent = message;
     }
 
+    function setCodeFeedback(type, message) {
+        if (!codeFeedback) return;
+        codeFeedback.hidden = !message;
+        codeFeedback.dataset.tone = type;
+        codeFeedback.textContent = message;
+    }
+
     function disableForm(disabled) {
         submitBtn.disabled = disabled;
-        submitBtn.textContent = disabled ? 'Submitting Application...' : 'Submit Registration';
+        submitBtn.textContent = disabled ? 'Sending verification code...' : 'Submit Registration';
+    }
+
+    function setCodeSubmitting(disabled) {
+        if (codeSubmitBtn) {
+            codeSubmitBtn.disabled = disabled;
+            codeSubmitBtn.textContent = disabled ? 'Submitting...' : 'Verify and submit';
+        }
+        if (codeResendBtn) {
+            codeResendBtn.disabled = disabled;
+        }
+    }
+
+    function openCodeModal() {
+        if (!codeModal || !codeInput) return;
+        setCodeFeedback('', '');
+        codeInput.value = '';
+        codeModal.hidden = false;
+        codeModal.removeAttribute('hidden');
+        document.body.classList.add('stage-one-code-open');
+        window.setTimeout(() => codeInput.focus(), 80);
+    }
+
+    function closeCodeModal() {
+        if (!codeModal) return;
+        codeModal.hidden = true;
+        codeModal.setAttribute('hidden', 'hidden');
+        document.body.classList.remove('stage-one-code-open');
+    }
+
+    function appendFormFields(formData, verificationCode = '') {
+        formData.append('firstName', fields.firstName.value.trim());
+        formData.append('middleName', fields.middleName.value.trim());
+        formData.append('lastName', fields.lastName.value.trim());
+        formData.append('email', fields.email.value.trim());
+        formData.append('birthdate', fields.birthdate.value);
+        formData.append('age', fields.age.value);
+        formData.append('gender', fields.gender.value);
+        formData.append('contactNumber', fields.contactNumber.value.trim());
+        formData.append('address', fields.address.value.trim());
+        formData.append('completeAddress', fields.address.value.trim());
+        formData.append('barangay', fields.barangay.value);
+        formData.append('is4ps', fields.is4ps.value);
+        formData.append('educationalAttainment', fields.educationalAttainment.value);
+        formData.append('sector', fields.sector.value);
+        formData.append('sectorOtherSpecify', fields.sectorOtherSpecify.value.trim());
+        formData.append('livelihood', fields.livelihood.value.trim());
+        formData.append('businessName', fields.businessName.value.trim());
+        if (verificationCode) {
+            formData.append('emailVerificationCode', verificationCode);
+        }
+    }
+
+    function buildRegistrationFormData(verificationCode) {
+        const formData = new FormData();
+        appendFormFields(formData, verificationCode);
+        formData.append('profilePhoto', fields.profilePhoto.files[0]);
+        formData.append('businessPhoto', fields.businessPhoto.files[0]);
+        formData.append('validIdPhoto', fields.validIdPhoto.files[0]);
+        return formData;
+    }
+
+    async function requestEmailCode() {
+        const formData = new FormData();
+        appendFormFields(formData);
+
+        const response = await fetch(routeUrl('portal/apply/email-code'), {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: formData,
+        });
+
+        return {
+            response,
+            payload: await response.json().catch(() => ({})),
+        };
     }
 
     function validate() {
@@ -258,44 +349,40 @@
     fields.birthdate?.addEventListener('change', syncAgeFromBirthdate);
     fields.sector?.addEventListener('change', toggleSectorOther);
     fields.address?.addEventListener('input', () => autoResizeTextarea(fields.address));
+    codeInput?.addEventListener('input', () => {
+        codeInput.value = codeInput.value.replace(/\D+/g, '').slice(0, 6);
+    });
+    document.querySelectorAll('[data-stage-one-code-close]').forEach((button) => {
+        button.addEventListener('click', closeCodeModal);
+    });
+    codeResendBtn?.addEventListener('click', async () => {
+        if (codeResendBtn.disabled) return;
+        setCodeSubmitting(true);
+        setCodeFeedback('info', 'Sending a fresh verification code...');
+        try {
+            const { response, payload } = await requestEmailCode();
+            setCodeFeedback(response.ok && payload.ok ? 'success' : 'danger', payload.message || 'Unable to send a fresh code.');
+        } catch (error) {
+            setCodeFeedback('danger', 'Unable to send a fresh code right now.');
+        } finally {
+            setCodeSubmitting(false);
+        }
+    });
     autoResizeTextarea(fields.address);
     syncAgeFromBirthdate();
     toggleSectorOther();
 
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (submitBtn.disabled) return;
-
-        if (!validate()) {
-            setFeedback('danger', 'Please complete the required application fields.');
+    async function submitVerifiedRegistration() {
+        const verificationCode = codeInput?.value.trim() || '';
+        if (!verificationCode || verificationCode.length !== 6) {
+            setCodeFeedback('danger', 'Enter the six-digit code sent to your email.');
             return;
         }
 
-        disableForm(true);
-        setAuthLoading(true, 'Submitting your Stage 1 application...');
-
+        setCodeSubmitting(true);
+        setAuthLoading(true, 'Verifying your email and submitting your registration...');
         try {
-            const formData = new FormData();
-            formData.append('firstName', fields.firstName.value.trim());
-            formData.append('middleName', fields.middleName.value.trim());
-            formData.append('lastName', fields.lastName.value.trim());
-            formData.append('email', fields.email.value.trim());
-            formData.append('birthdate', fields.birthdate.value);
-            formData.append('age', fields.age.value);
-            formData.append('gender', fields.gender.value);
-            formData.append('contactNumber', fields.contactNumber.value.trim());
-            formData.append('address', fields.address.value.trim());
-            formData.append('completeAddress', fields.address.value.trim());
-            formData.append('barangay', fields.barangay.value);
-            formData.append('is4ps', fields.is4ps.value);
-            formData.append('educationalAttainment', fields.educationalAttainment.value);
-            formData.append('sector', fields.sector.value);
-            formData.append('sectorOtherSpecify', fields.sectorOtherSpecify.value.trim());
-            formData.append('livelihood', fields.livelihood.value.trim());
-            formData.append('businessName', fields.businessName.value.trim());
-            formData.append('profilePhoto', fields.profilePhoto.files[0]);
-            formData.append('businessPhoto', fields.businessPhoto.files[0]);
-            formData.append('validIdPhoto', fields.validIdPhoto.files[0]);
+            const formData = buildRegistrationFormData(verificationCode);
 
             const response = await fetch(submitUrl(), {
                 method: 'POST',
@@ -332,31 +419,81 @@
                     profilePhoto: 'stageOneProfilePhoto',
                     businessPhoto: 'stageOneBusinessPhoto',
                     validIdPhoto: 'stageOneValidIdPhoto',
+                    emailVerificationCode: 'stageOneEmailCode',
                 };
 
                 Object.entries(payload.errors || {}).forEach(([key, message]) => {
-                    if (fieldMap[key]) {
+                    if (key === 'emailVerificationCode') {
+                        setCodeFeedback('danger', message);
+                    } else if (fieldMap[key]) {
                         showFieldError(fieldMap[key], message);
                     }
                 });
-                setFeedback('danger', payload.message || 'Unable to submit the application right now.');
-                disableForm(false);
+                setCodeFeedback('danger', payload.message || 'Unable to submit the application right now.');
+                setCodeSubmitting(false);
                 return;
             }
 
             disableForm(false);
+            setCodeSubmitting(false);
             resetErrors();
             if (successMessage) {
-                successMessage.textContent = payload.message || 'Watch your email for account activation once you are selected for the current batch.';
+                successMessage.textContent = payload.message || 'Your email is verified and your registration is now ready for Admin validation.';
             }
             card?.classList.add('is-complete');
+            closeCodeModal();
             form.hidden = true;
             successPanel.hidden = false;
             successPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (error) {
             await settleLoader();
             console.error('Stage 1 registration failed', error);
-            setFeedback('danger', 'Unable to submit the application right now.');
+            setCodeFeedback('danger', 'Unable to submit the application right now.');
+            setCodeSubmitting(false);
+        }
+    }
+
+    codeSubmitBtn?.addEventListener('click', submitVerifiedRegistration);
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (submitBtn.disabled) return;
+
+        if (!validate()) {
+            setFeedback('danger', 'Please complete the required application fields.');
+            return;
+        }
+
+        disableForm(true);
+        setAuthLoading(true, 'Sending your email verification code...');
+
+        try {
+            const { response, payload } = await requestEmailCode();
+            await settleLoader();
+            if (!response.ok || !payload.ok) {
+                const fieldMap = {
+                    firstName: 'stageOneFirstName',
+                    lastName: 'stageOneLastName',
+                    email: 'stageOneEmail',
+                };
+                Object.entries(payload.errors || {}).forEach(([key, message]) => {
+                    if (fieldMap[key]) {
+                        showFieldError(fieldMap[key], message);
+                    }
+                });
+                setFeedback('danger', payload.message || 'Unable to send a verification code right now.');
+                disableForm(false);
+                return;
+            }
+
+            disableForm(false);
+            resetErrors();
+            openCodeModal();
+            setCodeFeedback('success', payload.message || 'Verification code sent. Check your email inbox or spam folder.');
+        } catch (error) {
+            await settleLoader();
+            console.error('Stage 1 verification code failed', error);
+            setFeedback('danger', 'Unable to send a verification code right now.');
             disableForm(false);
         }
     });

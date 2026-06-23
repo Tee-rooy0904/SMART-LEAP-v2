@@ -34,9 +34,6 @@ class PostApprovalComplianceService
             true
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
-        if (($seminarAccess['codes'] ?? []) === []) {
-            return $this->emptyState();
-        }
 
         $tasks = $this->fetchTasks((int) $context['beneficiary_profile_id'], $context, $seminarAccess);
 
@@ -73,7 +70,7 @@ class PostApprovalComplianceService
             true
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
-        if (!in_array($code, $seminarAccess['codes'] ?? [], true)) {
+        if (!$this->canApplicantAccessTaskCode($code, $seminarAccess)) {
             return null;
         }
 
@@ -123,7 +120,7 @@ class PostApprovalComplianceService
             true
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
-        if (!in_array($code, $seminarAccess['codes'] ?? [], true)) {
+        if (!$this->canApplicantAccessTaskCode($code, $seminarAccess)) {
             return ['ok' => false, 'errors' => ['task' => 'This application form is not yet opened for your assigned training session.']];
         }
 
@@ -195,7 +192,7 @@ class PostApprovalComplianceService
             true
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
-        if (!in_array($code, $seminarAccess['codes'] ?? [], true)) {
+        if (!$this->canApplicantAccessTaskCode($code, $seminarAccess)) {
             return ['ok' => false, 'errors' => ['task' => 'This application form is not yet opened for your assigned training session.']];
         }
 
@@ -303,7 +300,7 @@ class PostApprovalComplianceService
             true
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
-        if (!in_array($code, $seminarAccess['codes'] ?? [], true)) {
+        if (!$this->canApplicantAccessTaskCode($code, $seminarAccess)) {
             return ['ok' => false, 'errors' => ['task' => 'This application form is not yet opened for your assigned training session.']];
         }
 
@@ -394,7 +391,7 @@ class PostApprovalComplianceService
             true
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
-        if (!in_array($code, $seminarAccess['codes'] ?? [], true)) {
+        if (!$this->canApplicantAccessTaskCode($code, $seminarAccess)) {
             return ['ok' => false, 'errors' => ['task' => 'This application form is not yet opened for your assigned training session.']];
         }
 
@@ -884,13 +881,18 @@ class PostApprovalComplianceService
                   "validation_form",
                   "mungkahing_proyekto",
                   "business_plan",
-                  "buhat_sa_pagpanumpa"
+                  "buhat_sa_pagpanumpa",
+                  "fund_release_evidence"
               ), post_approval_tasks.id ASC'
         );
         $statement->execute(['beneficiary_profile_id' => $beneficiaryProfileId]);
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $allowedMap = array_fill_keys($seminarAccess['codes'] ?? [], true);
-        $rows = array_values(array_filter($rows, static fn (array $row): bool => isset($allowedMap[(string) ($row['code'] ?? '')])));
+        $rows = array_values(array_filter(
+            $rows,
+            static fn (array $row): bool => (string) ($row['code'] ?? '') === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE
+                || isset($allowedMap[(string) ($row['code'] ?? '')])
+        ));
 
         $scheduleByCode = $this->scheduleByCode($seminarAccess);
 
@@ -908,6 +910,15 @@ class PostApprovalComplianceService
             }
             return $task;
         }, $rows);
+    }
+
+    private function canApplicantAccessTaskCode(string $code, array $seminarAccess): bool
+    {
+        if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+            return true;
+        }
+
+        return in_array($code, $seminarAccess['codes'] ?? [], true);
     }
 
     private function findTaskByCode(int $beneficiaryProfileId, string $code): ?array
@@ -989,7 +1000,9 @@ class PostApprovalComplianceService
                 'signatureUpload' => $this->assignedPdoSignature($context),
                 'hasSavedSignature' => $this->assignedPdoSignature($context) !== null,
             ],
-            'file' => $this->normalizeUploadMetadata($payload['staffReview']['reviewAttachment'] ?? null),
+            'file' => $code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE
+                ? $this->normalizeUploadMetadata($payload['fundReleaseEvidence']['releaseAttachment'] ?? null)
+                : $this->normalizeUploadMetadata($payload['staffReview']['reviewAttachment'] ?? null),
             'payload' => $payload,
             'completion' => $this->completionForTask($code, $payload),
         ];
@@ -3120,6 +3133,25 @@ class PostApprovalComplianceService
                     [
                         'title' => 'Verification',
                         'description' => 'Reviewer verification name, title, date, remarks, and signature remain staff-only in the review workflow.',
+                    ],
+                ],
+            ],
+            POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE => [
+                'title' => 'Proof of Assistance Received',
+                'summary' => 'Final proof that the approved SMART LEAP assistance was released to the applicant.',
+                'helpText' => 'Upload the release proof after you receive the assistance. PDO/Admin must verify this before you can be approved as a beneficiary.',
+                'interactive' => true,
+                'applicantSections' => [
+                    [
+                        'id' => 'fundReleaseEvidence',
+                        'title' => 'Proof of Assistance Received',
+                        'description' => 'Attach the official release evidence and confirm the date when assistance was received.',
+                    ],
+                ],
+                'staffSections' => [
+                    [
+                        'title' => 'Final Verification',
+                        'description' => 'PDO/Admin verifies the uploaded proof before final beneficiary approval.',
                     ],
                 ],
             ],

@@ -14,4 +14,5 @@ return [
     'POST /api/training/invitees' => ['handler' => [TrainingController::class, 'syncInvitees'], 'middleware' => ['auth']],
     'POST /api/training/notices' => ['handler' => [TrainingController::class, 'sendNotices'], 'middleware' => ['auth']],
     'POST /api/training/attendance' => ['handler' => [TrainingController::class, 'updateAttendance'], 'middleware' => ['auth']],
+    'POST /api/training/attendance-proof' => ['handler' => [TrainingController::class, 'uploadAttendanceProof'], 'middleware' => ['auth']],
 ];

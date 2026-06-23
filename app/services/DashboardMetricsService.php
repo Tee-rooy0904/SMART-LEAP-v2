@@ -350,6 +350,7 @@ class DashboardMetricsService
                     beneficiary_profiles.beneficiary_status,
                     beneficiary_profiles.replacement_for_beneficiary_profile_id,
                     beneficiary_profiles.approval_date,
+                    beneficiary_profiles.approved_at,
                     beneficiary_profiles.updated_at,
                     latest_application.status AS latest_application_status,
                     beneficiary_users.full_name AS beneficiary_name,
@@ -436,10 +437,16 @@ class DashboardMetricsService
         $repaymentMap = $this->beneficiaryRepaymentSummaries($beneficiaryIds);
         $complianceMap = $this->beneficiaryComplianceSummaries($beneficiaryIds);
 
-        return array_map(function (array $row) use ($repaymentMap, $complianceMap): array {
+        $scheduleService = new RepaymentScheduleService();
+
+        return array_map(function (array $row) use ($repaymentMap, $complianceMap, $scheduleService): array {
             $beneficiaryId = (int) ($row['id'] ?? 0);
             $repayment = $repaymentMap[$beneficiaryId] ?? $this->emptyBeneficiaryRepaymentSummary();
             $compliance = $complianceMap[$beneficiaryId] ?? $this->emptyBeneficiaryComplianceSummary();
+            $approvedAt = (string) ($row['approved_at'] ?? '');
+            $approvalDate = (string) ($row['approval_date'] ?? '');
+            $firstRepaymentDueDate = $scheduleService->firstDueDateForBeneficiaryContext($approvedAt, $approvalDate);
+            $repayment = $this->appendRepaymentLifecycleMetrics($repayment, $firstRepaymentDueDate, $approvedAt, $approvalDate);
             $activityCandidates = array_filter([
                 (string) ($row['updated_at'] ?? ''),
                 (string) ($repayment['latestActivity'] ?? ''),
@@ -496,7 +503,9 @@ class DashboardMetricsService
                         'url' => $this->publicUploadUrl((string) ($row['co_maker_relationship_document_path'] ?? '')),
                     ],
                 ] : null,
-                'approvalDate' => $row['approval_date'],
+                'approvalDate' => $approvalDate,
+                'approvedAt' => $approvedAt,
+                'firstRepaymentDueDate' => $firstRepaymentDueDate,
                 'repayment' => $repayment,
                 'compliance' => $compliance,
                 'lastActivity' => $lastActivity,
@@ -678,6 +687,9 @@ class DashboardMetricsService
                 $map[$beneficiaryId]['credited']++;
                 $map[$beneficiaryId]['verifiedInstallments']++;
                 $map[$beneficiaryId]['paidAmount'] += (float) ($row['amount'] ?? 0);
+                if (preg_match('/^\d{4}-\d{2}$/', $coverageMonth)) {
+                    $map[$beneficiaryId]['verifiedMonths'][$coverageMonth] = true;
+                }
                 if ($this->isRepaymentOnTime($paymentDate, $coverageMonth)) {
                     $map[$beneficiaryId]['onTimeInstallments']++;
                 } else {
@@ -689,6 +701,9 @@ class DashboardMetricsService
                 $map[$beneficiaryId]['verified']++;
                 $map[$beneficiaryId]['verifiedInstallments']++;
                 $map[$beneficiaryId]['paidAmount'] += (float) ($row['amount'] ?? 0);
+                if (preg_match('/^\d{4}-\d{2}$/', $coverageMonth)) {
+                    $map[$beneficiaryId]['verifiedMonths'][$coverageMonth] = true;
+                }
                 if ($this->isRepaymentOnTime($paymentDate, $coverageMonth)) {
                     $map[$beneficiaryId]['onTimeInstallments']++;
                 } else {
@@ -762,6 +777,7 @@ class DashboardMetricsService
             'verified' => 0,
             'credited' => 0,
             'verifiedInstallments' => 0,
+            'verifiedMonths' => [],
             'onTimeInstallments' => 0,
             'lateInstallments' => 0,
             'paidAmount' => 0.0,
@@ -800,6 +816,83 @@ class DashboardMetricsService
             : 0.0;
 
         return $summary;
+    }
+
+    private function appendRepaymentLifecycleMetrics(array $summary, ?string $firstRepaymentDueDate, string $approvedAt = '', string $approvalDate = ''): array
+    {
+        $firstDueMonth = null;
+        if (is_string($firstRepaymentDueDate) && preg_match('/^\d{4}-\d{2}/', $firstRepaymentDueDate)) {
+            $firstDueMonth = substr($firstRepaymentDueDate, 0, 7);
+        } else {
+            $anchor = trim($approvedAt) !== '' ? trim($approvedAt) : trim($approvalDate);
+            if (preg_match('/^\d{4}-\d{2}/', $anchor)) {
+                $firstDueMonth = $this->shiftMonth(substr($anchor, 0, 7), 1);
+            }
+        }
+
+        $currentMonth = date('Y-m');
+        $lastPlanMonth = $firstDueMonth !== null ? $this->shiftMonth($firstDueMonth, self::REPAYMENT_PLAN_MONTHS - 1) : null;
+        $effectiveEndMonth = $firstDueMonth !== null && $lastPlanMonth !== null
+            ? min($currentMonth, $lastPlanMonth)
+            : null;
+        $monthsPassed = $firstDueMonth !== null && $effectiveEndMonth !== null && strcmp($effectiveEndMonth, $firstDueMonth) >= 0
+            ? $this->countMonthsInclusive($firstDueMonth, $effectiveEndMonth)
+            : 0;
+
+        $monthsPaid = 0;
+        $monthsPaidToDate = 0;
+        foreach (array_keys((array) ($summary['verifiedMonths'] ?? [])) as $month) {
+            if (!preg_match('/^\d{4}-\d{2}$/', (string) $month)) {
+                continue;
+            }
+            if ($firstDueMonth !== null && strcmp((string) $month, $firstDueMonth) < 0) {
+                continue;
+            }
+            if ($lastPlanMonth !== null && strcmp((string) $month, $lastPlanMonth) > 0) {
+                continue;
+            }
+            $monthsPaid++;
+            if (strcmp((string) $month, $currentMonth) <= 0) {
+                $monthsPaidToDate++;
+            }
+        }
+
+        $calendarMonthsPassed = $monthsPassed;
+        $rateDenominator = max($calendarMonthsPassed, $monthsPaid);
+        $summary['firstDueMonth'] = $firstDueMonth;
+        $summary['calendarMonthsPassed'] = $calendarMonthsPassed;
+        $summary['monthsPassed'] = $rateDenominator;
+        $summary['monthsPaid'] = $monthsPaid;
+        $summary['monthsPaidToDate'] = $monthsPaidToDate;
+        $summary['monthsPaidFraction'] = sprintf('%d/%d', $monthsPaid, $rateDenominator);
+        $summary['repaymentRate'] = $rateDenominator > 0 ? round(($monthsPaid / $rateDenominator) * 100, 2) : 0.0;
+
+        return $summary;
+    }
+
+    private function shiftMonth(string $month, int $offset): string
+    {
+        try {
+            return (new \DateTimeImmutable($month . '-01'))->modify(($offset >= 0 ? '+' : '') . $offset . ' month')->format('Y-m');
+        } catch (\Throwable) {
+            return $month;
+        }
+    }
+
+    private function countMonthsInclusive(string $fromMonth, string $toMonth): int
+    {
+        try {
+            $from = new \DateTimeImmutable($fromMonth . '-01');
+            $to = new \DateTimeImmutable($toMonth . '-01');
+        } catch (\Throwable) {
+            return 0;
+        }
+        if ($to < $from) {
+            return 0;
+        }
+        return (((int) $to->format('Y') - (int) $from->format('Y')) * 12)
+            + ((int) $to->format('n') - (int) $from->format('n'))
+            + 1;
     }
 
     private function emptyBeneficiaryComplianceSummary(): array

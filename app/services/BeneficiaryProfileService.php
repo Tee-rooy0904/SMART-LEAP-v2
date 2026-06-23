@@ -65,7 +65,7 @@ class BeneficiaryProfileService
             'applicant_profile_id' => $applicantProfileId,
             'assigned_staff_profile_id' => $source['assigned_staff_profile_id'],
             'beneficiary_status' => $activate ? self::STATUS_ACTIVE : 'pending_fund_release',
-            'approval_date' => $activate ? date('Y-m-d') : null,
+            'approval_date' => null,
         ]);
 
         $beneficiaryProfileId = (int) db()->lastInsertId();
@@ -100,7 +100,7 @@ class BeneficiaryProfileService
         $this->activateBeneficiaryProfile(
             $beneficiaryProfileId,
             (int) $source['user_id'],
-            $receivedAt ?? new DateTimeImmutable(),
+            $receivedAt,
             true
         );
 
@@ -228,7 +228,10 @@ class BeneficiaryProfileService
             return ['ok' => false, 'message' => 'Only approved beneficiary records can receive a repayment anchor.'];
         }
 
-        $anchor = $receivedAt ?? $this->defaultBackfillAssistanceReceivedAt();
+        $anchor = $receivedAt ?? $this->resolveBatchAssistanceAnchor(
+            $beneficiaryProfileId,
+            $this->defaultBackfillAssistanceReceivedAt()
+        );
         $pdo = db();
         $pdo->beginTransaction();
 
@@ -642,7 +645,10 @@ class BeneficiaryProfileService
         bool $replaceApprovalAnchor = false
     ): void
     {
-        $approvalAnchor = $approvedAt ?? new DateTimeImmutable();
+        $approvalAnchor = $approvedAt ?? $this->resolveBatchAssistanceAnchor(
+            $beneficiaryProfileId,
+            new DateTimeImmutable()
+        );
         $approvalDateValue = $approvalAnchor->format('Y-m-d');
         $approvedAtValue = $approvalAnchor->format('Y-m-d H:i:s');
 
@@ -695,6 +701,60 @@ class BeneficiaryProfileService
             $scheduleService->rebuildForBeneficiaryProfile($beneficiaryProfileId);
         } else {
             $scheduleService->ensureForBeneficiaryProfile($beneficiaryProfileId);
+        }
+    }
+
+    private function resolveBatchAssistanceAnchor(int $beneficiaryProfileId, DateTimeImmutable $fallback): DateTimeImmutable
+    {
+        if ($beneficiaryProfileId <= 0 || !$this->schemaColumnExists('applicant_profiles', 'batch_no')) {
+            return $fallback;
+        }
+
+        try {
+            $batchStatement = db()->prepare(
+                'SELECT TRIM(COALESCE(applicant_profiles.batch_no, "")) AS batch_no
+                 FROM beneficiary_profiles
+                 INNER JOIN applicant_profiles ON applicant_profiles.id = beneficiary_profiles.applicant_profile_id
+                 WHERE beneficiary_profiles.id = :beneficiary_profile_id
+                 LIMIT 1'
+            );
+            $batchStatement->execute(['beneficiary_profile_id' => $beneficiaryProfileId]);
+            $batchNo = trim((string) ($batchStatement->fetchColumn() ?: ''));
+            if ($batchNo === '') {
+                return $fallback;
+            }
+
+            $batchDigits = preg_match('/\d+/', $batchNo, $matches) === 1 ? (string) $matches[0] : $batchNo;
+            $batchLabel = 'batch ' . $batchDigits;
+
+            $anchorStatement = db()->prepare(
+                'SELECT COALESCE(beneficiary_profiles.approved_at, beneficiary_profiles.approval_date) AS assistance_anchor
+                 FROM beneficiary_profiles
+                 INNER JOIN applicant_profiles ON applicant_profiles.id = beneficiary_profiles.applicant_profile_id
+                 WHERE beneficiary_profiles.id <> :beneficiary_profile_id
+                   AND LOWER(TRIM(COALESCE(applicant_profiles.batch_no, ""))) IN (:batch_no, :batch_digits, :batch_label)
+                   AND COALESCE(beneficiary_profiles.approved_at, beneficiary_profiles.approval_date) IS NOT NULL
+                   AND LOWER(COALESCE(beneficiary_profiles.beneficiary_status, "")) IN ("active", "inactive", "deceased")
+                 ORDER BY COALESCE(beneficiary_profiles.approved_at, CONCAT(beneficiary_profiles.approval_date, " 00:00:00")) ASC
+                 LIMIT 1'
+            );
+            $anchorStatement->execute([
+                'beneficiary_profile_id' => $beneficiaryProfileId,
+                'batch_no' => strtolower($batchNo),
+                'batch_digits' => strtolower($batchDigits),
+                'batch_label' => $batchLabel,
+            ]);
+            $anchorRaw = trim((string) ($anchorStatement->fetchColumn() ?: ''));
+            if ($anchorRaw === '') {
+                return $fallback;
+            }
+
+            return new DateTimeImmutable($anchorRaw);
+        } catch (\Throwable $exception) {
+            log_database_query_failure('beneficiary_profiles.batch_assistance_anchor', $exception, [
+                'beneficiary_profile_id' => $beneficiaryProfileId,
+            ]);
+            return $fallback;
         }
     }
 

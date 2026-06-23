@@ -24,6 +24,17 @@ class TrainingController extends Controller
         return $user;
     }
 
+    private function authorizeApplicantTrainingActor(): array
+    {
+        $user = auth_user() ?? [];
+        $role = strtolower((string) ($user['role'] ?? ''));
+        if (!str_contains($role, 'applicant') && !str_contains($role, 'beneficiary')) {
+            response_json(['ok' => false, 'message' => 'Forbidden.'], 403);
+        }
+
+        return $user;
+    }
+
     public function index(): never
     {
         $service = new TrainingService();
@@ -161,6 +172,33 @@ class TrainingController extends Controller
             $remarks !== '' ? $remarks : null,
             $this->authorizeTrainingActor(),
             $proofAttachment
+        );
+        if (!$result['ok']) {
+            response_json($result, 422);
+        }
+
+        response_json($result);
+    }
+
+    public function uploadAttendanceProof(): never
+    {
+        $trainingInviteeId = (int) ($_POST['trainingInviteeId'] ?? 0);
+        $remarks = trim((string) ($_POST['remarks'] ?? ''));
+        $proofAttachment = isset($_FILES['proofAttachment']) && is_array($_FILES['proofAttachment'])
+            ? $_FILES['proofAttachment']
+            : null;
+
+        $service = new TrainingService();
+        $schemaError = $service->schemaError();
+        if ($schemaError !== null) {
+            response_json(['ok' => false, 'message' => $schemaError], 500);
+        }
+        $user = $this->authorizeApplicantTrainingActor();
+        $result = $service->uploadApplicantAttendanceProof(
+            $trainingInviteeId,
+            (int) ($user['id'] ?? 0),
+            $proofAttachment,
+            $remarks !== '' ? $remarks : null
         );
         if (!$result['ok']) {
             response_json($result, 422);

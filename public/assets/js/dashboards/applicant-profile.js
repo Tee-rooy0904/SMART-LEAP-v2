@@ -523,10 +523,10 @@
 
         if (rejected) {
             return {
-                statusLabel: 'Rejected',
+                statusLabel: 'Needs correction',
                 statusClass: 'is-rejected',
                 tileClass: 'is-rejected',
-                note: entry?.reviewerRemarks ? `Review note: ${entry.reviewerRemarks}` : 'This upload needs a new file before you submit again.',
+                note: entry?.reviewerRemarks ? `PDO/Admin note: ${entry.reviewerRemarks}` : 'This upload needs correction before it can move forward.',
                 allowUpload: !formLocked && replacementAllowed,
             };
         }

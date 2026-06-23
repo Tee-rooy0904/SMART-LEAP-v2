@@ -47,6 +47,16 @@ class StageOneRegistrationController extends Controller
         response_json($result, 201);
     }
 
+    public function requestEmailVerification(): never
+    {
+        $result = (new StageOneRegistrationService())->requestEmailVerification($_POST);
+        if (!$result['ok']) {
+            response_json($result, 422);
+        }
+
+        response_json($result);
+    }
+
     public function index(): never
     {
         response_json([

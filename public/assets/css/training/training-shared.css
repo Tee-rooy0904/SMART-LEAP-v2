@@ -210,14 +210,14 @@ button, input, select, textarea { font: inherit; }
 
 .data-table { width: 100%; border-collapse: collapse; min-width: 960px; }
 .data-table caption { padding: 16px 20px 0; text-align: left; font-weight: 700; }
-.data-table th, .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--training-border); vertical-align: top; }
+.data-table th, .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--training-border); vertical-align: middle; text-align: center; }
 .data-table thead th {
   background: #f6f9fc;
   color: var(--training-text-muted);
   font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  text-align: left;
+  text-align: center;
 }
 
 .status-chip {

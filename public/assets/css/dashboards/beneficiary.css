@@ -843,6 +843,17 @@
     font-size: 0.9rem;
 }
 
+.repayment-due-list__footer {
+    display: flex;
+    justify-content: center;
+    padding-top: 4px;
+}
+
+.repayment-due-list__toggle {
+    min-width: min(100%, 220px);
+    justify-content: center;
+}
+
 .repayment-due-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
@@ -854,6 +865,20 @@
 .repayment-due-item.is-overdue {
     border-color: rgba(239, 68, 68, 0.22);
     background: rgba(254, 242, 242, 0.72);
+}
+
+.repayment-due-item--verified {
+    border-color: rgba(16, 185, 129, 0.2);
+    background: rgba(236, 253, 245, 0.78);
+}
+
+.repayment-due-item--pending_review {
+    border-color: rgba(59, 130, 246, 0.18);
+    background: rgba(239, 246, 255, 0.78);
+}
+
+.repayment-due-item--upcoming {
+    background: rgba(248, 250, 252, 0.9);
 }
 
 .repayment-due-item__label {
@@ -1088,6 +1113,91 @@
     min-width: 190px;
     min-height: 48px;
     padding-inline: 26px;
+}
+
+body.repayment-modal-open {
+    overflow: hidden;
+}
+
+.beneficiary-repayment-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1350;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.beneficiary-repayment-modal[hidden] {
+    display: none;
+}
+
+.beneficiary-repayment-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background:
+        radial-gradient(80% 120% at 50% 0%, rgba(20, 83, 145, 0.28), transparent 55%),
+        rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(8px);
+}
+
+.beneficiary-repayment-modal__panel {
+    position: relative;
+    width: min(980px, 100%);
+    max-height: min(88vh, 820px);
+    overflow: auto;
+    border-radius: 28px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98));
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    box-shadow: 0 34px 70px rgba(15, 23, 42, 0.3);
+}
+
+.beneficiary-repayment-modal__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 24px 28px 20px;
+    color: #fff;
+    background:
+        radial-gradient(90% 160% at 100% 0%, rgba(45, 212, 191, 0.2), transparent 50%),
+        linear-gradient(135deg, #0f4270 0%, #155986 100%);
+}
+
+.beneficiary-repayment-modal__header h3,
+.beneficiary-repayment-modal__header p {
+    margin: 0;
+}
+
+.beneficiary-repayment-modal__header p {
+    margin-top: 6px;
+    color: rgba(239, 246, 255, 0.86);
+}
+
+.beneficiary-repayment-modal__header .support-card__eyebrow {
+    color: rgba(224, 242, 254, 0.82);
+}
+
+.beneficiary-repayment-modal__close {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.beneficiary-repayment-modal__form {
+    padding: 24px 28px 28px;
+}
+
+.beneficiary-repayment-modal__actions {
+    justify-content: flex-end;
 }
 
 .repayment-batch-toolbar {
@@ -2276,7 +2386,7 @@
         bottom: 12px;
         z-index: 44;
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
         padding: 8px;
         border-radius: 22px;
@@ -3295,8 +3405,12 @@
         gap: 3px;
     }
 
-.beneficiary-tabbar__label {
+    .beneficiary-tabbar__label {
         font-size: 0.6rem;
+    }
+
+    .repayment-due-list__toggle {
+        width: 100%;
     }
 }
 
@@ -3533,6 +3647,36 @@
 }
 
 @media (max-width: 720px) {
+    .beneficiary-repayment-modal {
+        align-items: end;
+        padding: 10px;
+    }
+
+    .beneficiary-repayment-modal__panel {
+        width: 100%;
+        max-height: 92vh;
+        border-radius: 24px 24px 18px 18px;
+    }
+
+    .beneficiary-repayment-modal__header {
+        padding: 20px;
+    }
+
+    .beneficiary-repayment-modal__form {
+        padding: 18px;
+    }
+
+    .beneficiary-repayment-modal__actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .beneficiary-repayment-modal__actions .btn-outline,
+    .beneficiary-repayment-modal__actions .btn-primary {
+        width: 100%;
+    }
+
     #activity-log #auditList.timeline-list > li.timeline-item .timeline-item__head {
         display: grid;
         gap: 6px;

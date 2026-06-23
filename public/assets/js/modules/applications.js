@@ -346,7 +346,7 @@
       enabled: true,
       title: 'Approve this applicant and record assistance release.',
       statusTitle: 'Application is ready for final approval.',
-      statusCopy: 'All required upload requirements, fill-up form requirements, training conditions, and assistance confirmation are satisfied.',
+      statusCopy: 'All uploads, training forms, assistance proof, training conditions, and assistance confirmation are satisfied.',
     };
   };
 
@@ -365,7 +365,6 @@
 
   const buildModalMarkup = (application) => {
     const readiness = application.approvalReadiness || {};
-    const trainingApproval = application.trainingApprovalReadiness || {};
     const finalApproval = finalApprovalState(application);
     const uploadSummary = readiness.uploadSummary || { approved: 0, total: 0 };
     const formSummary = readiness.formSummary || { approved: 0, total: 0 };
@@ -502,7 +501,6 @@
               <div class="po-decision-rail__actions">
                 <button type="button" class="btn btn-outline-secondary" data-close-modal>Close</button>
                 <button type="button" class="btn btn-danger" data-review-action="reject">Reject</button>
-                <button type="button" class="btn btn-primary" data-review-action="approve_for_training" ${trainingApproval.canApproveForTraining ? '' : 'disabled'} title="${escapeAttribute(((trainingApproval.blockers || []).slice(0, 2).join(' | ')) || 'Resolve the upload review requirements before training approval.')}">${trainingApproval.alreadyApprovedForTraining ? 'Already Approved for Training' : 'Approve for Training'}</button>
                 <button type="button" class="btn btn-success" id="admin-app-modal-approve" data-review-action="approve" ${finalApproval.enabled ? '' : 'disabled'} title="${escapeAttribute(finalApproval.title)}">Approve</button>
               </div>
             </div>
@@ -640,7 +638,7 @@
       <div class="po-preview-file-card">
         <strong>${escapeHtml(item.label || 'Fill-up form')}</strong>
         <span>Review the requirement status here, or open the applicant-filled form separately for full paper-form checking.</span>
-        <a class="action-button" href="${escapeHtml(reviewUrl)}" data-open-form-review="${escapeHtml(reviewUrl)}">Review applicant form</a>
+        <a class="action-button" href="${escapeHtml(reviewUrl)}" data-open-form-review="${escapeHtml(reviewUrl)}">View / Check form</a>
         ${uploadedFormFile?.url ? `<a class="action-button action-button--quiet" href="${escapeHtml(uploadedFormFile.url)}" target="_blank" rel="noopener">Open uploaded copy</a>` : ''}
       </div>
     `);
@@ -667,6 +665,7 @@
     if (title) title.textContent = item.label || 'Requirement';
     if (chip) chip.textContent = item.typeLabel || '--';
     const canReviewUpload = kind === 'upload' && !!item.file?.url;
+    const isFinalAssistanceProof = kind === 'form' && String(item.type || '') === 'final_assistance_proof';
     const canReviewForm = kind === 'form' && (item.canReview !== false) && (requirementSubmissionLabel(kind, item) === 'Submitted');
     const canReviewItem = canReviewUpload || canReviewForm;
     const reviewActions = canReviewItem
@@ -680,9 +679,11 @@
       : `<div class="po-inspector-note">${
         kind === 'upload'
           ? 'This requirement cannot be reviewed until a file is uploaded.'
-          : 'This form requirement cannot be reviewed until the staff form upload is submitted.'
+          : (isFinalAssistanceProof
+            ? 'This final proof cannot be reviewed until the applicant uploads and submits it.'
+            : 'This form requirement cannot be reviewed until the applicant submits it or staff uploads a checked copy.')
       }</div>`;
-    setHTML(root, `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>Submission State</span><strong><span class="po-status-pill ${requirementSubmissionClass(kind, item)}">${escapeHtml(requirementSubmissionLabel(kind, item))}</span></strong></div><div class="po-inspector-summary__row"><span>Requirement Status</span><strong><span class="po-status-pill ${requirementStatusClass(item.status)}">${escapeHtml(statusLabel)}</span></strong></div></div>${kind === 'form' ? `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>Online form</span><strong>${escapeHtml(formSubmittedOnline ? 'Submitted by applicant' : 'Not submitted yet')}</strong></div><div class="po-inspector-summary__row"><span>Optional uploaded copy</span><strong>${escapeHtml(uploadedFormFile?.name || 'No file uploaded')}</strong></div><div class="po-inspector-summary__row"><span>Staff upload</span><strong>${uploadedFormFile?.uploadedAt ? escapeHtml(formatDate(uploadedFormFile.uploadedAt)) : '--'}</strong></div></div><div class="po-inspector-actions"><a class="action-button" href="${escapeHtml(formReviewUrl(item, false))}" data-open-form-review="${escapeHtml(formReviewUrl(item, false))}">Review applicant form</a></div>` : ''}${reviewActions}${reviewNote}`);
+    setHTML(root, `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>Submission State</span><strong><span class="po-status-pill ${requirementSubmissionClass(kind, item)}">${escapeHtml(requirementSubmissionLabel(kind, item))}</span></strong></div><div class="po-inspector-summary__row"><span>Requirement Status</span><strong><span class="po-status-pill ${requirementStatusClass(item.status)}">${escapeHtml(statusLabel)}</span></strong></div></div>${kind === 'form' ? `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>${escapeHtml(isFinalAssistanceProof ? 'Final proof' : 'Online form')}</span><strong>${escapeHtml(formSubmittedOnline ? 'Submitted by applicant' : 'Not submitted yet')}</strong></div><div class="po-inspector-summary__row"><span>${escapeHtml(isFinalAssistanceProof ? 'Uploaded proof' : 'Optional uploaded copy')}</span><strong>${escapeHtml(uploadedFormFile?.name || 'No file uploaded')}</strong></div><div class="po-inspector-summary__row"><span>Submitted / uploaded</span><strong>${uploadedFormFile?.uploadedAt ? escapeHtml(formatDate(uploadedFormFile.uploadedAt)) : '--'}</strong></div></div><div class="po-inspector-actions"><a class="action-button" href="${escapeHtml(formReviewUrl(item, false))}" data-open-form-review="${escapeHtml(formReviewUrl(item, false))}">View / Check form</a></div>` : ''}${reviewActions}${reviewNote}`);
   };
 
   const renderAssistanceStatus = (application = state.activeApplication) => {

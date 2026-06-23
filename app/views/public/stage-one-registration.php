@@ -228,21 +228,21 @@ $oldValue = static function (string $key) use ($stageOneOldInput): string {
                                 <div class="stage-one-success__content">
                                     <span class="stage-one-success__eyebrow">Registration submitted</span>
                                     <h3 id="stageOneSuccessHeading">Your SMART LEAP registration was received.</h3>
-                                    <p id="stageOneSuccessMessage"><?= htmlspecialchars($stageOneSuccess && $stageOneFeedbackMessage !== '' ? $stageOneFeedbackMessage : 'Watch your email for account activation once you are selected for the current batch.', ENT_QUOTES) ?></p>
+                                    <p id="stageOneSuccessMessage"><?= htmlspecialchars($stageOneSuccess && $stageOneFeedbackMessage !== '' ? $stageOneFeedbackMessage : 'Your email is verified and your registration is now ready for Admin validation.', ENT_QUOTES) ?></p>
                                 </div>
 
                                 <div class="stage-one-success__next" aria-label="What happens next">
                                     <div>
-                                        <strong>1. Initial screening</strong>
+                                        <strong>1. Email verified</strong>
+                                        <span>Your email code was accepted before your registration entered the queue.</span>
+                                    </div>
+                                    <div>
+                                        <strong>2. Admin validation</strong>
                                         <span>CSWDD reviews your basic information and uploaded requirements.</span>
                                     </div>
                                     <div>
-                                        <strong>2. Account activation email</strong>
-                                        <span>Selected applicants receive a secure link so they can activate portal access.</span>
-                                    </div>
-                                    <div>
-                                        <strong>3. Set your password</strong>
-                                        <span>Once verified, you can sign in and track your application inside the portal.</span>
+                                        <strong>3. Portal password</strong>
+                                        <span>If approved for the current batch, you will receive a link to set your password and open your portal.</span>
                                     </div>
                                 </div>
 
@@ -265,6 +265,26 @@ $oldValue = static function (string $key) use ($stageOneOldInput): string {
         <img src="<?= $baseUrl ?>/assets/img/SMARTLEAP.png" alt="" class="auth-loading-screen__logo">
         <strong class="auth-loading-screen__title">SMART LEAP</strong>
         <p class="auth-loading-screen__copy" id="authLoadingCopy">Submitting your Stage 1 registration...</p>
+    </div>
+
+    <div class="stage-one-code-modal" id="stageOneCodeModal" hidden>
+        <div class="stage-one-code-modal__backdrop" data-stage-one-code-close></div>
+        <div class="stage-one-code-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="stageOneCodeHeading">
+            <button type="button" class="stage-one-code-modal__close" data-stage-one-code-close aria-label="Close">&times;</button>
+            <span class="stage-one-success__eyebrow">Email verification</span>
+            <h3 id="stageOneCodeHeading">Enter the code sent to your email.</h3>
+            <p id="stageOneCodeCopy">We need to verify your email before your registration appears in Admin validation.</p>
+            <label class="field stage-one-code-modal__field">
+                <span>Six-digit verification code</span>
+                <input type="text" id="stageOneEmailCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+                <small data-error-for="stageOneEmailCode" id="stageOneEmailCodeError"></small>
+            </label>
+            <p class="auth-feedback" id="stageOneCodeFeedback" role="alert" hidden></p>
+            <div class="stage-one-code-modal__actions">
+                <button type="button" class="stage-one-code-modal__resend" id="stageOneResendCode">Send code again</button>
+                <button type="button" class="auth-submit signup-submit" id="stageOneVerifySubmit">Verify and submit</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>

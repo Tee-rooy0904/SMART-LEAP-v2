@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-require dirname(__DIR__) . '../dir/app/bootstrap.php';
+require dirname(__DIR__) . '/app/bootstrap.php';
 
-$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/public/index.php');
-$baseUrl = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+$scriptName = str_replace('\\', '//', $_SERVER['SCRIPT_NAME'] ?? '/public/index.php');
+$baseUrl = rtrim(str_replace('\\', '//', dirname($scriptName)), '//');
 $baseUrl = $baseUrl === '/' ? '' : $baseUrl;
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
@@ -21,17 +21,17 @@ if (isset($_GET['route']) && is_string($_GET['route']) && $_GET['route'] !== '')
 
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $routes = array_merge(
-    require base_path('app/route/web.php'),
-    require base_path('app/route/auth.php'),
-    require base_path('app/route/api-team.php'),
-    require base_path('app/route/api-applications.php'),
-    require base_path('app/route/api-validation.php'),
-    require base_path('app/route/api-training.php'),
-    require base_path('app/route/api-repayments.php'),
-    require base_path('app/route/api-reports.php'),
-    require base_path('app/route/api-notifications.php'),
-    require base_path('app/route/api-post-approval.php'),
-    require base_path('app/route/api-support-chat.php')
+    require base_path('app/routes/web.php'),
+    require base_path('app/routes/auth.php'),
+    require base_path('app/routes/api-team.php'),
+    require base_path('app/routes/api-applications.php'),
+    require base_path('app/routes/api-validation.php'),
+    require base_path('app/routes/api-training.php'),
+    require base_path('app/routes/api-repayments.php'),
+    require base_path('app/routes/api-reports.php'),
+    require base_path('app/routes/api-notifications.php'),
+    require base_path('app/routes/api-post-approval.php'),
+    require base_path('app/routes/api-support-chat.php')
 );
 $routeKey = $method . ' ' . $routePath;
 $route = $routes[$routeKey] ?? null;

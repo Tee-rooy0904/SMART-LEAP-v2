@@ -313,7 +313,9 @@ class ApplicantDashboardService
                 training_programs.status AS program_status,
                 attendance_records.attendance_status,
                 attendance_records.remarks AS attendance_remarks,
-                attendance_records.checked_in_at
+                attendance_records.checked_in_at,
+                attendance_records.proof_file_path,
+                attendance_records.proof_original_name
              FROM training_invitees
              INNER JOIN training_programs ON training_programs.id = training_invitees.training_program_id
              LEFT JOIN attendance_records ON attendance_records.training_invitee_id = training_invitees.id
@@ -339,6 +341,12 @@ class ApplicantDashboardService
                 'lastNoticeSentAt' => $row['last_notice_sent_at'],
                 'postApprovalUnlockedAt' => $row['post_approval_unlocked_at'],
                 'checkedInAt' => $row['checked_in_at'],
+                'proofAttachment' => ($row['proof_file_path'] ?? null)
+                    ? [
+                        'filePath' => (string) $row['proof_file_path'],
+                        'originalName' => (string) ($row['proof_original_name'] ?? basename((string) $row['proof_file_path'])),
+                    ]
+                    : null,
                 'program' => [
                     'id' => (int) $row['training_program_id'],
                     'programName' => $row['title'],
@@ -548,8 +556,8 @@ class ApplicantDashboardService
 
         if (($training['eligible'] ?? false) && in_array($training['currentStatus'] ?? TRAINING_STATUS_NOT_SCHEDULED, [TRAINING_STATUS_EXCUSED, TRAINING_STATUS_MISSED], true)) {
             return [
-                'title' => 'Review your training attendance record',
-                'description' => 'Your latest training attendance record was marked as missed or excused. Coordinate with CSWDD if you need follow-up guidance on the next seminar.',
+                'title' => 'Upload your training proof',
+                'description' => 'Your latest training attendance record was marked as absent or excused. Upload the required proof from your Training page so CSWDD can review it.',
                 'actionLabel' => 'View training progress',
                 'actionPath' => 'applicant-dashboard#training-progress',
             ];

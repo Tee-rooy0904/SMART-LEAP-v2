@@ -130,6 +130,40 @@ class ReportController extends Controller
             ]);
         }
 
+        $trainingRows = $report['trainingAnalytics']['rows'] ?? [];
+        fputcsv($stream, []);
+        fputcsv($stream, ['Training Attendance']);
+        fputcsv($stream, [
+            'Participant Name',
+            'Business Name',
+            'Session Number',
+            'Group Number',
+            'Assigned PDO',
+            'Activity Name',
+            'Location',
+            'Start Date & Time',
+            'End Date & Time',
+            'Attendance',
+            'Proof',
+            'Remarks',
+        ]);
+        foreach ($trainingRows as $row) {
+            fputcsv($stream, [
+                (string) ($row['participantName'] ?? ''),
+                (string) ($row['businessName'] ?? ''),
+                (int) ($row['sessionNumber'] ?? 0),
+                (int) ($row['groupNumber'] ?? 0),
+                (string) ($row['assignedPdo'] ?? ''),
+                (string) ($row['activityName'] ?? ''),
+                (string) ($row['location'] ?? ''),
+                $this->csvExcelText($row['startsAt'] ?? ''),
+                $this->csvExcelText($row['endsAt'] ?? ''),
+                (string) ($row['status'] ?? ''),
+                (string) (($row['proofName'] ?? '') ?: ($row['proofPath'] ?? '')),
+                (string) ($row['remarks'] ?? ''),
+            ]);
+        }
+
         fclose($stream);
         exit;
     }
@@ -215,10 +249,13 @@ class ReportController extends Controller
             'pdo' => $_GET['pdo'] ?? '',
             'repayment' => $_GET['repayment'] ?? '',
             'period' => $_GET['period'] ?? '',
+            'date' => $_GET['date'] ?? '',
+            'week' => $_GET['week'] ?? '',
             'month' => $_GET['month'] ?? '',
             'quarter' => $_GET['quarter'] ?? '',
             'year' => $_GET['year'] ?? '',
             'repaymentYear' => $_GET['repaymentYear'] ?? '',
+            'search' => $_GET['search'] ?? '',
             'trainingSession' => $_GET['trainingSession'] ?? '',
             'trainingGroup' => $_GET['trainingGroup'] ?? '',
         ];
@@ -227,8 +264,11 @@ class ReportController extends Controller
     private function resolveReport(array $filters): array
     {
         $actor = auth_user() ?? [];
-        $role = strtolower(trim((string) ($actor['role'] ?? '')));
-        if ($role === ROLE_PROJECT_OFFICER || $role === 'project_officer') {
+        // Compare against the constant directly — do NOT lowercase, because ROLE_PROJECT_OFFICER
+        // is 'Project Officer' (with a space and mixed case) and strtolower would produce
+        // 'project officer' which matches neither the constant nor 'project_officer'.
+        $role = (string) ($actor['role'] ?? '');
+        if ($role === ROLE_PROJECT_OFFICER) {
             return (new ReportService())->buildForProjectOfficer($actor, $filters);
         }
 
@@ -239,6 +279,7 @@ class ReportController extends Controller
     {
         $summary = $report['summary']['repaymentPerformance'] ?? ($report['repaymentAnalytics']['periodMetrics'] ?? []);
         $records = $report['records'] ?? [];
+        $trainingRows = $report['trainingAnalytics']['rows'] ?? [];
 
         $rows = array_map(function (array $record): string {
             $repayment = $record['repayment'] ?? [];
@@ -263,6 +304,23 @@ class ReportController extends Controller
                 . '</tr>';
         }, $records);
 
+        $trainingTableRows = array_map(static function (array $row): string {
+            return '<tr>'
+                . '<td>' . htmlspecialchars((string) ($row['participantName'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['businessName'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['sessionNumber'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['groupNumber'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['assignedPdo'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['activityName'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['location'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['startsAt'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['endsAt'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['status'] ?? ''), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) (($row['proofName'] ?? '') ?: ($row['proofPath'] ?? '')), ENT_QUOTES) . '</td>'
+                . '<td>' . htmlspecialchars((string) ($row['remarks'] ?? ''), ENT_QUOTES) . '</td>'
+                . '</tr>';
+        }, is_array($trainingRows) ? $trainingRows : []);
+
         return '<html><head><meta charset="UTF-8"><style>'
             . 'body{font-family:Arial,sans-serif;font-size:12px;color:#102347;}'
             . 'table{border-collapse:collapse;width:100%;}'
@@ -283,6 +341,12 @@ class ReportController extends Controller
             . '<th>Population Stage</th><th>Name</th><th>Email</th><th>Barangay</th><th>Assigned PDO</th><th>Service Type</th><th>Gender</th><th>Age</th><th>Age Group</th><th>Program Status</th><th>Repayment Status</th><th>Verified Amount</th><th>Months Passed</th><th>Months Paid</th><th>Repayment Rate (%)</th><th>Expected To Date</th><th>Gap To Date</th>'
             . '</tr></thead><tbody>'
             . implode('', $rows)
+            . '</tbody></table>'
+            . '<h3>Training Attendance</h3>'
+            . '<table><thead><tr>'
+            . '<th>Participant Name</th><th>Business Name</th><th>Session</th><th>Group</th><th>Assigned PDO</th><th>Activity Name</th><th>Location</th><th>Starts At</th><th>Ends At</th><th>Attendance</th><th>Proof</th><th>Remarks</th>'
+            . '</tr></thead><tbody>'
+            . ($trainingTableRows !== [] ? implode('', $trainingTableRows) : '<tr><td colspan="12">No training attendance rows for the selected filters.</td></tr>')
             . '</tbody></table>'
             . '</body></html>';
     }

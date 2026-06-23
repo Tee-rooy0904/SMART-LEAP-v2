@@ -34,7 +34,7 @@ $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifica
                 </div>
                 <button type="button" class="sidebar-drawer__close" id="sidebarClose" aria-label="Close navigation">
                     <span aria-hidden="true">&times;</span>
-                </button>
+                </button>   
             </div>
 
             <nav class="sidebar-nav">

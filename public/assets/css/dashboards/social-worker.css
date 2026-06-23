@@ -560,7 +560,20 @@
 }
 
 #beneficiaries-section .sw-table-wrapper .admin-data-table {
-  min-width: 1120px;
+  min-width: 1320px;
+}
+
+#beneficiaries-section .sw-table-wrapper .admin-data-table th:nth-child(8),
+#beneficiaries-section .sw-table-wrapper .admin-data-table td:nth-child(8),
+#beneficiaries-section .sw-table-wrapper .admin-data-table th:nth-child(9),
+#beneficiaries-section .sw-table-wrapper .admin-data-table td:nth-child(9),
+#beneficiaries-section .sw-table-wrapper .admin-data-table th:nth-child(10),
+#beneficiaries-section .sw-table-wrapper .admin-data-table td:nth-child(10),
+#beneficiaries-section .sw-table-wrapper .admin-data-table th:nth-child(11),
+#beneficiaries-section .sw-table-wrapper .admin-data-table td:nth-child(11),
+#beneficiaries-section .sw-table-wrapper .admin-data-table th.actions,
+#beneficiaries-section .sw-table-wrapper .admin-data-table td.actions {
+  text-align: center;
 }
 
 #applications-section .sw-table-wrapper .admin-data-table th:last-child,

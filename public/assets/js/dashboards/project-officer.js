@@ -96,7 +96,7 @@
     reports: 'Reports',
   };
   // Shared client state for scoped applications, beneficiaries, repayments, reports, and training subviews.
-  const state = { applications: Array.isArray(initialOverview.applications) ? initialOverview.applications : [], roster: Array.isArray(initialOverview.roster) ? initialOverview.roster : [], summary: initialOverview.summary || {}, scopeBarangays: Array.isArray(initialOverview.scopeBarangays) ? initialOverview.scopeBarangays : [], beneficiarySummary: initialOverview.beneficiarySummary || {}, beneficiaryRoster: Array.isArray(initialOverview.beneficiaryRoster) ? initialOverview.beneficiaryRoster : [], repaymentRecords: Array.isArray(initialRepaymentData.payments) ? initialRepaymentData.payments : [], dashboardLoaded: false, activeApplication: null, activePreviewToken: '', activePreviewOwnerId: null, activeBeneficiaryId: null, beneficiaryFilters: { search: '', barangay: '', repayment: '', status: '' }, reports: { period: 'monthly', month: defaultCycleMonth, quarter: deriveRepaymentQuarter(defaultCycleMonth), year: currentReportYear, repaymentYear: '1', from: '', to: '', search: '', barangay: '', pdo: '', serviceType: '', gender: '', repayment: '', refreshTimer: null, refreshing: false, liveRequestId: 0 }, searchTimers: {}, returnToApplicationModal: false, assistanceReceivedSelection: false, repayments: { workspace: null, syncObserver: null, syncingDetail: false, modal: null, syncTimer: null }, training: { view: 'overview', subview: 'attendance', programs: [], summary: {}, eligibleInvitees: [], seminarForms: [], selectedProgramId: null, activeProgram: null, lastUpdatedInviteeId: null, lastNotifiedInviteeId: null, savingProgram: false, syncingInvitees: false, sendingProgramNotice: '', removingProgramId: null, confirmRemoveProgramId: null, busyInvitees: {}, rosterSearch: '', rosterFilter: '', assignmentSearch: '', assignmentFilter: '', assignedSearch: '', assignedFilter: '', noticeSelection: [], noticeFilters: { search: '', status: '' }, noticeWarning: '', attendanceEditorId: null, attendanceDrafts: {} } };
+  const state = { applications: Array.isArray(initialOverview.applications) ? initialOverview.applications : [], roster: Array.isArray(initialOverview.roster) ? initialOverview.roster : [], summary: initialOverview.summary || {}, scopeBarangays: Array.isArray(initialOverview.scopeBarangays) ? initialOverview.scopeBarangays : [], beneficiarySummary: initialOverview.beneficiarySummary || {}, beneficiaryRoster: Array.isArray(initialOverview.beneficiaryRoster) ? initialOverview.beneficiaryRoster : [], repaymentRecords: Array.isArray(initialRepaymentData.payments) ? initialRepaymentData.payments : [], dashboardLoaded: false, activeApplication: null, activePreviewToken: '', activePreviewOwnerId: null, activeBeneficiaryId: null, beneficiaryFilters: { search: '', barangay: '', repayment: '', status: '' }, reportsInitialized: false, reports: { period: 'monthly', month: defaultCycleMonth, quarter: deriveRepaymentQuarter(defaultCycleMonth), year: currentReportYear, repaymentYear: '1', from: '', to: '', search: '', barangay: '', pdo: '', serviceType: '', gender: '', repayment: '', refreshTimer: null, refreshing: false, liveRequestId: 0 }, searchTimers: {}, returnToApplicationModal: false, assistanceReceivedSelection: false, repayments: { workspace: null, syncObserver: null, syncingDetail: false, modal: null, syncTimer: null }, training: { view: 'overview', subview: 'attendance', programs: [], summary: {}, eligibleInvitees: [], seminarForms: [], selectedProgramId: null, activeProgram: null, lastUpdatedInviteeId: null, lastNotifiedInviteeId: null, savingProgram: false, syncingInvitees: false, sendingProgramNotice: '', removingProgramId: null, confirmRemoveProgramId: null, busyInvitees: {}, rosterSearch: '', rosterFilter: '', assignmentSearch: '', assignmentFilter: '', assignedSearch: '', assignedFilter: '', noticeSelection: [], noticeFilters: { search: '', status: '' }, noticeWarning: '', attendanceEditorId: null, attendanceDrafts: {}, sessionFilter: '', groupFilter: '', activityFilter: '', overviewStatusFilter: '' } };
   const routeUrl = (path) => `${baseUrl}/${String(path || '').replace(/^\/+/, '')}`;
   const absoluteRouteUrl = (path) => new URL(routeUrl(path), window.location.origin).toString();
 
@@ -181,7 +181,6 @@
     document.getElementById('poApplicationModal')?.addEventListener('change', handleReviewChange);
     document.getElementById('po-app-modal-livelihood-category-input')?.addEventListener('change', handleLivelihoodCategoryChange);
     document.getElementById('po-app-modal-reject')?.addEventListener('click', () => submitApplicationDecision('reject'));
-    document.getElementById('po-app-modal-approve-training')?.addEventListener('click', () => submitApplicationDecision('approve_for_training'));
     document.getElementById('po-app-modal-approve')?.addEventListener('click', openApprovalSummary);
     document.getElementById('po-app-modal-assisted')?.addEventListener('change', () => {
       state.assistanceReceivedSelection = !!document.getElementById('po-app-modal-assisted')?.checked;
@@ -199,6 +198,11 @@
     document.getElementById('training-section')?.addEventListener('submit', handleTrainingSubmit);
     document.getElementById('training-section')?.addEventListener('input', handleTrainingInput);
     document.getElementById('training-section')?.addEventListener('change', handleTrainingInput);
+    document.getElementById('poAttendanceModalClose')?.addEventListener('click', closeAttendanceModal);
+    document.getElementById('poAttendanceModalBackdrop')?.addEventListener('click', closeAttendanceModal);
+    document.getElementById('poAttendanceModal')?.addEventListener('click', handleAttendanceModalClick);
+    document.getElementById('poAttendanceModal')?.addEventListener('input', handleAttendanceModalInput);
+    document.getElementById('poAttendanceModal')?.addEventListener('change', handleAttendanceModalInput);
   }
 
   function initApplicationModalStack() {
@@ -612,9 +616,14 @@
       state.repayments.workspace?.refresh?.();
     }
     if (nextSection === 'reports') {
-      syncReportsFilterControls();
-      fetchPoReportData();
-      startReportsRealtimeRefresh();
+      initReports();
+      if (document.getElementById('poReportsPeriod')) {
+        syncReportsFilterControls();
+        fetchPoReportData();
+        startReportsRealtimeRefresh();
+      } else {
+        stopReportsRealtimeRefresh();
+      }
     } else {
       stopReportsRealtimeRefresh();
     }
@@ -766,6 +775,20 @@
 
   function optionListFromApi(values) {
     return Array.isArray(values) ? values.filter((value) => String(value || '').trim() !== '') : [];
+  }
+
+  function initReports() {
+    const reports = window.App?.modules?.reports;
+    if (!reports || typeof reports.init !== 'function') {
+      return false;
+    }
+    if (state.reportsInitialized) {
+      if (typeof reports.render === 'function') reports.render();
+      return true;
+    }
+    state.reportsInitialized = true;
+    reports.init();
+    return true;
   }
 
   function populatePoReportOptionsFromApi(options = {}) {
@@ -1017,6 +1040,10 @@
   async function fetchPoReportData() {
     const reportsSection = document.getElementById('reports-section');
     if (!reportsSection || reportsSection.style.display === 'none') return;
+    if (!document.getElementById('poReportsPeriod')) {
+      initReports();
+      return;
+    }
     const requestId = safeNumber(state.reports.liveRequestId) + 1;
     state.reports.liveRequestId = requestId;
     const filters = collectPoReportFiltersFromControls();
@@ -1865,8 +1892,10 @@
     return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  function deriveFirstDueMonth(approvalDate) {
-    const approvalMonth = normalizeMonthValue(approvalDate);
+  function deriveFirstDueMonth(record) {
+    const firstDueMonth = normalizeMonthValue(record?.firstRepaymentDueDate || '');
+    if (firstDueMonth) return firstDueMonth;
+    const approvalMonth = normalizeMonthValue(record?.approvedAt || record?.approvalDate || '');
     return approvalMonth ? shiftMonthValue(approvalMonth, 1) : '';
   }
 
@@ -2013,6 +2042,7 @@
       programStatus: String(payment?.beneficiaryStatus || 'active').trim() || 'active',
       approvalDate: String(payment?.beneficiaryApprovedAt || payment?.beneficiaryApprovalDate || payment?.paymentDate || payment?.submittedAt || '').trim(),
       approvedAt: String(payment?.beneficiaryApprovedAt || payment?.beneficiaryApprovalDate || '').trim(),
+      firstRepaymentDueDate: '',
       lastActivity: String(payment?.reviewedAt || payment?.verifiedAt || payment?.submittedAt || payment?.paymentDate || '').trim(),
     };
   }
@@ -2069,22 +2099,22 @@
         map[month] = safeNumber(map[month]) + safeNumber(record.amount);
         return map;
       }, {});
-      const firstDueMonth = deriveFirstDueMonth(entry.meta?.approvalDate);
+      const firstDueMonth = deriveFirstDueMonth(entry.meta || {});
       const currentMonth = currentReportMonth;
       const lastPlanMonth = firstDueMonth ? shiftMonthValue(firstDueMonth, TOTAL_REPAYMENT_MONTHS - 1) : '';
       const effectiveEndMonth = firstDueMonth && lastPlanMonth
         ? (currentMonth < lastPlanMonth ? currentMonth : lastPlanMonth)
         : '';
-      const monthsPassed = firstDueMonth && effectiveEndMonth ? monthDiffInclusive(firstDueMonth, effectiveEndMonth) : 0;
+      const calendarMonthsPassed = firstDueMonth && effectiveEndMonth ? monthDiffInclusive(firstDueMonth, effectiveEndMonth) : 0;
       const monthsPaid = Array.from(verifiedMonths).filter((month) => {
         const normalized = normalizeMonthValue(month);
         if (!normalized) return false;
         if (firstDueMonth && normalized < firstDueMonth) return false;
         if (lastPlanMonth && normalized > lastPlanMonth) return false;
-        if (currentMonth && normalized > currentMonth) return false;
         return true;
       }).length;
-      const rate = monthsPassed > 0 ? Math.round((monthsPaid / monthsPassed) * 10000) / 100 : 0;
+      const rateDenominator = Math.max(calendarMonthsPassed, monthsPaid);
+      const rate = rateDenominator > 0 ? Math.round((monthsPaid / rateDenominator) * 10000) / 100 : 0;
 
       let repaymentKey = 'no_upload_yet';
       if (!records.length) {
@@ -2109,9 +2139,10 @@
           verifiedAmount,
           verifiedMonthCount: verifiedMonths.size,
           verifiedAmountByMonth,
-          monthsPassed,
+          calendarMonthsPassed,
+          monthsPassed: rateDenominator,
           monthsPaid,
-          monthsPaidFraction: `${monthsPaid}/${monthsPassed}`,
+          monthsPaidFraction: `${monthsPaid}/${rateDenominator}`,
           rate,
           recordCount: records.length,
         },
@@ -2304,6 +2335,9 @@
 
   // Build the PDO reports view from the currently selected filters and live scoped analytics payload.
   function renderReportsSection() {
+    if (initReports()) {
+      return;
+    }
     syncReportsFilterControls();
     if (document.getElementById('reports-section')?.style.display !== 'none') {
       fetchPoReportData();
@@ -2367,7 +2401,6 @@
   function renderApplicationModal() {
     const app = state.activeApplication;
     const ready = app.approvalReadiness || {};
-    const trainingApproval = app.trainingApprovalReadiness || {};
     setText('po-app-modal-applicant', app.applicantName || '--');
     setText('po-app-modal-submitted', formatDate(app.submittedAt));
     setText('po-app-modal-status', app.status || '--');
@@ -2385,13 +2418,18 @@
     setText('po-app-modal-livelihood', app.livelihood || '--');
     setText('po-app-readiness-status', ready.overallStatus || 'Under Review');
     setText('po-app-upload-summary', `${ready.uploadSummary?.approved || 0} / ${ready.uploadSummary?.total || 0}`);
-    setText('po-app-form-summary', `${ready.formSummary?.approved || 0} / ${ready.formSummary?.total || 0}`);
+    const trainingForms = (app.formRequirements || []).filter((r) => String(r.key || '').toLowerCase() !== 'fund_release_evidence');
+    const trainingFormsApproved = trainingForms.filter((r) => ['verified', 'approved'].includes(String(r.status || '').toLowerCase())).length;
+    setText('po-app-form-summary', `${trainingFormsApproved} / ${trainingForms.length}`);
+
     const trainingProgress = ready.trainingStatus?.displayStatus || ready.trainingStatus?.status || '--';
     const trainingCompletion = ready.trainingStatus?.completionStatus || '';
     setText('po-app-training-status', trainingCompletion ? `${trainingProgress} - ${trainingCompletion}` : trainingProgress);
     setText('po-app-training-chip', ready.trainingStatus?.completed ? 'Training Completed' : 'Training Pending');
     setStatusChipClass('po-app-training-chip', ready.trainingStatus?.completed ? 'Completed' : 'Pending');
-    setText('po-upload-review-count', formatRequirementCount(app.requirements || []));
+    const assistanceProofTask = (app.formRequirements || []).find((r) => String(r.key || '').toLowerCase() === 'fund_release_evidence');
+    const assistanceProofStatus = assistanceProofTask ? (String(assistanceProofTask.status || '').toLowerCase() === 'verified' ? 'Verified' : (String(assistanceProofTask.status || '').toLowerCase() === 'submitted' ? 'Submitted' : 'Pending')) : 'Not yet uploaded';
+    setText('po-app-assistance-proof-status', assistanceProofStatus);    setText('po-upload-review-count', formatRequirementCount(app.requirements || []));
     setText('po-form-review-count', formatRequirementCount(app.formRequirements || []));
     setText('po-review-total-count', formatRequirementCount([...(app.requirements || []), ...(app.formRequirements || [])]));
     const blockerList = document.getElementById('po-app-readiness-blockers');
@@ -2400,17 +2438,8 @@
       : '<li class="po-blocker-item po-blocker-item--clear"><span class="po-blocker-item__icon" aria-hidden="true">OK</span><span>Ready for approval action. No blocking reasons recorded.</span></li>';
     setText('po-decision-status-note', ready.canApprove ? 'Application is ready for approval.' : 'Approval is currently blocked.');
     setText('po-decision-blocker-note', ready.canApprove
-      ? 'All required upload requirements, fill-up form requirements, and training conditions are satisfied.'
-      : ((ready.blockers || []).slice(0, 2).join(' | ') || 'Resolve any blocking requirement or training issue before approval.'));
-    const trainingApprovalButton = document.getElementById('po-app-modal-approve-training');
-    if (trainingApprovalButton) {
-      const alreadyApproved = !!trainingApproval.alreadyApprovedForTraining;
-      trainingApprovalButton.disabled = !trainingApproval.canApproveForTraining;
-      trainingApprovalButton.textContent = alreadyApproved ? 'Already Approved for Training' : 'Approve for Training';
-      trainingApprovalButton.title = trainingApproval.canApproveForTraining
-        ? 'Mark this applicant as approved for training.'
-        : ((trainingApproval.blockers || []).slice(0, 2).join(' | ') || 'Resolve the upload review requirements before training approval.');
-    }
+      ? 'All required upload requirements, fill-up form requirements, training conditions, and proof of assistance are satisfied.'
+      : ((ready.blockers || []).slice(0, 2).join(' | ') || 'Resolve any blocking requirement, training issue, or proof of assistance before approval.'));
     const approveButton = document.getElementById('po-app-modal-approve');
     if (approveButton) approveButton.disabled = !ready.canApprove;
     ensureActivePreview(app);
@@ -2462,7 +2491,7 @@
       enabled: true,
       title: 'Approve this applicant and record assistance release.',
       statusTitle: 'Application is ready for final approval.',
-      statusCopy: 'All required upload requirements, fill-up form requirements, training conditions, and assistance confirmation are satisfied.',
+      statusCopy: 'All uploads, training forms, assistance proof, training conditions, and assistance confirmation are satisfied.',
     };
   }
 
@@ -2817,12 +2846,19 @@
     const trainingSummary = ready.trainingStatus?.completionStatus
       ? `${ready.trainingStatus?.displayStatus || ready.trainingStatus?.status || '--'} - ${ready.trainingStatus?.completionStatus}`
       : (ready.trainingStatus?.displayStatus || ready.trainingStatus?.status || '--');
+    const assistanceProofTask = (state.activeApplication.formRequirements || []).find((r) => String(r.key || '').toLowerCase() === 'fund_release_evidence');
+    const assistanceProofStatus = assistanceProofTask
+      ? (String(assistanceProofTask.status || '').toLowerCase() === 'verified' ? 'Verified'
+        : String(assistanceProofTask.status || '').toLowerCase() === 'submitted' ? 'Submitted'
+        : 'Pending')
+      : 'Not yet uploaded';
     setText('po-summary-applicant', state.activeApplication.applicantName || 'Applicant');
     setText('po-summary-case-title', `${state.activeApplication.applicantName || 'Applicant'} approval check`);
     setText('po-summary-barangay', state.activeApplication.barangay || '--');
     setText('po-summary-upload', `${ready.uploadSummary?.approved || 0} / ${ready.uploadSummary?.total || 0}`);
     setText('po-summary-form', `${ready.formSummary?.approved || 0} / ${ready.formSummary?.total || 0}`);
     setText('po-summary-training', trainingSummary);
+    setText('po-summary-assistance-proof', assistanceProofStatus);
     setText(
       'po-summary-readiness-text',
       finalApproval.enabled
@@ -2835,11 +2871,18 @@
     if (list) {
       list.innerHTML = [
         buildApprovalSummaryGroup('Upload Requirements', state.activeApplication.requirements || []),
-        buildApprovalSummaryGroup('Fill-up Form Requirements', state.activeApplication.formRequirements || []),
+        buildApprovalSummaryGroup('Fill-up Form Requirements', (state.activeApplication.formRequirements || []).filter((r) => String(r.key || '').toLowerCase() !== 'fund_release_evidence')),
         buildApprovalSummaryGroup('Training', [{
           label: 'Training seminars',
           status: ready.trainingStatus?.completed ? 'approved' : 'pending',
           detail: trainingSummary,
+        }]),
+        buildApprovalSummaryGroup('Proof of Assistance Received', [{
+          label: 'Proof of Assistance Received',
+          status: assistanceProofTask ? assistanceProofTask.status : 'missing',
+          detail: assistanceProofTask
+            ? (assistanceProofTask.submittedAt ? `Submitted ${formatDate(assistanceProofTask.submittedAt)}` : assistanceProofStatus)
+            : 'PDO has not yet uploaded proof of assistance release.',
         }]),
       ].join('');
     }
@@ -2948,11 +2991,16 @@
     state.training.summary = response.data?.summary || {};
     state.training.seminarForms = response.data?.seminarForms || [];
     state.training.eligibleInvitees = response.data?.eligibleInvitees || [];
+    state.training.sessionFilter = state.training.sessionFilter || '';
+    state.training.groupFilter = state.training.groupFilter || '';
+    state.training.activityFilter = state.training.activityFilter || '';
+    state.training.overviewStatusFilter = state.training.overviewStatusFilter || '';
     state.training.noticeSelection = [];
     state.training.noticeWarning = '';
+    await hydrateScopedTrainingDetails();
+    syncScopedTrainingFilters();
     renderOverviewSummary();
     renderTrainingSnapshotCard();
-    setText('po-training-program-count', `${state.training.programs.length} ${state.training.programs.length === 1 ? 'session' : 'sessions'}`);
     if (!state.training.programs.some((item) => item.id === state.training.selectedProgramId)) {
       state.training.selectedProgramId = null;
       state.training.activeProgram = null;
@@ -2963,6 +3011,17 @@
       return loadTrainingProgram(state.training.selectedProgramId, false);
     }
     renderTrainingOverview();
+  }
+
+  async function hydrateScopedTrainingDetails() {
+    const programs = Array.isArray(state.training.programs) ? state.training.programs : [];
+    if (!programs.length) return;
+    const detailed = await Promise.all(programs.map(async (program) => {
+      if (!program?.id) return program;
+      const response = await apiGet('api/training/show', { id: program.id });
+      return response.ok && response.program ? { ...program, ...response.program } : program;
+    }));
+    state.training.programs = detailed;
   }
 
   async function loadTrainingProgram(programId, showError = true) {
@@ -2986,23 +3045,9 @@
   }
 
   function renderTrainingSummary() {
-    const s = state.training.summary || {};
+    // KPI stat cards removed — overview uses the Scoped Participants table instead.
     const root = document.getElementById('po-training-summary');
-    if (!root) return;
-    const participants = Number(s.participants || 0);
-    const notified = Number(s.notified || 0);
-    const completed = Number(s.completed || 0);
-    const excused = Number(s.excused || 0);
-    const noticesPending = Math.max(0, participants - notified);
-    const attendancePending = Math.max(0, participants - completed - excused);
-    root.innerHTML = `
-      ${renderTrainingStatCard('Scoped Sessions', s.total || 0, 'Sessions currently in your scope', 'Sessions')}
-      ${renderTrainingStatCard('Assigned Participants', participants, 'Participants attached to your scoped sessions', 'Roster')}
-      ${renderTrainingStatCard('Notices Pending', noticesPending, 'Participants still waiting for notice delivery', 'Notices')}
-      ${renderTrainingStatCard('Attendance Pending', attendancePending, 'Participants still needing attendance action', 'Attendance')}
-      ${renderTrainingStatCard('Excused', excused, 'Participants marked as excused', 'Exceptions')}
-      ${renderTrainingStatCard('Completed', completed, 'Participants already completed', 'Completion')}
-    `;
+    if (root) root.innerHTML = '';
   }
 
   function renderTrainingStatCard(label, value, helper, eyebrow) {
@@ -3014,12 +3059,141 @@
   function renderTrainingQueue() {
     const root = document.getElementById('po-training-program-list');
     if (!root) return;
-    root.innerHTML = state.training.programs.map((program) => {
-      const participants = Number(program.participantCount || 0);
-      const noticesPending = Math.max(0, participants - Number(program.notifiedCount || 0));
-      const attendancePending = Math.max(0, participants - Number(program.completedCount || 0) - Number(program.excusedCount || 0));
-      return `<article class="po-training-program-card ${state.training.selectedProgramId === program.id ? 'is-active' : ''}"><div class="po-training-program-card__top"><div class="po-training-program-card__title"><span class="po-panel-label">Scoped Session</span><strong>${escapeHtml(program.programName || '--')}</strong></div><span class="po-status-pill ${statusClass(program.status)}">${escapeHtml(program.status || '--')}</span></div><div class="po-training-program-card__details"><div class="po-training-program-card__detail"><span>Date</span><strong>${escapeHtml(formatDate(program.date || program.startsAt))}</strong></div><div class="po-training-program-card__detail"><span>Venue</span><strong>${escapeHtml(program.venue || '--')}</strong></div><div class="po-training-program-card__detail"><span>Participants</span><strong>${escapeHtml(`${participants}`)}</strong></div><div class="po-training-program-card__detail"><span>Notices Pending</span><strong>${escapeHtml(`${noticesPending}`)}</strong></div><div class="po-training-program-card__detail"><span>Attendance Pending</span><strong>${escapeHtml(`${attendancePending}`)}</strong></div><div class="po-training-program-card__detail"><span>Completed</span><strong>${escapeHtml(`${program.completedCount || 0}`)}</strong></div></div><div class="po-training-program-card__footer"><div class="po-training-program-card__actions"><button type="button" class="action-button po-case-action" data-training-open="${program.id}">Open Operations</button></div></div></article>`;
-    }).join('') || '<div class="po-empty">No scoped training sessions found.</div>';
+    const rows = scopedTrainingRows();
+    const sessionOpts = scopedSessionOptionsAll();
+    const groupOpts = scopedGroupOptionsAll();
+    root.innerHTML = `
+      <section class="po-training-attendance-panel">
+        <div class="po-training-attendance-panel__header">
+          <div><span class="po-panel-label">Operations Workspace</span><h4>Scoped Participants</h4></div>
+          <div class="po-training-row-actions">
+            <span class="chip">${escapeHtml(`${rows.length} ${rows.length === 1 ? 'participant' : 'participants'}`)}</span>
+          </div>
+        </div>
+        <div class="po-training-roster-toolbar">
+          <label class="po-search-control" aria-label="Search participant or business"><i class="fas fa-magnifying-glass"></i><input id="po-training-activity-filter" type="search" placeholder="Search participant or business" value="${escapeHtml(state.training.activityFilter || '')}"></label>
+          <label class="po-filter-field" for="po-training-session-filter"><span>Session</span><select id="po-training-session-filter" class="section-filter"><option value="">All sessions</option>${sessionOpts.map((o) => `<option value="${escapeHtml(o.value)}" ${state.training.sessionFilter === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</select></label>
+          <label class="po-filter-field" for="po-training-group-filter"><span>Group</span><select id="po-training-group-filter" class="section-filter"><option value="">All groups</option>${groupOpts.map((o) => `<option value="${escapeHtml(o.value)}" ${state.training.groupFilter === o.value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</select></label>
+          <label class="po-filter-field" for="po-training-overview-status-filter"><span>Status</span><select id="po-training-overview-status-filter" class="section-filter"><option value="">All statuses</option><option value="Scheduled" ${state.training.overviewStatusFilter === 'Scheduled' ? 'selected' : ''}>Scheduled</option><option value="Notified" ${state.training.overviewStatusFilter === 'Notified' ? 'selected' : ''}>Notified</option><option value="Attended" ${state.training.overviewStatusFilter === 'Attended' ? 'selected' : ''}>Present</option><option value="Missed" ${state.training.overviewStatusFilter === 'Missed' ? 'selected' : ''}>Absent</option><option value="Excused" ${state.training.overviewStatusFilter === 'Excused' ? 'selected' : ''}>Excused</option><option value="Completed" ${state.training.overviewStatusFilter === 'Completed' ? 'selected' : ''}>Completed</option></select></label>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table po-training-attendance-table">
+            <thead><tr><th>Participant</th><th>Business / Group</th><th>Session</th><th>Workflow Status</th><th>Attendance Status</th><th>Completion Status</th><th>Notice</th><th>Actions</th></tr></thead>
+            <tbody>${rows.map((row) => renderOverviewScopedRow(row)).join('') || '<tr><td colspan="8" class="text-center text-muted">No scoped participants found.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+
+  function scopedTrainingRows() {
+    const session = String(state.training.sessionFilter || '');
+    const group = String(state.training.groupFilter || '');
+    const search = String(state.training.activityFilter || '').toLowerCase();
+    const statusFilter = String(state.training.overviewStatusFilter || '');
+    const rows = [];
+    (state.training.programs || []).forEach((program) => {
+      if (session !== '' && String(program.roundNumber || '') !== session) return;
+      if (group !== '' && String(program.targetGroupNumber || '') !== group) return;
+      (program.invitees || []).forEach((invitee) => {
+        if (search) {
+          const haystack = [invitee.user?.name, invitee.businessName].join(' ').toLowerCase();
+          if (!haystack.includes(search)) return;
+        }
+        if (statusFilter) {
+          const workflowMatch = deriveTrainingWorkflowStatus(invitee) === statusFilter;
+          const attendanceMatch = deriveTrainingAttendanceStatus(invitee) === statusFilter;
+          const completionMatch = deriveTrainingCompletionStatus(invitee) === statusFilter;
+          if (!workflowMatch && !attendanceMatch && !completionMatch) return;
+        }
+        rows.push({ program, invitee });
+      });
+    });
+    return rows;
+  }
+
+  function renderOverviewScopedRow(row) {
+    const { program, invitee } = row;
+    const workflowLabel = deriveTrainingWorkflowStatus(invitee);
+    const attendanceStatus = deriveTrainingAttendanceStatus(invitee);
+    const attendanceLabel = attendanceDisplayLabel(attendanceStatus);
+    const completionLabel = deriveTrainingCompletionStatus(invitee);
+    const completionClass = completionLabel === 'Completed' ? 'po-training-status-chip--completed' : 'po-training-status-chip--warning';
+    const noticeDate = invitee.lastNoticeSentAt || invitee.notifiedAt ? formatDate(invitee.lastNoticeSentAt || invitee.notifiedAt) : '';
+    const groupLabel = invitee.batchGroupNumber ? `Group ${escapeHtml(String(invitee.batchGroupNumber))}` : 'Batch';
+    const sessionLabel = `Session ${escapeHtml(String(program.roundNumber || '--'))}`;
+    return `<tr class="${state.training.lastUpdatedInviteeId === invitee.id ? 'is-updated' : ''}">
+      <td class="po-training-attendance-col po-training-attendance-col--participant">${renderTrainingAttendanceCompactCell(`<div class="table-primary">${escapeHtml(invitee.user?.name || '--')}</div>`, `<span class="table-secondary">${escapeHtml(invitee.contactNumber || invitee.user?.email || '')}</span>`, 'po-training-roster-cell--participant')}</td>
+      <td class="po-training-attendance-col">${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(invitee.businessName || '--')}</strong>`, escapeHtml(groupLabel), 'po-training-roster-cell--business')}</td>
+      <td class="po-training-attendance-col">${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(sessionLabel)}</strong>`, escapeHtml(`Group ${program.targetGroupNumber || invitee.batchGroupNumber || '--'}`), 'po-training-roster-cell--status')}</td>
+      <td class="po-training-attendance-col">${renderTrainingAttendanceCompactCell(`<span class="po-training-status-chip ${workflowLabel === 'Notified' ? 'po-training-status-chip--notified' : 'po-training-status-chip--scheduled'}">${escapeHtml(workflowLabel)}</span>`, '', 'po-training-roster-cell--status')}</td>
+      <td class="po-training-attendance-col">${renderTrainingAttendanceCompactCell(`<span class="po-training-status-chip ${attendanceStatus === 'Not Marked' ? 'po-training-status-chip--warning' : statusClass(attendanceStatus)}">${escapeHtml(attendanceLabel)}</span>`, '', 'po-training-roster-cell--status')}</td>
+      <td class="po-training-attendance-col">${renderTrainingAttendanceCompactCell(`<span class="po-training-status-chip ${completionClass} po-training-completion-chip">${escapeHtml(completionLabel)}</span>`, '', 'po-training-roster-cell--status')}</td>
+      <td class="po-training-attendance-col">${renderTrainingAttendanceCompactCell(`<span class="po-table-state">${escapeHtml(noticeDate || 'Pending notice')}</span>`, '', 'po-training-roster-cell--status')}</td>
+      <td class="actions po-training-attendance-col po-training-attendance-col--action"><button type="button" class="app-btn-outline" data-training-overview-editor="${invitee.id}">Check Attendance</button></td>
+    </tr>`;
+  }
+
+  function scopedSessionOptionsAll() {
+    const sessions = [...new Set((state.training.programs || [])
+      .map((p) => Number(p.roundNumber || 0))
+      .filter((v) => v > 0))]
+      .sort((a, b) => a - b);
+    return sessions.map((v) => ({ value: String(v), label: `Session ${v}` }));
+  }
+
+  function scopedGroupOptionsAll() {
+    const session = String(state.training.sessionFilter || '');
+    const programs = session !== ''
+      ? (state.training.programs || []).filter((p) => String(p.roundNumber || '') === session)
+      : (state.training.programs || []);
+    const groups = [...new Set(programs
+      .map((p) => Number(p.targetGroupNumber || 0))
+      .filter((v) => v > 0))]
+      .sort((a, b) => a - b);
+    return groups.map((v) => ({ value: String(v), label: `Group ${v}` }));
+  }
+
+  function renderScopedTrainingRow(row) {
+    const { program, invitee } = row;
+    const attendance = deriveTrainingAttendanceStatus(invitee);
+    const attendanceLabel = attendanceDisplayLabel(attendance);
+    const proof = invitee.proofAttachment;
+    const forms = trainingFormLabels(program.seminarFormCodes || []);
+    const proofMeta = ['Absent', 'Excused'].includes(attendanceLabel)
+      ? (proof?.file_path ? 'Applicant proof uploaded' : 'Waiting for applicant proof')
+      : (attendanceLabel === 'Not Marked' ? 'Waiting for PDO attendance mark' : 'No proof required');
+    const formsMarkup = forms.length
+      ? `<div class="po-training-form-cluster">${forms.map((label) => `<span class="training-form-chip">${escapeHtml(label)}</span>`).join('')}</div>`
+      : '<span class="po-status-chip is-muted">No forms</span>';
+    return `<tr class="po-training-scoped-row ${state.training.lastUpdatedInviteeId === invitee.id ? 'is-updated' : ''}" data-training-open="${program.id}" title="Open session details"><td>${renderTrainingAttendanceCompactCell(`<div class="table-primary">${escapeHtml(invitee.user?.name || '--')}</div>`, `<span class="table-secondary">${escapeHtml(invitee.businessName || 'No business name')}</span>`, 'po-training-roster-cell--participant')}</td><td>${renderTrainingAttendanceCompactCell(`<span class="po-training-status-chip ${attendance === 'Not Marked' ? 'po-training-status-chip--warning' : statusClass(attendance)}">${escapeHtml(attendanceLabel)}</span>`, escapeHtml(proofMeta), 'po-training-roster-cell--status')}</td><td>${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(`Session ${program.roundNumber || '--'} / Group ${program.targetGroupNumber || invitee.batchGroupNumber || '--'}`)}</strong>`, escapeHtml(invitee.batchGroupNumber ? `Participant group ${invitee.batchGroupNumber}` : 'Scoped session'), 'po-training-roster-cell--status')}</td><td>${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(program.programName || '--')}</strong>`, escapeHtml(program.speaker || 'Speaker to be announced'), 'po-training-roster-cell--status')}</td><td>${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(formatTimeRange(program.startTime, program.endTime))}</strong>`, escapeHtml(formatDate(program.date || program.startsAt)), 'po-training-roster-cell--status')}</td><td>${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(program.venue || '--')}</strong>`, escapeHtml(invitee.barangay || 'Scoped venue'), 'po-training-roster-cell--status')}</td><td>${renderTrainingAttendanceCompactCell(`<strong>${escapeHtml(program.whatToBring || '--')}</strong>`, escapeHtml(program.instructions || 'No extra reminder'), 'po-training-roster-cell--status')}</td><td>${renderTrainingAttendanceCompactCell(formsMarkup, escapeHtml(forms.length ? `${forms.length} assigned form${forms.length === 1 ? '' : 's'}` : 'No forms assigned'), 'po-training-roster-cell--status')}</td></tr>`;
+  }
+
+  function trainingFormLabels(codes) {
+    const forms = new Map((state.training.seminarForms || []).map((form) => [form.code, form.label]));
+    return (codes || []).map((code) => forms.get(code) || code);
+  }
+
+  function scopedSessionOptions() {
+    const sessions = [...new Set((state.training.programs || [])
+      .map((program) => Number(program.roundNumber || 0))
+      .filter((value) => value > 0))]
+      .sort((left, right) => left - right);
+    return sessions.map((value) => ({ value: String(value), label: `Session ${value}` }));
+  }
+
+  function scopedGroupOptions() {
+    const session = Number(state.training.sessionFilter || 0);
+    const groups = [...new Set((state.training.programs || [])
+      .filter((program) => Number(program.roundNumber || 0) === session)
+      .map((program) => Number(program.targetGroupNumber || 0))
+      .filter((value) => value > 0))]
+      .sort((left, right) => left - right);
+    return groups.map((value) => ({ value: String(value), label: `Group ${value}` }));
+  }
+
+  function syncScopedTrainingFilters() {
+    // Filters now default to empty string (show all) — no forced selection needed.
   }
 
   function renderTrainingSessionView() {
@@ -3259,6 +3433,13 @@
     if (rerender) renderTrainingSessionView();
   }
 
+  function updateTrainingAttendanceDraftInline(trainingInviteeId, field, value, rerenderFn) {
+    const key = String(trainingInviteeId);
+    const current = state.training.attendanceDrafts[key] || {};
+    state.training.attendanceDrafts[key] = { ...current, [field]: value };
+    if (typeof rerenderFn === 'function') rerenderFn();
+  }
+
   function isAttendanceDateBypassApplicant(invitee) {
     const name = String(invitee?.user?.name || '').toLowerCase();
     return ['lisadora', 'andrea', 'maria', 'mariel'].some((allowed) => name.includes(allowed));
@@ -3276,22 +3457,35 @@
 
   function isAttendanceDateLockedForInvitee(invitee) {
     if (isAttendanceDateBypassApplicant(invitee)) return false;
-    const sessionDate = sessionDateValue(state.training.activeProgram);
-    return sessionDate !== '' && todayDateValue() < sessionDate;
+    const program = state.training.activeProgram || findProgramForInvitee(invitee?.id);
+    return isAttendanceDateLockedForProgram(program);
   }
 
-  function renderTrainingAttendanceEditorRow(invitee) {
+  function renderTrainingAttendanceEditorRow(invitee, program) {
     const saveBusy = !!state.training.busyInvitees[`attendance-${invitee.id}`];
     const proof = invitee.proofAttachment;
     const draft = getTrainingAttendanceDraft(invitee);
-    const isExcused = draft.status === 'Excused';
-    const dateLocked = isAttendanceDateLockedForInvitee(invitee);
+    const needsApplicantProof = ['Excused', 'Missed'].includes(String(draft.status || ''));
+    const resolvedProgram = program || state.training.activeProgram || findProgramForInvitee(invitee.id);
+    const dateLocked = isAttendanceDateLockedForProgram(resolvedProgram);
     const dateLockedAttr = dateLocked ? 'disabled' : '';
     const existingProofName = proof?.file_path ? String(proof.file_path).split('/').pop() : '';
     const completionLabel = deriveTrainingCompletionStatus(invitee);
     const noticeLabel = deriveTrainingWorkflowStatus(invitee);
     const lastUpdated = invitee.proofAttachment?.updated_at || invitee.lastNoticeSentAt || invitee.notifiedAt || '';
-    return `<tr class="po-training-attendance-editor-row"><td colspan="7"><div class="po-training-editor"><div class="po-training-editor__meta"><div class="po-training-editor__meta-item"><span>Participant</span><strong>${escapeHtml(invitee.user?.name || '--')}</strong></div><div class="po-training-editor__meta-item"><span>Workflow</span><strong>${escapeHtml(noticeLabel)}</strong></div><div class="po-training-editor__meta-item"><span>Attendance</span><strong>${escapeHtml(attendanceDisplayLabel(deriveTrainingAttendanceStatus(invitee)))}</strong></div><div class="po-training-editor__meta-item"><span>Completion</span><strong>${escapeHtml(completionLabel)}</strong></div><div class="po-training-editor__meta-item"><span>Last Updated</span><strong>${escapeHtml(lastUpdated ? formatDate(lastUpdated) : 'No recent update')}</strong></div></div><div class="po-training-editor__body"><section class="po-training-editor__column po-training-editor__column--decision"><div class="po-training-editor__section-title"><span class="po-panel-label">Session Actions</span><h5>Execution Controls</h5></div><div class="po-training-status-preset-list"><button type="button" class="po-training-status-preset ${draft.status === 'Attended' ? 'is-active' : ''}" data-training-editor-status="${invitee.id}:Attended" ${dateLockedAttr}>Mark Present</button><button type="button" class="po-training-status-preset ${draft.status === 'Missed' ? 'is-active' : ''}" data-training-editor-status="${invitee.id}:Missed" ${dateLockedAttr}>Mark Absent</button><button type="button" class="po-training-status-preset ${draft.status === 'Excused' ? 'is-active' : ''}" data-training-editor-status="${invitee.id}:Excused" ${dateLockedAttr}>Mark Excused</button></div>${dateLocked ? `<div class="po-training-editor-validation">Attendance opens on ${escapeHtml(formatDate(sessionDateValue(state.training.activeProgram)))}.</div>` : ''}<div class="po-filter-field"><span>Selected Status</span><div class="po-training-proof-state"><strong>${escapeHtml(attendanceDisplayLabel(draft.status))}</strong></div></div></section><section class="po-training-editor__column po-training-editor__column--proof"><div class="po-training-editor__section-title"><span class="po-panel-label">Exception Proof</span><h5>Excused Proof</h5></div><div class="po-training-proof-block ${isExcused ? 'is-active' : 'is-disabled'}"><div class="po-training-proof-state"><strong>${proof?.file_path ? 'Proof uploaded' : 'No proof uploaded'}</strong></div>${proof?.file_path ? `<div class="po-training-proof-file"><span>${escapeHtml(existingProofName || 'Existing proof file')}</span><a class="action-link" href="${escapeHtml(routeUrl(proof.file_path))}" target="_blank" rel="noopener">View proof</a></div>` : ''}${isExcused ? `<label class="po-filter-field"><span>Proof Upload</span><input type="file" class="section-filter" data-training-proof="${invitee.id}" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf" ${saveBusy || dateLocked ? 'disabled' : ''}></label>` : ''}</div></section><section class="po-training-editor__column po-training-editor__column--remarks"><div class="po-training-editor__section-title"><span class="po-panel-label">Remarks and Save</span><h5>Remarks and Save</h5></div><div class="po-training-remarks-block"><label class="po-filter-field"><span>Remarks</span><textarea id="po-training-remarks-${invitee.id}" class="po-inline-remarks po-training-compact-textarea" data-training-remarks="${invitee.id}" rows="5" placeholder="Add remarks" ${saveBusy ? 'disabled' : ''}>${escapeHtml(draft.remarks)}</textarea></label>${isExcused && !proof?.file_path ? '<div class="po-training-editor-validation">Upload proof before saving Excused status.</div>' : ''}<div class="po-training-editor-footer"><button type="button" class="action-button po-case-action" data-training-save-status="${invitee.id}" ${saveBusy || dateLocked ? 'disabled' : ''}>${saveBusy ? 'Saving...' : 'Save Update'}</button><button type="button" class="action-button action-button--quiet" data-training-open-editor="${invitee.id}">Close</button></div></div></section></div></div></td></tr>`;
+    return `<tr class="po-training-attendance-editor-row"><td colspan="8"><div class="po-training-editor"><div class="po-training-editor__meta"><div class="po-training-editor__meta-item"><span>Participant</span><strong>${escapeHtml(invitee.user?.name || '--')}</strong></div><div class="po-training-editor__meta-item"><span>Workflow</span><strong>${escapeHtml(noticeLabel)}</strong></div><div class="po-training-editor__meta-item"><span>Attendance</span><strong>${escapeHtml(attendanceDisplayLabel(deriveTrainingAttendanceStatus(invitee)))}</strong></div><div class="po-training-editor__meta-item"><span>Completion</span><strong>${escapeHtml(completionLabel)}</strong></div><div class="po-training-editor__meta-item"><span>Last Updated</span><strong>${escapeHtml(lastUpdated ? formatDate(lastUpdated) : 'No recent update')}</strong></div></div><div class="po-training-editor__body"><section class="po-training-editor__column po-training-editor__column--decision"><div class="po-training-editor__section-title"><span class="po-panel-label">Session Actions</span><h5>Execution Controls</h5></div><div class="po-training-status-preset-list"><button type="button" class="po-training-status-preset ${draft.status === 'Attended' ? 'is-active' : ''}" data-training-editor-status="${invitee.id}:Attended" ${dateLockedAttr}>Mark Present</button><button type="button" class="po-training-status-preset ${draft.status === 'Missed' ? 'is-active' : ''}" data-training-editor-status="${invitee.id}:Missed" ${dateLockedAttr}>Mark Absent</button><button type="button" class="po-training-status-preset ${draft.status === 'Excused' ? 'is-active' : ''}" data-training-editor-status="${invitee.id}:Excused" ${dateLockedAttr}>Mark Excused</button></div>${dateLocked ? `<div class="po-training-editor-validation">Attendance opens on ${escapeHtml(formatDate(sessionDateValue(resolvedProgram)))}.</div>` : ''}<div class="po-filter-field"><span>Selected Status</span><div class="po-training-proof-state"><strong>${escapeHtml(attendanceDisplayLabel(draft.status))}</strong></div></div></section><section class="po-training-editor__column po-training-editor__column--proof"><div class="po-training-editor__section-title"><span class="po-panel-label">Applicant Proof</span><h5>Absent / Excused Proof</h5></div><div class="po-training-proof-block ${needsApplicantProof ? 'is-active' : 'is-disabled'}"><div class="po-training-proof-state"><strong>${proof?.file_path ? 'Proof uploaded by applicant' : (needsApplicantProof ? 'Waiting for applicant proof' : 'Proof not required')}</strong></div>${proof?.file_path ? `<div class="po-training-proof-file"><span>${escapeHtml(existingProofName || 'Existing proof file')}</span><a class="action-link" href="${escapeHtml(routeUrl(proof.file_path))}" target="_blank" rel="noopener">View proof</a></div>` : ''}${needsApplicantProof && !proof?.file_path ? '<div class="po-training-editor-validation">Applicant must upload proof from the Training page after you save this status.</div>' : ''}</div></section><section class="po-training-editor__column po-training-editor__column--remarks"><div class="po-training-editor__section-title"><span class="po-panel-label">Remarks and Save</span><h5>Remarks and Save</h5></div><div class="po-training-remarks-block"><label class="po-filter-field"><span>Remarks</span><textarea id="po-training-remarks-${invitee.id}" class="po-inline-remarks po-training-compact-textarea" data-training-remarks="${invitee.id}" rows="5" placeholder="Add remarks" ${saveBusy ? 'disabled' : ''}>${escapeHtml(draft.remarks)}</textarea></label>${needsApplicantProof ? '<div class="po-training-editor-validation">Save the attendance mark first so the applicant can upload the required proof.</div>' : ''}<div class="po-training-editor-footer"><button type="button" class="action-button po-case-action" data-training-save-status="${invitee.id}" ${saveBusy || dateLocked ? 'disabled' : ''}>${saveBusy ? 'Saving...' : 'Save Update'}</button><button type="button" class="action-button action-button--quiet" data-training-overview-editor="${invitee.id}">Close</button></div></div></section></div></div></td></tr>`;
+  }
+
+  function findProgramForInvitee(inviteeId) {
+    return (state.training.programs || []).find((p) =>
+      (p.invitees || []).some((inv) => Number(inv.id) === Number(inviteeId))
+    ) || null;
+  }
+
+  function isAttendanceDateLockedForProgram(program) {
+    if (!program) return false;
+    const sessionDate = sessionDateValue(program);
+    return sessionDate !== '' && todayDateValue() < sessionDate;
   }
 
   function renderTrainingAttendanceCompactRow(invitee, program, saveBusy, editorOpen) {
@@ -3372,6 +3566,27 @@
   }
 
   function handleTrainingInput(event) {
+    const sessionFilter = event.target.closest('#po-training-session-filter');
+    if (sessionFilter) {
+      state.training.sessionFilter = String(sessionFilter.value || '');
+      state.training.groupFilter = '';
+      return renderTrainingOverview();
+    }
+    const groupFilter = event.target.closest('#po-training-group-filter');
+    if (groupFilter) {
+      state.training.groupFilter = String(groupFilter.value || '');
+      return renderTrainingOverview();
+    }
+    const activityFilter = event.target.closest('#po-training-activity-filter');
+    if (activityFilter) {
+      state.training.activityFilter = String(activityFilter.value || '');
+      return renderTrainingOverview();
+    }
+    const overviewStatusFilter = event.target.closest('#po-training-overview-status-filter');
+    if (overviewStatusFilter) {
+      state.training.overviewStatusFilter = String(overviewStatusFilter.value || '');
+      return renderTrainingOverview();
+    }
     const search = event.target.closest('#po-training-roster-search');
     if (search) {
       state.training.rosterSearch = String(search.value || '');
@@ -3414,6 +3629,172 @@
     }
   }
 
+  // ─── Attendance modal (overview table) ───────────────────────────────────
+
+  function openAttendanceModal(inviteeId) {
+    state.training.attendanceEditorId = inviteeId;
+    const backdrop = document.getElementById('poAttendanceModalBackdrop');
+    const modal = document.getElementById('poAttendanceModal');
+    if (!backdrop || !modal) return;
+    renderAttendanceModalBody(inviteeId);
+    backdrop.hidden = false;
+    backdrop.removeAttribute('aria-hidden');
+    modal.hidden = false;
+    modal.removeAttribute('aria-hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeAttendanceModal() {
+    const inviteeId = state.training.attendanceEditorId;
+    if (inviteeId) delete state.training.attendanceDrafts[String(inviteeId)];
+    state.training.attendanceEditorId = null;
+    const backdrop = document.getElementById('poAttendanceModalBackdrop');
+    const modal = document.getElementById('poAttendanceModal');
+    if (backdrop) { backdrop.hidden = true; backdrop.setAttribute('aria-hidden', 'true'); }
+    if (modal) { modal.hidden = true; modal.setAttribute('aria-hidden', 'true'); }
+    document.body.style.overflow = '';
+  }
+
+  function renderAttendanceModalBody(inviteeId) {
+    const program = findProgramForInvitee(inviteeId);
+    const invitee = (program?.invitees || []).find((inv) => Number(inv.id) === Number(inviteeId))
+      || (state.training.programs || []).flatMap((p) => p.invitees || []).find((inv) => Number(inv.id) === Number(inviteeId));
+    const meta = document.getElementById('poAttendanceModalMeta');
+    const body = document.getElementById('poAttendanceModalBody');
+    if (!invitee || !body) return;
+
+    const noticeLabel = deriveTrainingWorkflowStatus(invitee);
+    const attendanceStatus = deriveTrainingAttendanceStatus(invitee);
+    const attendanceLabel = attendanceDisplayLabel(attendanceStatus);
+    const completionLabel = deriveTrainingCompletionStatus(invitee);
+    const lastUpdated = invitee.proofAttachment?.updated_at || invitee.lastNoticeSentAt || invitee.notifiedAt || '';
+    const sessionLabel = program ? `Session ${program.roundNumber || '--'}` : '--';
+    const groupLabel = program ? `Group ${program.targetGroupNumber || invitee.batchGroupNumber || '--'}` : '--';
+    const activityName = program?.programName || '--';
+    const venue = program?.venue || '--';
+    const dateLabel = program?.date ? formatDate(program.date) : '--';
+    const timeLabel = program ? formatTimeRange(program.startTime, program.endTime) : '--';
+
+    const attendanceChipClass = attendanceStatus === 'Attended' ? 'atm-chip--present'
+      : attendanceStatus === 'Missed' ? 'atm-chip--absent'
+      : attendanceStatus === 'Excused' ? 'atm-chip--excused'
+      : 'atm-chip--unmarked';
+    const completionChipClass = completionLabel === 'Completed' ? 'atm-chip--completed' : 'atm-chip--incomplete';
+    const noticeChipClass = noticeLabel === 'Notified' ? 'atm-chip--notified' : 'atm-chip--scheduled';
+
+    const saveBusy = !!state.training.busyInvitees[`attendance-${inviteeId}`];
+    const proof = invitee.proofAttachment;
+    const draft = getTrainingAttendanceDraft(invitee);
+    const needsApplicantProof = ['Excused', 'Missed'].includes(String(draft.status || ''));
+    const dateLocked = isAttendanceDateLockedForProgram(program);
+    const dateLockedAttr = dateLocked ? 'disabled' : '';
+    const existingProofName = proof?.file_path ? String(proof.file_path).split('/').pop() : '';
+    const selectedStatusChip = draft.status
+      ? `<span class="atm-selected-chip atm-selected-chip--${draft.status === 'Attended' ? 'present' : draft.status === 'Missed' ? 'absent' : draft.status === 'Excused' ? 'excused' : 'none'}">${escapeHtml(attendanceDisplayLabel(draft.status))}</span>`
+      : `<span class="atm-selected-chip atm-selected-chip--none">Not set</span>`;
+
+    if (meta) {
+      const initials = (invitee.user?.name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+      meta.innerHTML = `
+        <div class="atm-hero">
+          <div class="atm-hero__avatar">${escapeHtml(initials)}</div>
+          <div class="atm-hero__identity">
+            <strong class="atm-hero__name">${escapeHtml(invitee.user?.name || '--')}</strong>
+            <span class="atm-hero__sub">${escapeHtml(invitee.businessName || invitee.contactNumber || '')}</span>
+          </div>
+          <div class="atm-hero__chips">
+            <span class="atm-chip ${noticeChipClass}">${escapeHtml(noticeLabel)}</span>
+            <span class="atm-chip ${attendanceChipClass}">${escapeHtml(attendanceLabel)}</span>
+            <span class="atm-chip ${completionChipClass}">${escapeHtml(completionLabel)}</span>
+          </div>
+        </div>
+        <div class="atm-session-strip">
+          <div class="atm-session-strip__item"><i class="fas fa-calendar-day"></i><span>${escapeHtml(activityName)}</span></div>
+          <div class="atm-session-strip__item"><i class="fas fa-layer-group"></i><span>${escapeHtml(sessionLabel)} · ${escapeHtml(groupLabel)}</span></div>
+          <div class="atm-session-strip__item"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(venue)}</span></div>
+          <div class="atm-session-strip__item"><i class="fas fa-clock"></i><span>${escapeHtml(dateLabel)} · ${escapeHtml(timeLabel)}</span></div>
+          ${lastUpdated ? `<div class="atm-session-strip__item"><i class="fas fa-history"></i><span>Updated ${escapeHtml(formatDate(lastUpdated))}</span></div>` : ''}
+        </div>
+      `;
+    }
+
+    body.innerHTML = `
+      <div class="atm-body">
+
+        <section class="atm-section atm-section--actions">
+          <div class="atm-section__label"><i class="fas fa-check-circle"></i> Mark Attendance</div>
+          ${dateLocked ? `<div class="atm-locked-notice"><i class="fas fa-lock"></i> Attendance opens on ${escapeHtml(formatDate(sessionDateValue(program)))}.</div>` : ''}
+          <div class="atm-action-buttons">
+            <button type="button" class="atm-action-btn atm-action-btn--present ${draft.status === 'Attended' ? 'is-active' : ''}" data-training-editor-status="${inviteeId}:Attended" ${dateLockedAttr}>
+              <i class="fas fa-user-check"></i>
+              <span>Present</span>
+            </button>
+            <button type="button" class="atm-action-btn atm-action-btn--absent ${draft.status === 'Missed' ? 'is-active' : ''}" data-training-editor-status="${inviteeId}:Missed" ${dateLockedAttr}>
+              <i class="fas fa-user-times"></i>
+              <span>Absent</span>
+            </button>
+            <button type="button" class="atm-action-btn atm-action-btn--excused ${draft.status === 'Excused' ? 'is-active' : ''}" data-training-editor-status="${inviteeId}:Excused" ${dateLockedAttr}>
+              <i class="fas fa-user-slash"></i>
+              <span>Excused</span>
+            </button>
+          </div>
+          <div class="atm-selected-status">
+            <span class="atm-selected-label">Selected:</span>
+            ${selectedStatusChip}
+          </div>
+        </section>
+
+        <section class="atm-section atm-section--proof ${needsApplicantProof ? 'is-required' : ''}">
+          <div class="atm-section__label"><i class="fas fa-file-upload"></i> Applicant Proof</div>
+          <div class="atm-proof-state">
+            ${proof?.file_path
+              ? `<div class="atm-proof-uploaded"><i class="fas fa-check-circle"></i><div><strong>Proof uploaded</strong><span>${escapeHtml(existingProofName || 'Uploaded file')}</span></div><a class="atm-proof-link" href="${escapeHtml(routeUrl(proof.file_path))}" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> View</a></div>`
+              : needsApplicantProof
+                ? `<div class="atm-proof-pending"><i class="fas fa-hourglass-half"></i><div><strong>Waiting for applicant</strong><span>Applicant uploads after you save this status.</span></div></div>`
+                : `<div class="atm-proof-na"><i class="fas fa-minus-circle"></i><div><strong>Not required</strong><span>Only needed for Absent or Excused.</span></div></div>`
+            }
+          </div>
+        </section>
+
+        <section class="atm-section atm-section--remarks">
+          <div class="atm-section__label"><i class="fas fa-comment-alt"></i> Remarks</div>
+          <textarea id="po-training-remarks-${inviteeId}" class="atm-remarks" data-training-remarks="${inviteeId}" rows="4" placeholder="Optional — add notes about this participant's attendance…" ${saveBusy ? 'disabled' : ''}>${escapeHtml(draft.remarks)}</textarea>
+        </section>
+
+      </div>
+      <footer class="atm-footer">
+        <button type="button" class="atm-footer-btn atm-footer-btn--cancel" id="poAttendanceModalCloseBtn">Cancel</button>
+        <button type="button" class="atm-footer-btn atm-footer-btn--save" data-training-save-status="${inviteeId}" ${saveBusy || dateLocked ? 'disabled' : ''}>
+          ${saveBusy ? '<i class="fas fa-spinner fa-spin"></i> Saving…' : '<i class="fas fa-save"></i> Save Attendance'}
+        </button>
+      </footer>
+    `;
+    document.getElementById('poAttendanceModalCloseBtn')?.addEventListener('click', closeAttendanceModal);
+  }
+
+  function handleAttendanceModalClick(event) {
+    const editorStatus = event.target.closest('[data-training-editor-status]');
+    if (editorStatus) {
+      const [inviteeId, status] = String(editorStatus.dataset.trainingEditorStatus || '').split(':');
+      updateTrainingAttendanceDraftInline(Number(inviteeId), 'status', String(status || ''), () => renderAttendanceModalBody(Number(inviteeId)));
+      return;
+    }
+    const save = event.target.closest('[data-training-save-status]');
+    if (save) {
+      saveTrainingAttendanceRow(Number(save.dataset.trainingSaveStatus));
+    }
+  }
+
+  function handleAttendanceModalInput(event) {
+    const remarks = event.target.closest('[data-training-remarks]');
+    if (remarks) {
+      const inviteeId = Number(remarks.dataset.trainingRemarks);
+      updateTrainingAttendanceDraftInline(inviteeId, 'remarks', remarks.value);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   async function handleTrainingClick(event) {
     const backOverview = event.target.closest('[data-training-action="back-overview"]');
     if (backOverview) {
@@ -3446,6 +3827,12 @@
       if (isClosing) delete state.training.attendanceDrafts[String(inviteeId)];
       return renderTrainingSessionView();
     }
+    const overviewEditor = event.target.closest('[data-training-overview-editor]');
+    if (overviewEditor) {
+      const inviteeId = Number(overviewEditor.dataset.trainingOverviewEditor);
+      openAttendanceModal(inviteeId);
+      return;
+    }
     const quickStatus = event.target.closest('[data-training-quick-status]');
     if (quickStatus) {
       const [inviteeId, status] = String(quickStatus.dataset.trainingQuickStatus || '').split(':');
@@ -3455,10 +3842,22 @@
       }
       return;
     }
+    const overviewStatus = event.target.closest('[data-training-overview-status]');
+    if (overviewStatus) {
+      const [inviteeId, status] = String(overviewStatus.dataset.trainingOverviewStatus || '').split(':');
+      return saveTrainingAttendanceQuick(Number(inviteeId), String(status || ''));
+    }
     const editorStatus = event.target.closest('[data-training-editor-status]');
     if (editorStatus) {
       const [inviteeId, status] = String(editorStatus.dataset.trainingEditorStatus || '').split(':');
-      updateTrainingAttendanceDraft(Number(inviteeId), 'status', String(status || 'Notified'), true);
+      const rerender = () => {
+        if (state.training.view === 'overview') {
+          renderAttendanceModalBody(Number(inviteeId));
+        } else {
+          renderTrainingSessionView();
+        }
+      };
+      updateTrainingAttendanceDraftInline(Number(inviteeId), 'status', String(status || 'Notified'), rerender);
       return;
     }
     const save = event.target.closest('[data-training-save-status]');
@@ -3635,16 +4034,56 @@
     await loadTraining();
   }
 
+  async function saveTrainingAttendanceQuick(trainingInviteeId, status) {
+    if (!trainingInviteeId || !['Attended', 'Excused', 'Missed'].includes(status)) {
+      return showToast('Choose Present, Absent, or Excused before saving attendance.', 'warning');
+    }
+
+    if (state.training.busyInvitees[`attendance-${trainingInviteeId}`]) return null;
+    state.training.busyInvitees[`attendance-${trainingInviteeId}`] = true;
+    renderTrainingQueue();
+
+    const formData = new FormData();
+    formData.append('trainingInviteeId', String(trainingInviteeId));
+    formData.append('status', status);
+    formData.append('remarks', '');
+
+    const response = await apiFormPost('api/training/attendance', formData);
+    delete state.training.busyInvitees[`attendance-${trainingInviteeId}`];
+    if (!response.ok) {
+      renderTrainingQueue();
+      return showToast(firstError(response.errors) || response.message || 'Unable to update attendance.', 'warning');
+    }
+
+    state.training.lastUpdatedInviteeId = trainingInviteeId;
+    showToast('Attendance record updated.', 'success');
+    await loadTraining();
+    return null;
+  }
+
   async function updateTrainingAttendance(trainingInviteeId) {
     const draft = state.training.attendanceDrafts[String(trainingInviteeId)] || {};
-    const invitee = (state.training.activeProgram?.invitees || []).find((item) => Number(item.id) === Number(trainingInviteeId));
+    // Find invitee from active program (session view) or any scoped program (overview).
+    const invitee = (state.training.activeProgram?.invitees || []).find((item) => Number(item.id) === Number(trainingInviteeId))
+      || (state.training.programs || []).flatMap((p) => p.invitees || []).find((item) => Number(item.id) === Number(trainingInviteeId));
+    const program = state.training.activeProgram || findProgramForInvitee(trainingInviteeId);
     const status = String(draft.status || '').trim();
+    const rerenderCurrent = () => {
+      const modal = document.getElementById('poAttendanceModal');
+      if (modal && !modal.hidden && state.training.attendanceEditorId) {
+        renderAttendanceModalBody(state.training.attendanceEditorId);
+      } else if (state.training.view === 'overview') {
+        renderTrainingQueue();
+      } else {
+        renderTrainingSessionView();
+      }
+    };
     if (!['Attended', 'Excused', 'Missed'].includes(status)) {
       showToast('Choose Present, Absent, or Excused before saving attendance.', 'warning');
       return;
     }
-    if (invitee && isAttendanceDateLockedForInvitee(invitee) && ['Attended', 'Excused', 'Missed'].includes(status)) {
-      showToast(`Attendance opens on ${formatDate(sessionDateValue(state.training.activeProgram))}.`, 'warning');
+    if (invitee && isAttendanceDateLockedForProgram(program) && ['Attended', 'Excused', 'Missed'].includes(status)) {
+      showToast(`Attendance opens on ${formatDate(sessionDateValue(program))}.`, 'warning');
       return;
     }
     const remarksSource = draft.remarks ?? document.querySelector(`[data-training-remarks="${trainingInviteeId}"]`)?.value ?? '';
@@ -3652,7 +4091,7 @@
     const proofInput = document.querySelector(`[data-training-proof="${trainingInviteeId}"]`);
     if (state.training.busyInvitees[`attendance-${trainingInviteeId}`]) return;
     state.training.busyInvitees[`attendance-${trainingInviteeId}`] = true;
-    renderTrainingSessionView();
+    rerenderCurrent();
     const formData = new FormData();
     formData.append('trainingInviteeId', String(trainingInviteeId));
     formData.append('status', status);
@@ -3664,17 +4103,19 @@
     const response = await apiFormPost('api/training/attendance', formData);
     if (!response.ok) {
       delete state.training.busyInvitees[`attendance-${trainingInviteeId}`];
-      renderTrainingSessionView();
+      rerenderCurrent();
       return showToast(firstError(response.errors) || response.message || 'Unable to update attendance.', 'warning');
     }
     showToast('Attendance record updated.', 'success');
     state.training.lastUpdatedInviteeId = trainingInviteeId;
     delete state.training.attendanceDrafts[String(trainingInviteeId)];
     state.training.attendanceEditorId = null;
+    // Close the modal if it was used for this update, then refresh data and re-render the table.
+    closeAttendanceModal();
     if (state.training.selectedProgramId) await loadTrainingProgram(state.training.selectedProgramId, false);
     await loadTraining();
     delete state.training.busyInvitees[`attendance-${trainingInviteeId}`];
-    renderTrainingSessionView();
+    rerenderCurrent();
   }
 
   // Persist one invitee's attendance row after validating the allowed status set and completion rules.

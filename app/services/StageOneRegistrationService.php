@@ -12,6 +12,8 @@ class StageOneRegistrationService
     public const STATUS_SELECTED = 'selected';
     public const STATUS_SAVED = 'saved_next_batch';
     public const STATUS_ARCHIVED = 'archived';
+    private const EMAIL_VERIFICATION_EXPIRY_MINUTES = 10;
+    private const EMAIL_VERIFICATION_MAX_ATTEMPTS = 5;
     private ?array $applicantProfileColumns = null;
     private array $legacyProfilePhotoCache = [];
 
@@ -30,7 +32,50 @@ class StageOneRegistrationService
             ];
         }
 
+        $verificationCode = trim((string) ($input['emailVerificationCode'] ?? ''));
+        $verification = $this->verifyEmailVerificationCode($clean['email'], $verificationCode);
+        if (!$verification['ok']) {
+            return [
+                'ok' => false,
+                'message' => (string) ($verification['message'] ?? 'Verify your email before submitting your registration.'),
+                'errors' => ['emailVerificationCode' => (string) ($verification['message'] ?? 'Enter the verification code sent to your email.')],
+            ];
+        }
+
         return $this->persistSubmission($clean, $files, 'public_online', null);
+    }
+
+    public function requestEmailVerification(array $input): array
+    {
+        $this->ensureSchema();
+
+        $clean = $this->cleanSubmissionInput($input);
+        $errors = $this->validateEmailVerificationRequest($clean);
+        if ($errors !== []) {
+            return [
+                'ok' => false,
+                'message' => 'Please enter a valid email before verification.',
+                'errors' => $errors,
+            ];
+        }
+
+        if ($this->emailExistsInPortalUsers($clean['email'])) {
+            return [
+                'ok' => false,
+                'message' => 'This email already has a SMART LEAP portal account.',
+                'errors' => ['email' => 'This email already has a SMART LEAP portal account.'],
+            ];
+        }
+
+        if ($this->emailExistsInStageOne($clean['email'])) {
+            return [
+                'ok' => false,
+                'message' => 'This email already has a Stage 1 registration on file.',
+                'errors' => ['email' => 'This email already has a Stage 1 registration on file.'],
+            ];
+        }
+
+        return $this->issueEmailVerificationCode($clean['email'], $clean['fullName']);
     }
 
     public function submitStaffEntry(array $input, array $files, array $actor): array
@@ -168,8 +213,8 @@ class StageOneRegistrationService
                     ? 'Hardcopy applicant encoded and saved for the next SMART LEAP batch.'
                     : 'Hardcopy applicant encoded and added to the validation queue.')
                 : ($initialStatus === self::STATUS_SAVED
-                ? 'Registration submitted and saved for the next SMART LEAP batch.'
-                : 'Registration submitted. Watch your email for account activation once you are selected.'),
+                ? 'Email verified. Registration submitted and saved for the next SMART LEAP batch.'
+                : 'Email verified. Registration submitted for Admin validation. Watch your email for the approval notice if you are selected.'),
             'referenceCode' => $referenceCode,
             'registration' => $this->getRegistrationDetail($registrationId),
         ];
@@ -187,6 +232,12 @@ class StageOneRegistrationService
                 stage_one_registrations.*,
                 reviewers.full_name AS reviewed_by_name
              FROM stage_one_registrations
+             INNER JOIN (
+                SELECT LOWER(email) COLLATE utf8mb4_unicode_ci AS email_key, MAX(id) AS latest_id
+                FROM stage_one_registrations
+                WHERE validation_status <> "archived"
+                GROUP BY LOWER(email) COLLATE utf8mb4_unicode_ci
+             ) latest_registration ON latest_registration.latest_id = stage_one_registrations.id
              LEFT JOIN users AS reviewers ON reviewers.id = stage_one_registrations.validated_by_user_id
              WHERE stage_one_registrations.validation_status <> "archived"
              ORDER BY stage_one_registrations.created_at DESC, stage_one_registrations.id DESC'
@@ -253,12 +304,14 @@ class StageOneRegistrationService
             return ['ok' => false, 'message' => 'Unsupported validation action.'];
         }
 
+        $autoSavedForNextBatch = false;
         if (
             $targetStatus === self::STATUS_SELECTED
             && $registration['statusKey'] !== self::STATUS_SELECTED
             && $this->selectedCount() >= $this->currentBatchCapacity()
         ) {
-            return ['ok' => false, 'message' => sprintf('The current SMART LEAP batch is already full at %d selected registrants.', $this->currentBatchCapacity())];
+            $targetStatus = self::STATUS_SAVED;
+            $autoSavedForNextBatch = true;
         }
 
         $statement = db()->prepare(
@@ -289,11 +342,13 @@ class StageOneRegistrationService
 
         return [
             'ok' => true,
-            'message' => $targetStatus === self::STATUS_SELECTED
+            'message' => $autoSavedForNextBatch
+                ? sprintf('The current SMART LEAP batch is full at %d selected registrants, so this applicant was automatically saved for the next batch.', $this->currentBatchCapacity())
+                : ($targetStatus === self::STATUS_SELECTED
                 ? ($emailSent
                     ? 'Stage 1 applicant selected for the current batch. Email notice sent.'
-                    : 'Stage 1 applicant selected for the current batch, but the account activation email could not be sent. Please resend it before telling the applicant to proceed.')
-                : 'Stage 1 applicant saved for the next SMART LEAP batch.',
+                    : 'Stage 1 applicant selected for the current batch, but the approval email could not be sent. Please review the mail logs before telling the applicant to proceed.')
+                : 'Stage 1 applicant saved for the next SMART LEAP batch.'),
             'registration' => $updatedRegistration,
             'state' => $this->validationState(),
             'emailSent' => $emailSent,
@@ -311,7 +366,7 @@ class StageOneRegistrationService
         }
 
         if (($registration['statusKey'] ?? '') !== self::STATUS_SELECTED) {
-            return ['ok' => false, 'message' => 'Only selected registrants can receive the account activation email.'];
+            return ['ok' => false, 'message' => 'Only selected registrants can receive the approval email.'];
         }
 
         $emailSent = $this->sendSelectionEmail($registration);
@@ -321,8 +376,8 @@ class StageOneRegistrationService
         return [
             'ok' => $emailSent,
             'message' => $emailSent
-                ? 'Account activation email resent successfully.'
-                : 'Unable to resend the account activation email right now. Please review the mail configuration or try again.',
+                ? 'Approval email sent successfully.'
+                : 'Unable to send the approval email right now. Please review the mail configuration or try again.',
             'registration' => $updatedRegistration,
             'state' => $this->validationState(),
             'emailSent' => $emailSent,
@@ -468,6 +523,25 @@ class StageOneRegistrationService
             && (!is_array($files['hardcopyForm'] ?? null) || (int) (($files['hardcopyForm']['error'] ?? UPLOAD_ERR_NO_FILE)) === UPLOAD_ERR_NO_FILE)
         ) {
             $errors['hardcopyForm'] = 'Upload the scanned hardcopy form.';
+        }
+
+        return $errors;
+    }
+
+    private function validateEmailVerificationRequest(array $clean): array
+    {
+        $errors = [];
+
+        if (mb_strlen($clean['firstName']) < 2) {
+            $errors['firstName'] = 'Enter your first name before email verification.';
+        }
+
+        if (mb_strlen($clean['lastName']) < 2) {
+            $errors['lastName'] = 'Enter your last name before email verification.';
+        }
+
+        if (!filter_var($clean['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Enter a valid email address.';
         }
 
         return $errors;
@@ -1030,6 +1104,107 @@ class StageOneRegistrationService
         ];
     }
 
+    private function issueEmailVerificationCode(string $email, string $fullName): array
+    {
+        $email = strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'message' => 'Enter a valid email address.'];
+        }
+
+        $code = (string) random_int(100000, 999999);
+        $expiresAt = date('Y-m-d H:i:s', time() + (self::EMAIL_VERIFICATION_EXPIRY_MINUTES * 60));
+
+        try {
+            db()->prepare(
+                'INSERT INTO stage_one_email_verification_codes (email, full_name, code_hash, expires_at, attempts)
+                 VALUES (:email, :full_name, :code_hash, :expires_at, 0)'
+            )->execute([
+                'email' => $email,
+                'full_name' => $fullName !== '' ? $fullName : 'Applicant',
+                'code_hash' => password_hash($code, PASSWORD_DEFAULT),
+                'expires_at' => $expiresAt,
+            ]);
+        } catch (Throwable $exception) {
+            log_database_query_failure('stage_one_registration.email_verification.create', $exception, ['email' => $email]);
+            return ['ok' => false, 'message' => 'Unable to create an email verification code right now.'];
+        }
+
+        $body = sprintf(
+            '<p>Good day %s,</p><p>Your SMART LEAP registration verification code is <strong style="font-size:1.2rem; letter-spacing:0.18em;">%s</strong>.</p><p>This code expires in %d minutes. Enter it in the registration modal to submit your application for Admin validation.</p><p>If you did not request this code, you can ignore this message.</p>',
+            htmlspecialchars($fullName !== '' ? $fullName : 'Applicant', ENT_QUOTES),
+            htmlspecialchars($code, ENT_QUOTES),
+            self::EMAIL_VERIFICATION_EXPIRY_MINUTES
+        );
+
+        $sent = (new MailService())->send($email, 'SMART LEAP Registration Verification Code', $body, null);
+        if (!$sent) {
+            return [
+                'ok' => false,
+                'message' => 'We could not send a code to that email. Please check the email spelling or try another address.',
+                'errors' => ['email' => 'The verification email could not be delivered.'],
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Verification code sent. Check your email inbox or spam folder.',
+            'expiresInMinutes' => self::EMAIL_VERIFICATION_EXPIRY_MINUTES,
+        ];
+    }
+
+    private function verifyEmailVerificationCode(string $email, string $code): array
+    {
+        $email = strtolower(trim($email));
+        $code = trim($code);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || $code === '') {
+            return ['ok' => false, 'message' => 'Enter the six-digit code sent to your email.'];
+        }
+
+        $statement = db()->prepare(
+            'SELECT id, code_hash, expires_at, attempts, consumed_at
+             FROM stage_one_email_verification_codes
+             WHERE email = :email
+             ORDER BY id DESC
+             LIMIT 1'
+        );
+        $statement->execute(['email' => $email]);
+        $challenge = $statement->fetch(PDO::FETCH_ASSOC);
+
+        if (!is_array($challenge)) {
+            return ['ok' => false, 'message' => 'No active email verification code was found. Send a new code first.'];
+        }
+
+        if ($challenge['consumed_at'] !== null) {
+            return ['ok' => false, 'message' => 'That verification code has already been used. Send a new code.'];
+        }
+
+        if (strtotime((string) $challenge['expires_at']) < time()) {
+            return ['ok' => false, 'message' => 'That verification code has expired. Send a new code.'];
+        }
+
+        if ((int) $challenge['attempts'] >= self::EMAIL_VERIFICATION_MAX_ATTEMPTS) {
+            return ['ok' => false, 'message' => 'Too many failed attempts. Send a new verification code.'];
+        }
+
+        if (!password_verify($code, (string) $challenge['code_hash'])) {
+            db()->prepare(
+                'UPDATE stage_one_email_verification_codes
+                 SET attempts = attempts + 1, updated_at = NOW()
+                 WHERE id = :id'
+            )->execute(['id' => (int) $challenge['id']]);
+
+            return ['ok' => false, 'message' => 'The verification code is incorrect.'];
+        }
+
+        db()->prepare(
+            'UPDATE stage_one_email_verification_codes
+             SET consumed_at = NOW(), updated_at = NOW()
+             WHERE id = :id'
+        )->execute(['id' => (int) $challenge['id']]);
+
+        return ['ok' => true];
+    }
+
     private function sendSelectionEmail(array $registration): bool
     {
         $recipient = trim((string) ($registration['email'] ?? ''));
@@ -1040,13 +1215,13 @@ class StageOneRegistrationService
         $name = htmlspecialchars((string) ($registration['fullName'] ?? 'Applicant'), ENT_QUOTES);
         $activationUrl = htmlspecialchars(app_url('signup?email=' . urlencode($recipient)), ENT_QUOTES);
         $portalLoginUrl = htmlspecialchars(app_url('portal-login'), ENT_QUOTES);
-        $subject = 'SMART LEAP Account Activation';
+        $subject = 'SMART LEAP Registration Approved';
         $body = sprintf(
             '<p>Hello %s,</p>'
             . '<p>Your SMART LEAP registration has been selected for the current batch.</p>'
-            . '<p>You may now activate your SMART LEAP portal account using this link:</p>'
+            . '<p>Your email was already verified during registration, so you only need to set your portal password using this link:</p>'
             . '<p><a href="%s">%s</a></p>'
-            . '<p>After opening the link, set your password and complete the verification step to activate your portal access.</p>'
+            . '<p>After setting your password, you will be redirected to your applicant portal.</p>'
             . '<p>Applicant Portal Login: <a href="%s">%s</a></p>',
             $name,
             $activationUrl,
@@ -1069,14 +1244,14 @@ class StageOneRegistrationService
             $statement = db()->prepare(
                 'SELECT error_message
                  FROM email_logs
-                 WHERE recipient_email = :recipient_email
+                WHERE recipient_email = :recipient_email
                    AND subject = :subject
                  ORDER BY id DESC
                  LIMIT 1'
             );
             $statement->execute([
                 'recipient_email' => $recipientEmail,
-                'subject' => 'SMART LEAP Account Activation',
+                'subject' => 'SMART LEAP Registration Approved',
             ]);
             $errorMessage = $statement->fetchColumn();
             $errorMessage = is_string($errorMessage) ? trim($errorMessage) : null;
@@ -1213,6 +1388,22 @@ class StageOneRegistrationService
                 INDEX idx_stage_one_registrations_status (validation_status),
                 INDEX idx_stage_one_registrations_email (email),
                 INDEX idx_stage_one_registrations_created_at (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        db()->exec(
+            'CREATE TABLE IF NOT EXISTS stage_one_email_verification_codes (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(160) NOT NULL,
+                full_name VARCHAR(180) NOT NULL DEFAULT "",
+                code_hash VARCHAR(255) NOT NULL,
+                attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+                expires_at DATETIME NOT NULL,
+                consumed_at DATETIME NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_stage_one_email_verification_email (email),
+                INDEX idx_stage_one_email_verification_created_at (created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
 

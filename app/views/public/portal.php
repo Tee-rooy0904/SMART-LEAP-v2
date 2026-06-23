@@ -20,7 +20,7 @@ $heroSecondaryLabel = $portalQuickView
     : '';
 $heroBody = $portalQuickView
     ? ($isCoMakerQuickView ? 'This account is only for repayment access linked to a deceased primary beneficiary. It is not part of the applicant training or beneficiary application workflow.' : 'Continue from your current SMART LEAP step, review the latest notices, and keep your record complete.')
-    : 'Submit one complete Stage 1 application with your profile, demographic details, business information, valid ID, and existing business photo. Once selected, you will receive an email to activate your applicant portal account.';
+    : 'Submit one complete Stage 1 application with your profile, demographic details, business information, valid ID, and existing business photo. You will verify your email by code before Admin validation, and selected applicants receive an email to set their applicant portal password.';
 $heroFactLine = $portalQuickView
     ? ($isCoMakerQuickView ? 'Upload repayment receipts and follow PDO/Admin verification from the beneficiary dashboard.' : 'Stay updated on your current review, training, or beneficiary record.')
     : 'SMART LEAP serves Butuan City residents with microbusinesses or livelihood activities who need organized CSWDD screening before the full applicant workflow.';

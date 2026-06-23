@@ -325,7 +325,7 @@ $butuanBarangays = array_map(
                             <div class="application-status-hero__content">
                                 <span class="journey-pill" id="applicationStatusPill">Draft</span>
                                 <strong class="application-status-hero__title" id="applicationStatusValue">Draft</strong>
-                                <p class="application-status-hero__copy" id="applicationStatusNextStep">Start by uploading your required files and saving your application.</p>
+                                <p class="application-status-hero__copy" id="applicationStatusNextStep">Start by uploading your required files, then submit them for PDO/Admin verification.</p>
                             </div>
                         </div>
                         <div class="application-status-hero__meta">
@@ -352,72 +352,22 @@ $butuanBarangays = array_map(
                             </p>
                         </div>
                         <div class="doc-grid" id="docGrid"></div>
-                        <section id="requirements-progress" class="application-requirements-summary" aria-labelledby="requirementsHeading">
-                            <div class="panel-header application-requirements-summary__header">
-                                <h3 id="requirementsHeading">Requirements checklist</h3>
-                                <p class="panel-subtitle">See what is uploaded, what is being checked, and what still needs action.</p>
-                            </div>
-                            <div class="requirements-progress">
-                                <div class="requirements-progress__meta"><strong id="requirementsProgressCount">0/4 requirements</strong><span id="requirementsProgressStatus">No uploaded requirements yet.</span></div>
-                                <div class="requirements-progress__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="requirements-progress__fill" id="requirementsProgressFill"></div></div>
-                                <ul class="requirements-list" id="requirementsList"><li class="empty">No requirement records yet.</li></ul>
-                            </div>
-                        </section>
                         <div class="action-bar application-action-bar">
-                            <button type="button" class="btn-outline" id="saveDraftButton">Save draft</button>
                             <button type="button" class="btn-primary" id="submitProfileButton">Submit for verification</button>
                         </div>
-                        <section id="application-form-files" class="application-form-files-panel" aria-labelledby="applicationFormFilesHeading">
-                            <div class="panel-header application-form-files-panel__header">
-                                <h3 id="applicationFormFilesHeading">Application form requirements</h3>
-                                <p class="panel-subtitle">You may fill up these forms online once unlocked. Your assigned PDO or Admin may also upload scanned hardcopy forms from the application checker.</p>
-                            </div>
-                            <div class="doc-grid applicant-form-card-grid" id="applicationFormCards"></div>
-                        </section>
-                    </section>
-                    <section id="application-status" class="panel dash-section panel--review application-workspace-panel application-status-panel" aria-labelledby="applicationReviewHeading">
-                        <div class="panel-header"><h3 id="applicationReviewHeading">Review updates</h3><p class="panel-subtitle">Check the latest review result first, then open the full history when needed.</p></div>
-                        <div class="overview-grid status-summary-grid">
-                            <article class="overview-card"><span class="overview-label">Current status</span><strong class="overview-value" id="applicationReviewStatusValue">Draft</strong><p class="overview-meta" id="applicationReviewStatusNote">No review activity yet.</p></article>
-                            <article class="overview-card"><span class="overview-label">Reviewed</span><strong class="overview-value" id="requirementReviewValue">0 verified</strong><p class="overview-meta" id="requirementReviewNote">No requirement review activity yet.</p></article>
-                            <article class="overview-card overview-card--soft"><span class="overview-label">Needs correction</span><strong class="overview-value" id="applicationRemarkCount">0 remarks</strong><p class="overview-meta" id="applicationRemarkNote">Reviewer notes visible to the applicant are summarized here.</p></article>
-                        </div>
-                        <div class="application-review-latest" id="applicationLatestRemarkPanel" hidden>
-                            <article class="application-review-latest__card">
-                                <span class="overview-label">Latest reviewer message</span>
-                                <strong class="overview-value" id="applicationLatestRemarkTitle">No message yet</strong>
-                                <p class="overview-meta" id="applicationLatestRemarkCopy">Reviewer notes visible to the applicant appear here first.</p>
-                            </article>
-                        </div>
-                        <div class="status-panel">
-                            <h3>Messages for you</h3>
-                            <ul class="timeline-list" id="remarksList"><li class="empty">No reviewer remarks visible to the applicant yet.</li></ul>
-                        </div>
-                        <details class="application-history-disclosure">
-                            <summary>View full history</summary>
-                            <ul class="timeline-list" id="historyList"><li class="empty">No status history yet.</li></ul>
-                        </details>
                     </section>
                 </section>
                 <section id="training-page" class="dash-page">
-                    <section id="training-progress" class="panel dash-section panel--hero training-hero-panel" aria-labelledby="trainingHeading">
-                        <div class="training-hero-panel__main">
-                            <div class="panel-header panel-header--compact"><h3 id="trainingHeading">Upcoming or current session</h3><p class="panel-subtitle">The next live training schedule appears here first.</p></div>
-                            <div class="training-dashboard__next training-dashboard__next--hero is-empty" id="trainingNextCard"><h3>Next session</h3><p class="training-next__title" id="trainingNextTitle">No upcoming session scheduled</p><p class="training-next__meta" id="trainingNextMeta"></p></div>
-                            <p class="training-dashboard__hint" id="trainingSummaryNote">No training assignment recorded yet.</p>
-                        </div>
-                    </section>
-                    <section class="panel dash-section panel--summary training-metrics-panel" aria-labelledby="trainingMetricsHeading">
-                        <div class="panel-header panel-header--compact"><h3 id="trainingMetricsHeading">Attendance summary</h3><p class="panel-subtitle">A quick read on your assigned sessions and attendance record.</p></div>
-                        <div class="training-dashboard__stats training-dashboard__stats--workspace">
-                            <div class="training-stat"><span class="training-stat__label">Completed</span><span class="training-stat__value" id="trainingNahumanCount">0</span></div>
-                            <div class="training-stat"><span class="training-stat__label">Missed</span><span class="training-stat__value" id="trainingMissedCount">0</span></div>
-                            <div class="training-stat"><span class="training-stat__label">Notified</span><span class="training-stat__value" id="trainingNapahibaloanCount">0</span></div>
-                        </div>
-                    </section>
                     <section class="panel dash-section training-subsection training-subsection--schedule panel--info" aria-labelledby="trainingScheduleHeading">
                         <div class="panel-header"><h3 id="trainingScheduleHeading">Schedule list</h3><p class="panel-subtitle">Dates, venues, and preparation notes for each assigned session.</p></div>
                         <div class="training-schedule-grid" id="trainingScheduleGrid"><article class="training-schedule-empty">No training schedule yet. Wait for notice updates from CSWDD.</article></div>
+                    </section>
+                    <section id="application-form-files" class="panel dash-section training-subsection application-form-files-panel" aria-labelledby="applicationFormFilesHeading">
+                        <div class="panel-header application-form-files-panel__header">
+                            <h3 id="applicationFormFilesHeading">Training application forms</h3>
+                            <p class="panel-subtitle">Opened forms are grouped by the training session where Admin made them available.</p>
+                        </div>
+                        <div class="doc-grid applicant-form-card-grid applicant-form-card-grid--training" id="applicationFormCards"></div>
                     </section>
                     <section class="panel dash-section panel--records training-attendance-panel" aria-labelledby="trainingAttendanceHeading">
                         <div class="panel-header panel-header--spaced"><h3 id="trainingAttendanceHeading">Attendance</h3><p class="panel-subtitle">Attendance is easier to read on mobile and shows the latest status first.</p></div>

@@ -73,8 +73,10 @@
     return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  function deriveFirstDueMonth(approvalDate) {
-    const approvalMonth = normalizeMonth(approvalDate);
+  function deriveFirstDueMonth(record) {
+    const firstDueMonth = normalizeMonth(record?.firstRepaymentDueDate || '');
+    if (firstDueMonth) return firstDueMonth;
+    const approvalMonth = normalizeMonth(record?.approvedAt || record?.approvalDate || '');
     return approvalMonth ? shiftMonthValue(approvalMonth, 1) : '';
   }
 
@@ -357,21 +359,21 @@
       ? Math.max(Number(meta.repayment.verifiedInstallments), 0)
       : verifiedMonths.length;
     const currentMonth = normalizeMonth(new Date().toISOString());
-    const firstDueMonth = deriveFirstDueMonth(meta?.approvalDate || '');
+    const firstDueMonth = deriveFirstDueMonth(meta || {});
     const lastPlanMonth = firstDueMonth ? shiftMonthValue(firstDueMonth, TOTAL_MONTHS - 1) : '';
     const effectiveEndMonth = firstDueMonth && lastPlanMonth
       ? (currentMonth && currentMonth < lastPlanMonth ? currentMonth : lastPlanMonth)
       : '';
-    const monthsPassed = firstDueMonth && effectiveEndMonth ? monthDiffInclusive(firstDueMonth, effectiveEndMonth) : 0;
+    const calendarMonthsPassed = firstDueMonth && effectiveEndMonth ? monthDiffInclusive(firstDueMonth, effectiveEndMonth) : 0;
     const monthsPaid = verifiedMonths.filter((month) => {
       const normalized = normalizeMonth(month);
       if (!normalized) return false;
       if (firstDueMonth && normalized < firstDueMonth) return false;
       if (lastPlanMonth && normalized > lastPlanMonth) return false;
-      if (currentMonth && normalized > currentMonth) return false;
       return true;
     }).length;
-    const repaymentRate = monthsPassed > 0 ? Math.round((monthsPaid / monthsPassed) * 10000) / 100 : 0;
+    const rateDenominator = Math.max(calendarMonthsPassed, monthsPaid);
+    const repaymentRate = rateDenominator > 0 ? Math.round((monthsPaid / rateDenominator) * 10000) / 100 : 0;
 
     let key = meta && meta.repayment && text(meta.repayment.key)
       ? normalizeFilterValue(meta.repayment.key)
@@ -390,12 +392,13 @@
       verifiedAmount,
       verifiedMonths,
       verifiedInstallments,
-      monthsPassed,
+      calendarMonthsPassed,
+      monthsPassed: rateDenominator,
       monthsPaid,
       repaymentRate,
       outstandingBalance: Math.max(TOTAL_EXPECTED - verifiedAmount, 0),
-      progressLabel: `${monthsPaid} / ${monthsPassed} months`,
-      monthsPaidFraction: `${monthsPaid}/${monthsPassed}`,
+      progressLabel: `${monthsPaid} / ${rateDenominator} months`,
+      monthsPaidFraction: `${monthsPaid}/${rateDenominator}`,
     };
   }
 
@@ -613,6 +616,7 @@
         toDate: '',
       },
       modalOpen: false,
+      recordDetailOpen: false,
       remarksSnapshot: '',
     };
 
@@ -694,8 +698,29 @@
         return false;
       }
       state.selectedBeneficiaryKey = state.selectedBeneficiaryKey || '';
+      closeRecordDetail(true);
       toggleModal(false);
       return true;
+    }
+
+    function toggleRecordDetail(open) {
+      const modal = byId(config.recordModalId || '');
+      if (!modal) return;
+      state.recordDetailOpen = open;
+      modal.classList.toggle('is-open', open);
+      modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+
+    function closeRecordDetail(force = false) {
+      if (!force && remarksDirty() && !window.confirm('Discard unsaved remarks for this repayment review?')) {
+        return false;
+      }
+      toggleRecordDetail(false);
+      return true;
+    }
+
+    function openRecordDetail() {
+      toggleRecordDetail(true);
     }
 
     function renderSummary() {
@@ -814,14 +839,15 @@
       if (!body) return;
       if (!beneficiary || !beneficiary.records.length) {
         body.innerHTML = '<tr><td colspan="10">No repayment history recorded yet.</td></tr>';
+        body.closest('.admin-repayment-history-wrapper')?.scrollTo({ left: 0, top: 0 });
         return;
       }
 
       body.innerHTML = beneficiary.records.map((record) => {
         const isActive = currentRecord && currentRecord.id === record.id;
-        const proofAction = record.proof
-          ? `<button type="button" class="app-btn-outline app-btn-outline--quiet" data-repayment-proof="${record.id}">Open</button>`
-          : '--';
+        const actionLabel = record.stage === 'verified' && normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus) === 'confirmed_by_office'
+          ? 'View'
+          : 'Verify';
         const verificationResult = record.stage === 'verified'
           ? submissionStatusLabel(record)
           : record.stage === 'needs_correction'
@@ -835,15 +861,16 @@
             <td>${escapeHtml(formatCurrency(MONTHLY_EXPECTED))}</td>
             <td>${escapeHtml(formatCurrency(record.amount))}</td>
             <td>${escapeHtml(record.orNumber || '--')}</td>
-            <td>${proofAction}</td>
             <td>${chipMarkup(submissionStatusLabel(record), stageTone(record.stage))}</td>
             <td>${escapeHtml(verificationResult)}</td>
             <td>${escapeHtml(record.reviewedBy || '--')}</td>
             <td>${escapeHtml(record.notes || '--')}</td>
             <td>${escapeHtml(formatDateTime(record.reviewedAt || record.submittedAt || record.paymentDate))}</td>
+            <td class="actions"><button type="button" class="app-btn-outline app-btn-outline--quiet" data-repayment-record-action="${record.id}">${escapeHtml(actionLabel)}</button></td>
           </tr>
         `;
       }).join('');
+      body.closest('.admin-repayment-history-wrapper')?.scrollTo({ left: 0, top: 0 });
     }
 
     // Enable or lock review buttons depending on verification progress and hard-copy office confirmation.
@@ -1025,6 +1052,7 @@
     function selectRecord(recordId) {
       state.activeRecordId = Number(recordId || 0);
       renderModal();
+      openRecordDetail();
     }
 
     async function fetchJson(path, options = {}) {
@@ -1201,8 +1229,19 @@
           return;
         }
 
+        if (event.target.closest('[data-repayment-record-close]') || event.target.id === config.recordCloseId) {
+          closeRecordDetail();
+          return;
+        }
+
+        const recordAction = event.target.closest('[data-repayment-record-action]');
+        if (recordAction) {
+          selectRecord(recordAction.getAttribute('data-repayment-record-action'));
+          return;
+        }
+
         const recordRow = event.target.closest('[data-repayment-record]');
-        if (recordRow) {
+        if (recordRow && !event.target.closest('button, a')) {
           selectRecord(recordRow.getAttribute('data-repayment-record'));
           return;
         }
@@ -1231,6 +1270,10 @@
       byId(ids.close)?.addEventListener('click', () => closeModal());
 
       document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && state.recordDetailOpen) {
+          closeRecordDetail();
+          return;
+        }
         if (event.key === 'Escape' && state.modalOpen) {
           closeModal();
         }

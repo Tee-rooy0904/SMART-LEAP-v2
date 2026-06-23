@@ -191,25 +191,26 @@ class AuthService
         $existingUser = $this->findUserByEmail($email);
         if ($existingUser !== null) {
             if (strtolower((string) ($existingUser['verification_status'] ?? 'pending')) !== 'verified') {
-                $challenge = $this->issueVerificationChallenge(
-                    (int) $existingUser['id'],
-                    (string) $existingUser['email'],
-                    (string) $existingUser['full_name'],
-                    self::CHALLENGE_TYPE_ACCOUNT_ACTIVATION
-                );
+                $passwordService = new PasswordService();
+                db()->prepare(
+                    'UPDATE users
+                     SET password_hash = :password_hash,
+                         verification_status = "verified",
+                         updated_at = NOW()
+                     WHERE id = :id'
+                )->execute([
+                    'password_hash' => $passwordService->hash($password),
+                    'id' => (int) $existingUser['id'],
+                ]);
 
-                if (!$challenge['ok']) {
-                    return [
-                        'ok' => false,
-                        'errors' => ['general' => $challenge['message'] ?? 'Unable to restart account activation right now.'],
-                    ];
-                }
+                $freshUser = $this->sessionPayloadForUser((int) $existingUser['id']);
+                $this->recordLogin((int) $existingUser['id']);
 
                 return [
                     'ok' => true,
-                    'requiresVerification' => true,
-                    'message' => 'A verification code was sent to your email so you can finish activating your portal account.',
-                    'redirect' => 'verify-account?email=' . urlencode($email) . '&mode=activation&entryPoint=portal',
+                    'user' => $freshUser,
+                    'message' => 'Your applicant portal account is ready.',
+                    'redirect' => $this->redirectPathFor($freshUser),
                 ];
             }
 
@@ -265,7 +266,7 @@ class AuthService
                     'last_name' => $nameParts['last_name'] ?: null,
                     'email' => $email,
                     'password_hash' => $passwordHash,
-                    'verification_status' => 'pending',
+                    'verification_status' => 'verified',
                 ]);
             } else {
                 $statement = $pdo->prepare(
@@ -277,7 +278,7 @@ class AuthService
                     'full_name' => $fullName,
                     'email' => $email,
                     'password_hash' => $passwordHash,
-                    'verification_status' => 'pending',
+                    'verification_status' => 'verified',
                 ]);
             }
             $userId = (int) $pdo->lastInsertId();
@@ -294,25 +295,14 @@ class AuthService
             ];
         }
 
-        $challenge = $this->issueVerificationChallenge(
-            $userId,
-            $email,
-            $fullName !== '' ? $fullName : 'Applicant',
-            self::CHALLENGE_TYPE_ACCOUNT_ACTIVATION
-        );
-
-        if (!$challenge['ok']) {
-            return [
-                'ok' => false,
-                'errors' => ['general' => $challenge['message'] ?? 'Unable to send your verification code right now.'],
-            ];
-        }
+        $freshUser = $this->sessionPayloadForUser($userId);
+        $this->recordLogin($userId);
 
         return [
             'ok' => true,
-            'requiresVerification' => true,
-            'message' => 'Your account is almost ready. Check your email for the verification code to finish activation.',
-            'redirect' => 'verify-account?email=' . urlencode($email) . '&mode=activation&entryPoint=portal',
+            'user' => $freshUser,
+            'message' => 'Your applicant portal account is ready.',
+            'redirect' => $this->redirectPathFor($freshUser),
         ];
     }
 

@@ -11,6 +11,7 @@ $projectOfficerCssVersion = @filemtime(base_path('public/assets/css/dashboards/p
 $postApprovalCssVersion = @filemtime(base_path('public/assets/css/dashboards/post-approval.css')) ?: time();
 $postApprovalReviewCssVersion = @filemtime(base_path('public/assets/css/dashboards/post-approval-review.css')) ?: time();
 $notificationsCssVersion = @filemtime(base_path('public/assets/css/components/notifications.css')) ?: time();
+$reportsModuleJsVersion = @filemtime(base_path('public/assets/js/modules/reports.js')) ?: time();
 $projectOfficerJsVersion = @filemtime(base_path('public/assets/js/dashboards/project-officer.js')) ?: time();
 $repaymentWorkspaceJsVersion = @filemtime(base_path('public/assets/js/dashboards/repayment-review-workspace.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
@@ -28,12 +29,21 @@ foreach (($repaymentData['payments'] ?? []) as $payment) {
     }
     $initialPaymentsByBeneficiary[$beneficiaryId][] = $payment;
 }
-$monthsPassedFor = static function (string $approvalDate): int {
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $approvalDate)) {
+$monthsPassedFor = static function (string $firstRepaymentDueDate, string $approvedAt = '', string $approvalDate = ''): int {
+    $anchor = $firstRepaymentDueDate;
+    $alreadyFirstDue = true;
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $anchor)) {
+        $anchor = $approvedAt !== '' ? $approvedAt : $approvalDate;
+        $alreadyFirstDue = false;
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $anchor)) {
         return 0;
     }
     try {
-        $start = (new DateTimeImmutable(substr($approvalDate, 0, 7) . '-01'))->modify('+1 month');
+        $start = new DateTimeImmutable(substr($anchor, 0, 7) . '-01');
+        if (!$alreadyFirstDue) {
+            $start = $start->modify('+1 month');
+        }
         $today = new DateTimeImmutable('first day of this month');
     } catch (Throwable) {
         return 0;
@@ -87,8 +97,14 @@ $initialRepaymentRows = array_map(static function (array $beneficiary) use ($ini
             }
         }
     }
-    $monthsPassed = $monthsPassedFor((string) ($beneficiary['approvalDate'] ?? ''));
+    $monthsPassed = $monthsPassedFor(
+        (string) ($beneficiary['firstRepaymentDueDate'] ?? ''),
+        (string) ($beneficiary['approvedAt'] ?? ''),
+        (string) ($beneficiary['approvalDate'] ?? '')
+    );
     $monthsPaid = count($verifiedMonths);
+    $calendarMonthsPassed = $monthsPassed;
+    $rateDenominator = max($calendarMonthsPassed, $monthsPaid);
     $hasNeedsCorrection = array_reduce($payments, static fn (bool $carry, array $payment): bool => $carry || $normalizeRepaymentStage((string) ($payment['stage'] ?? '')) === 'needs_correction', false);
     $hasRejected = array_reduce($payments, static fn (bool $carry, array $payment): bool => $carry || $normalizeRepaymentStage((string) ($payment['stage'] ?? '')) === 'rejected', false);
     $hasCredited = array_reduce($payments, static fn (bool $carry, array $payment): bool => $carry || $normalizeRepaymentStage((string) ($payment['stage'] ?? '')) === 'credited', false);
@@ -98,9 +114,11 @@ $initialRepaymentRows = array_map(static function (array $beneficiary) use ($ini
         'repaymentKey' => $repaymentKey,
         'repaymentLabel' => ['under_review' => 'Under Review', 'needs_correction' => 'Needs Correction', 'rejected' => 'Rejected', 'fully_paid' => 'Fully Paid', 'partial_paid' => 'Partial Paid', 'no_upload_yet' => 'No Upload Yet'][$repaymentKey] ?? 'No Upload Yet',
         'verifiedAmount' => $verifiedAmount,
-        'monthsPassed' => $monthsPassed,
+        'calendarMonthsPassed' => $calendarMonthsPassed,
+        'monthsPassed' => $rateDenominator,
         'monthsPaid' => $monthsPaid,
-        'rate' => $monthsPassed > 0 ? round(($monthsPaid / $monthsPassed) * 100, 2) : 0.0,
+        'rate' => $rateDenominator > 0 ? round(($monthsPaid / $rateDenominator) * 100, 2) : 0.0,
+        'monthsPaidFraction' => $monthsPaid . '/' . $rateDenominator,
     ];
 }, $initialRepaymentBeneficiaries);
 $initialRepaymentPendingCount = count(array_filter($initialRepaymentRows, static fn (array $row): bool => $row['repaymentKey'] === 'under_review'));
@@ -173,6 +191,8 @@ $initialReportBars = [
   <script>
     window.SMARTLEAP_AUTH_USER = <?= json_encode($authUser ?? null, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
     window.SMARTLEAP_BASE_URL = <?= json_encode($baseUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+    window.SMARTLEAP_REPORTS_API_PATH = 'pdo/reports/data';
+    window.SMARTLEAP_REPORT_EXPORT_BASE = 'pdo/reports/export';
     window.SMARTLEAP_PO_INITIAL = <?= json_encode([
         'overview' => $overview,
         'repaymentData' => $repaymentData,
@@ -395,23 +415,10 @@ $initialReportBars = [
 
         <section id="training-section" class="content-card" data-role-section style="display:none;">
           <div id="po-training-overview-view" class="po-section-shell">
-            <section class="po-training-stats-strip">
-              <div class="po-training-summary" id="po-training-summary"></div>
-            </section>
-
             <section class="po-section-board">
-              <section class="data-table-card po-training-queue-card">
-                <header class="data-table-card__header">
-                  <div>
-                    <span class="po-panel-label">Training</span>
-                    <h3>Scoped Training Sessions</h3>
-                  </div>
-                  <span class="chip" id="po-training-program-count">0 sessions</span>
-                </header>
-                <div id="po-training-program-list" class="po-training-program-list">
-                  <div class="po-empty">No scoped training sessions found.</div>
-                </div>
-              </section>
+              <div id="po-training-program-list" class="po-training-program-list">
+                <div class="po-empty">No scoped training sessions found.</div>
+              </div>
             </section>
           </div>
 
@@ -432,37 +439,6 @@ $initialReportBars = [
         <section id="repayments-section" class="content-card" data-role-section style="display:none;">
           <div class="po-section-shell po-repayment-shell">
             <section class="po-section-board">
-              <section class="po-repayment-summary-row po-repayment-summary-strip" aria-label="Repayment management summary">
-                <article class="po-application-stat po-snapshot-card po-snapshot-card--compact">
-                  <div class="po-snapshot-card__eyebrow">Approved</div>
-                  <div class="po-snapshot-card__body">
-                    <span>Approved Beneficiaries</span>
-                    <strong id="po-repayment-approved"><?= count($initialRepaymentRows) ?></strong>
-                  </div>
-                </article>
-                <article class="po-application-stat po-snapshot-card po-snapshot-card--compact">
-                  <div class="po-snapshot-card__eyebrow">Review</div>
-                  <div class="po-snapshot-card__body">
-                    <span>With Pending Review</span>
-                    <strong id="po-repayment-pending"><?= $initialRepaymentPendingCount ?></strong>
-                  </div>
-                </article>
-                <article class="po-application-stat po-snapshot-card po-snapshot-card--compact">
-                  <div class="po-snapshot-card__eyebrow">Partial</div>
-                  <div class="po-snapshot-card__body">
-                    <span>Partial Verified</span>
-                    <strong id="po-repayment-partial"><?= $initialRepaymentPartialCount ?></strong>
-                  </div>
-                </article>
-                <article class="po-application-stat po-snapshot-card po-snapshot-card--compact po-snapshot-card--success">
-                  <div class="po-snapshot-card__eyebrow">Full</div>
-                  <div class="po-snapshot-card__body">
-                    <span>Fully Verified</span>
-                    <strong id="po-repayment-full"><?= $initialRepaymentFullCount ?></strong>
-                  </div>
-                </article>
-              </section>
-
               <div class="po-repayment-page">
                 <section class="data-table-card po-repayment-filters">
                   <header class="data-table-card__header">
@@ -560,7 +536,7 @@ $initialReportBars = [
                               <td>PHP <?= number_format((float) $initialRepaymentRow['verifiedAmount'], 2) ?></td>
                               <td><?= (int) $initialRepaymentRow['monthsPassed'] ?></td>
                               <td><?= (int) $initialRepaymentRow['monthsPaid'] ?></td>
-                              <td><?= $escapeHtml($repaymentRate) ?>% (<?= (int) $initialRepaymentRow['monthsPaid'] ?>/<?= (int) $initialRepaymentRow['monthsPassed'] ?>)</td>
+                              <td><?= $escapeHtml($repaymentRate) ?>% (<?= $escapeHtml($initialRepaymentRow['monthsPaidFraction'] ?? '0/0') ?>)</td>
                               <td class="actions">
                                 <button type="button" class="app-btn-outline" data-repayment-open="id:<?= $beneficiaryId ?>">Open Repayments</button>
                               </td>
@@ -822,158 +798,7 @@ $initialReportBars = [
         </section>
 
         <section id="reports-section" class="content-card" data-role-section style="display:none;">
-          <div class="po-section-shell po-reports-shell">
-            <section class="po-section-board">
-              <section class="reports-toolbar reports-filter-card po-reports-filter-card">
-                <div class="reports-filter-grid reports-filter-grid--realtime po-reports-filter-grid">
-                  <label class="reports-filter-group reports-search po-reports-search-field">
-                    <span class="reports-label">Search</span>
-                    <i class="fas fa-search" aria-hidden="true"></i>
-                    <input type="search" id="poReportsSearch" placeholder="Search beneficiary, business, or service type">
-                  </label>
-                  <label class="reports-field po-reports-filter-field po-reports-filter-field--period">
-                    <span class="reports-label">View Type</span>
-                    <select class="filter-select" id="poReportsPeriod">
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field" data-po-report-filter-field="year">
-                    <span class="reports-label">Year</span>
-                    <select class="filter-select" id="poReportsYear">
-                      <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
-                    </select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field" data-po-report-filter-field="repaymentYear">
-                    <span class="reports-label">Repayment Cycle</span>
-                    <select class="filter-select" id="poReportsRepaymentYear">
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                    </select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field" data-po-report-filter-field="month">
-                    <span class="reports-label">Repayment Month</span>
-                    <select class="filter-select" id="poReportsMonth"></select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field" data-po-report-filter-field="quarter" hidden>
-                    <span class="reports-label">Repayment Quarter</span>
-                    <select class="filter-select" id="poReportsQuarter"></select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field">
-                    <span class="reports-label">Service Type</span>
-                    <select class="filter-select" id="poReportsServiceType"></select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field">
-                    <span class="reports-label">Gender</span>
-                    <select class="filter-select" id="poReportsGender"></select>
-                  </label>
-                </div>
-                <div class="reports-filter-actions po-reports-filter-actions">
-                  <span class="reports-result-count" id="poReportsResultCount">0 unique people shown</span>
-                  <div class="reports-toolbar__actions">
-                    <button class="app-btn-outline" id="poReportsRefresh" type="button">Refresh</button>
-                  </div>
-                </div>
-              </section>
-
-                <section class="charts-grid po-reports-performance-grid" aria-label="PDO reports">
-                  <section class="chart-card chart-card--full po-reports-performance-card">
-                    <header class="chart-card__header">
-                      <div>
-                      <h4>Repayment Performance</h4>
-                      <p>Targeted collections, actual collected repayments, reporting gap, and ROI for the selected period.</p>
-                    </div>
-                  </header>
-                  <div class="reports-repayment-status-kpis">
-                    <article class="reports-repayment-status-kpi" style="--kpi-color:#2563eb">
-                      <span>Target Amount</span>
-                      <strong id="poReportsTargetAmount">&#8369;<?= number_format((float) $initialReportTargetAmount, 0) ?></strong>
-                      <small id="poReportsTargetMeta"><?= $escapeHtml(date('Y')) ?></small>
-                    </article>
-                    <article class="reports-repayment-status-kpi" style="--kpi-color:#16a34a">
-                      <span>Actual Collected</span>
-                      <strong id="poReportsActualCollected">&#8369;<?= number_format((float) $initialReportActualAmount, 0) ?></strong>
-                      <small id="poReportsActualMeta"><?= count($initialRepaymentRows) ?> scoped <?= count($initialRepaymentRows) === 1 ? 'beneficiary' : 'beneficiaries' ?></small>
-                    </article>
-                    <article class="reports-repayment-status-kpi" style="--kpi-color:#dc2626">
-                      <span>Gap</span>
-                      <strong id="poReportsGapAmount">&#8369;<?= number_format((float) $initialReportGapAmount, 0) ?></strong>
-                      <small id="poReportsGapMeta"><?= count($initialRepaymentRows) ?> repayment <?= count($initialRepaymentRows) === 1 ? 'month' : 'months' ?> covered</small>
-                    </article>
-                    <article class="reports-repayment-status-kpi" style="--kpi-color:#7c3aed">
-                      <span>ROI</span>
-                      <strong id="poReportsRoiPercent"><?= $initialReportRoiPercent == (int) $initialReportRoiPercent ? (int) $initialReportRoiPercent : number_format($initialReportRoiPercent, 2) ?>%</strong>
-                      <small>Actual / target x 100</small>
-                    </article>
-                  </div>
-                  <div class="chart-wrap reports-monthly-payment-chart-wrap" id="poReportsPerformanceBars">
-                    <div class="reports-monthly-payment-chart" role="img" aria-label="Repayment performance for scoped PDO beneficiaries">
-                      <div class="reports-monthly-payment-chart__body">
-                        <div class="reports-monthly-payment-chart__axis-title">Payments</div>
-                        <div class="reports-monthly-payment-chart__axis">
-                          <?php foreach ($initialReportTicks as $tick): ?>
-                            <span><?= number_format((float) $tick, 2) ?></span>
-                          <?php endforeach; ?>
-                        </div>
-                        <div class="reports-monthly-payment-chart__plot">
-                          <div class="reports-monthly-payment-chart__guides">
-                            <?php foreach ($initialReportTicks as $_tick): ?><i></i><?php endforeach; ?>
-                          </div>
-                          <div class="reports-monthly-payment-chart__groups" style="--month-count:1;">
-                            <article class="reports-monthly-payment-chart__group">
-                              <div class="reports-monthly-payment-chart__bars">
-                                <?php foreach ($initialReportBars as $bar): ?>
-                                  <?php $height = $initialReportMaxValue > 0 ? max(((float) $bar['amount']) > 0 ? 3 : 0, (((float) $bar['amount']) / $initialReportMaxValue) * 100) : 0; ?>
-                                  <span class="reports-monthly-payment-chart__bar" style="--bar-height:<?= $height ?>%;--bar-color:<?= $escapeHtml($bar['color']) ?>;" title="<?= $escapeHtml($bar['label']) ?>: PHP <?= number_format((float) $bar['amount'], 2) ?>">
-                                    <strong>&#8369;<?= number_format((float) $bar['amount'], 0) ?></strong>
-                                  </span>
-                                <?php endforeach; ?>
-                              </div>
-                              <span class="reports-monthly-payment-chart__month"><?= strtoupper(date('M Y')) ?></span>
-                            </article>
-                          </div>
-                        </div>
-                        <div class="reports-monthly-payment-chart__legend">
-                          <?php foreach ($initialReportBars as $bar): ?>
-                            <span><i style="background:<?= $escapeHtml($bar['color']) ?>"></i><?= $escapeHtml($bar['label']) ?></span>
-                          <?php endforeach; ?>
-                        </div>
-                      </div>
-                      <div class="reports-monthly-payment-chart__x-title">Months</div>
-                    </div>
-                  </div>
-                </section>
-                <section class="chart-card">
-                  <header class="chart-card__header">
-                    <div>
-                      <h4>Gender Segregation</h4>
-                      <p>Scoped pipeline and beneficiary population.</p>
-                    </div>
-                  </header>
-                  <div class="chart-wrap" id="poReportsGenderDonut"></div>
-                </section>
-                <section class="chart-card">
-                  <header class="chart-card__header">
-                    <div>
-                      <h4>Service Type Distribution</h4>
-                      <p>Scoped pipeline and beneficiary population.</p>
-                    </div>
-                  </header>
-                  <div class="chart-wrap" id="poReportsServiceDonut"></div>
-                </section>
-                <section class="chart-card">
-                  <header class="chart-card__header">
-                    <div>
-                      <h4>Sector Distribution</h4>
-                      <p>Scoped pipeline and beneficiary population.</p>
-                    </div>
-                  </header>
-                  <div class="chart-wrap" id="poReportsSectorDonut"></div>
-                </section>
-              </section>
-            </section>
-          </div>
+          <div class="admin-reports-loading">Loading reports.</div>
         </section>
       </main>
 
@@ -1040,6 +865,7 @@ $initialReportBars = [
               <article class="po-readiness-card"><span>Upload Requirements</span><strong id="po-app-upload-summary">0 / 0</strong></article>
               <article class="po-readiness-card"><span>Fill-up Form Requirements</span><strong id="po-app-form-summary">0 / 0</strong></article>
               <article class="po-readiness-card"><span>Training Status</span><strong id="po-app-training-status">--</strong></article>
+              <article class="po-readiness-card"><span>Proof of Assistance</span><strong id="po-app-assistance-proof-status">--</strong></article>
             </div>
             <div class="po-blocker-box">
               <span class="po-panel-label">Blocking Reasons</span>
@@ -1115,7 +941,6 @@ $initialReportBars = [
             <div class="po-decision-rail__actions">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
               <button type="button" class="btn btn-danger" id="po-app-modal-reject">Reject</button>
-              <button type="button" class="btn btn-primary" id="po-app-modal-approve-training">Approve for Training</button>
               <button type="button" class="btn btn-success" id="po-app-modal-approve">Approve</button>
             </div>
           </div>
@@ -1167,6 +992,11 @@ $initialReportBars = [
               <strong id="po-summary-training">--</strong>
               <small>PDO-verified seminar progress</small>
             </article>
+            <article class="po-summary-card">
+              <span>Proof of Assistance</span>
+              <strong id="po-summary-assistance-proof">--</strong>
+              <small>PDO upload — proof assistance was released</small>
+            </article>
           </div>
           <div class="po-summary-layout">
             <section class="po-summary-section">
@@ -1213,9 +1043,25 @@ $initialReportBars = [
   <div class="po-toast-stack" id="poToastStack" aria-live="polite" aria-atomic="true"></div>
   <div id="modal-root"></div>
 
+  <!-- Attendance check modal for the PDO training pipeline overview -->
+  <div class="po-attendance-modal-backdrop" id="poAttendanceModalBackdrop" hidden aria-hidden="true"></div>
+  <div class="po-attendance-modal" id="poAttendanceModal" hidden role="dialog" aria-modal="true" aria-labelledby="poAttendanceModalTitle">
+    <div class="po-attendance-modal__dialog">
+      <header class="po-attendance-modal__header">
+        <div class="atm-header-top">
+          <div class="atm-header-eyebrow"><i class="fas fa-chalkboard-user"></i> Attendance Check</div>
+          <button type="button" class="po-attendance-modal__close" id="poAttendanceModalClose" aria-label="Close attendance modal">&times;</button>
+        </div>
+        <div id="poAttendanceModalMeta"></div>
+      </header>
+      <div class="po-attendance-modal__body" id="poAttendanceModalBody"></div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script src="<?= $baseUrl ?>/assets/js/dashboards/repayment-review-workspace.js?v=<?= $repaymentWorkspaceJsVersion ?>" defer></script>
   <script src="<?= $baseUrl ?>/assets/js/shared/notifications.js?v=<?= $notificationsJsVersion ?>" defer></script>
+  <script src="<?= $baseUrl ?>/assets/js/modules/reports.js?v=<?= urlencode((string) $reportsModuleJsVersion) ?>" defer></script>
   <script src="<?= $baseUrl ?>/assets/js/dashboards/project-officer.js?v=<?= $projectOfficerJsVersion ?>" defer></script>
 </body>
 </html>

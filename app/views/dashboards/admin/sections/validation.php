@@ -22,14 +22,14 @@
             </article>
             <article class="metric-card metric-card--soft">
                 <div class="metric-card__body">
-                    <span class="metric-card__label">Selected for Current Batch</span>
+                    <span class="metric-card__label">Selected for Batch 1</span>
                     <strong class="metric-card__value" id="validationApprovedCount">0</strong>
-                    <span class="metric-card__meta" id="validationEmailFailureMeta">0 need resend</span>
+                    <span class="metric-card__meta" id="validationEmailFailureMeta">0 failed notices</span>
                 </div>
             </article>
             <article class="metric-card metric-card--soft">
                 <div class="metric-card__body">
-                    <span class="metric-card__label">Saved for Next Batch</span>
+                    <span class="metric-card__label">Saved for Batch 2</span>
                     <strong class="metric-card__value" id="validationDeferredCount">0</strong>
                 </div>
             </article>
@@ -91,7 +91,7 @@
                                 <th>Contact</th>
                                 <th>Email</th>
                                 <th>Validated</th>
-                                <th>Email Invite</th>
+                                <th>Approval Email</th>
                                 <th class="actions">Action</th>
                             </tr>
                         </thead>

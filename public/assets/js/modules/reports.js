@@ -42,6 +42,10 @@
     const startMonth = `${baseYear}-${padMonth(repaymentCycleStartMonth)}`;
     return Array.from({ length: 12 }, (_, index) => shiftMonthValue(startMonth, index));
   };
+  const buildCalendarYearMonths = (yearValue) => {
+    const baseYear = Number.parseInt(yearValue, 10) || Number.parseInt(currentYear, 10);
+    return Array.from({ length: 12 }, (_, index) => `${baseYear}-${padMonth(index + 1)}`);
+  };
   const labelCycleMonth = (monthValue) => {
     const [yearValue, monthNumber] = String(monthValue || '').split('-').map(Number);
     if (!yearValue || !monthNumber) return monthValue;
@@ -73,12 +77,25 @@
   let loading = false;
   let errorMessage = '';
   let requestId = 0;
+  let searchTimer = 0;
 
   const today = new Date();
   const currentYear = String(today.getFullYear());
+  const formatDateInput = (date) => {
+    const safe = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
+    return `${safe.getFullYear()}-${padMonth(safe.getMonth() + 1)}-${String(safe.getDate()).padStart(2, '0')}`;
+  };
+  const isoWeekInput = (date) => {
+    const safe = date instanceof Date && !Number.isNaN(date.getTime()) ? new Date(date) : new Date();
+    safe.setHours(0, 0, 0, 0);
+    safe.setDate(safe.getDate() + 3 - ((safe.getDay() + 6) % 7));
+    const week1 = new Date(safe.getFullYear(), 0, 4);
+    const week = 1 + Math.round(((safe - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    return `${safe.getFullYear()}-W${String(week).padStart(2, '0')}`;
+  };
   const currentCycleMonth = `${currentYear}-${padMonth(today.getMonth() + 1)}`;
   const defaultCycleMonth = (() => {
-    const cycleMonths = buildRepaymentCycleMonths(currentYear);
+    const cycleMonths = buildCalendarYearMonths(currentYear);
     return cycleMonths.includes(currentCycleMonth) ? currentCycleMonth : cycleMonths[0];
   })();
 
@@ -90,9 +107,10 @@
     quarter: deriveRepaymentQuarter(defaultCycleMonth),
     year: currentYear,
     repaymentYear: '1',
+    date: formatDateInput(today),
+    week: isoWeekInput(today),
     from: '',
     to: '',
-    district: '',
     sector: '',
     serviceType: '',
     gender: '',
@@ -100,8 +118,17 @@
     pdo: '',
     repayment: '',
     search: '',
+    trainingSession: '',
+    trainingGroup: '',
+    activeReport: 'repayments',
     ...(state.filters.reports || {}),
   };
+  if (String(state.filters.reports.period || '').toLowerCase() === 'all') {
+    state.filters.reports.period = 'monthly';
+  }
+  if (!['repayments', 'demographics', 'training'].includes(String(state.filters.reports.activeReport || ''))) {
+    state.filters.reports.activeReport = 'repayments';
+  }
 
   const escapeHtml = (value) => String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -111,6 +138,7 @@
     .replace(/'/g, '&#039;');
 
   const routeUrl = (path) => `${baseUrl}/${String(path || '').replace(/^\/+/, '')}`;
+  const reportApiPath = () => String(window.SMARTLEAP_REPORTS_API_PATH || 'api/reports');
 
   const reportExportBase = () => {
     if (window.SMARTLEAP_REPORT_EXPORT_BASE) {
@@ -147,23 +175,37 @@
 
   const buildReportQuery = () => {
     const filters = state.filters.reports;
+    const activeReport = String(filters.activeReport || 'repayments');
     const params = new URLSearchParams();
-    [
-      ['period', filters.period || 'monthly'],
+    const queryFields = [
+      ['period', filters.period || 'all'],
       ['month', filters.month],
       ['quarter', filters.quarter],
       ['year', filters.year],
       ['repaymentYear', filters.repaymentYear],
+      ['date', filters.date],
+      ['week', filters.week],
       ['from', filters.from],
       ['to', filters.to],
-      ['district', normalizeFilterValue(filters.district)],
-      ['sector', normalizeFilterValue(filters.sector)],
-      ['serviceType', normalizeFilterValue(filters.serviceType)],
-      ['gender', normalizeFilterValue(filters.gender)],
+      ['search', filters.search],
       ['ageGroup', normalizeFilterValue(filters.ageGroup)],
       ['pdo', normalizeFilterValue(filters.pdo)],
       ['repayment', normalizeFilterValue(filters.repayment)],
-    ].forEach(([key, value]) => {
+    ];
+    if (activeReport === 'demographics') {
+      queryFields.push(
+        ['sector', normalizeFilterValue(filters.sector)],
+        ['serviceType', normalizeFilterValue(filters.serviceType)],
+        ['gender', normalizeFilterValue(filters.gender)],
+      );
+    }
+    if (activeReport === 'training') {
+      queryFields.push(
+        ['trainingSession', normalizeFilterValue(filters.trainingSession)],
+        ['trainingGroup', normalizeFilterValue(filters.trainingGroup)],
+      );
+    }
+    queryFields.forEach(([key, value]) => {
       if (String(value || '').trim() !== '') params.set(key, value);
     });
     return params;
@@ -176,7 +218,7 @@
     renderStatus();
 
     const query = buildReportQuery();
-    const url = query.toString() ? `${routeUrl('api/reports')}?${query}` : routeUrl('api/reports');
+    const url = query.toString() ? `${routeUrl(reportApiPath())}?${query}` : routeUrl(reportApiPath());
 
     try {
       const response = await fetch(url, {
@@ -235,87 +277,168 @@
     barangayDistribution: countBy(items, (record) => record.barangay),
   });
 
+  const scheduledRepaymentMonthsForYear = (yearValue) => {
+    const year = String(yearValue || '').trim();
+    const months = Array.isArray(reportData?.options?.repaymentMonths) ? reportData.options.repaymentMonths : [];
+    return months
+      .map((value) => String(value || '').trim())
+      .filter((value) => /^\d{4}-\d{2}$/.test(value) && value.startsWith(`${year}-`))
+      .sort();
+  };
+
+  const scheduledRepaymentQuartersForYear = (yearValue) => {
+    const year = Number.parseInt(yearValue, 10);
+    const quarters = Array.isArray(reportData?.options?.repaymentQuarters) ? reportData.options.repaymentQuarters : [];
+    return quarters
+      .filter((item) => Number(item?.year || 0) === year)
+      .map((item) => ({
+        value: String(item.quarter || ''),
+        label: String(item.label || `Q${item.quarter || ''} ${year}`),
+      }))
+      .filter((item) => /^[1-4]$/.test(item.value))
+      .sort((left, right) => Number(left.value) - Number(right.value));
+  };
+
+  const scheduledRepaymentYears = (period) => {
+    if (period === 'monthly') {
+      const years = new Set((Array.isArray(reportData?.options?.repaymentMonths) ? reportData.options.repaymentMonths : [])
+        .map((value) => String(value || '').slice(0, 4))
+        .filter((value) => /^\d{4}$/.test(value)));
+      return Array.from(years).sort();
+    }
+    if (period === 'quarterly') {
+      const years = new Set((Array.isArray(reportData?.options?.repaymentQuarters) ? reportData.options.repaymentQuarters : [])
+        .map((item) => String(item?.year || ''))
+        .filter((value) => /^\d{4}$/.test(value)));
+      return Array.from(years).sort();
+    }
+    return [];
+  };
+
   const buildToolbar = () => {
     const filters = state.filters.reports;
     const options = reportData?.options || {};
-    const period = ['monthly', 'quarterly', 'yearly'].includes(String(filters.period || ''))
+    const activeReport = String(filters.activeReport || 'repayments');
+    const period = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'].includes(String(filters.period || ''))
       ? filters.period
       : 'monthly';
     filters.period = period;
-    const years = optionList(options.years).length ? optionList(options.years) : [currentYear];
-    const repaymentYear = String(filters.repaymentYear || '1');
-    const cycleBaseYear = String((Number.parseInt(filters.year || currentYear, 10) || Number.parseInt(currentYear, 10)) + (repaymentYear === '2' ? 1 : 0));
-    const cycleMonths = buildRepaymentCycleMonths(cycleBaseYear);
-    const selectedMonth = cycleMonths.includes(filters.month) ? filters.month : cycleMonths[0];
+    const scheduledYears = scheduledRepaymentYears(period);
+    const years = scheduledYears.length ? scheduledYears : (optionList(options.years).length ? optionList(options.years) : [currentYear]);
+    const selectedYear = years.includes(String(filters.year || '')) ? String(filters.year) : String(years[0] || currentYear);
+    filters.year = selectedYear;
+    const cycleMonths = period === 'monthly'
+      ? scheduledRepaymentMonthsForYear(selectedYear)
+      : buildCalendarYearMonths(selectedYear);
+    const selectedMonth = cycleMonths.includes(filters.month) ? filters.month : (cycleMonths[0] || '');
+    if (period === 'monthly') filters.month = selectedMonth;
+    const quarterOptions = period === 'quarterly' ? scheduledRepaymentQuartersForYear(selectedYear) : quarterLabels;
+    const selectedQuarter = quarterOptions.some((item) => item.value === String(filters.quarter || ''))
+      ? String(filters.quarter)
+      : String(quarterOptions[0]?.value || '1');
+    if (period === 'quarterly') filters.quarter = selectedQuarter;
 
-    const periodControls = `
+    const rangeControls = `
+        <div class="reports-field">
+          <span class="reports-label">From Date</span>
+          <input type="date" id="reports-from" value="${escapeHtml(filters.from || '')}">
+        </div>
+        <div class="reports-field">
+          <span class="reports-label">To Date</span>
+          <input type="date" id="reports-to" value="${escapeHtml(filters.to || '')}">
+        </div>
+      `;
+
+    const yearControl = `
         <div class="reports-field">
           <span class="reports-label">Year</span>
           <select id="reports-year">
-            ${years.map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.year || currentYear, value)}>${escapeHtml(value)}</option>`).join('')}
+            ${years.map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(selectedYear, value)}>${escapeHtml(value)}</option>`).join('')}
           </select>
         </div>
+      `;
+    const repaymentYearControl = `
         <div class="reports-field">
-          <span class="reports-label">Repayment Cycle</span>
+          <span class="reports-label">Repayment Year</span>
           <select id="reports-repayment-year">
-            <option value="1" ${selectedAttr(repaymentYear, '1')}>Year 1</option>
-            <option value="2" ${selectedAttr(repaymentYear, '2')}>Year 2</option>
+            <option value="1" ${selectedAttr(filters.repaymentYear || '1', '1')}>Year 1 (Months 1-12)</option>
+            <option value="2" ${selectedAttr(filters.repaymentYear || '1', '2')}>Year 2 (Months 13-24)</option>
           </select>
         </div>
+      `;
+
+    const periodControls = `
+        ${['monthly', 'quarterly'].includes(period) ? yearControl : ''}
+        ${period === 'yearly' ? repaymentYearControl : ''}
         ${period === 'monthly' ? `
           <div class="reports-field">
             <span class="reports-label">Repayment Month</span>
-            <select id="reports-month">
-              ${cycleMonths.map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(selectedMonth, value)}>${escapeHtml(labelCycleMonth(value))}</option>`).join('')}
+            <select id="reports-month" ${cycleMonths.length ? '' : 'disabled'}>
+              ${cycleMonths.length
+                ? cycleMonths.map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(selectedMonth, value)}>${escapeHtml(labelCycleMonth(value))}</option>`).join('')
+                : '<option value="">No repayment months</option>'}
             </select>
+          </div>
+        ` : ''}
+        ${period === 'daily' ? `
+          <div class="reports-field">
+            <span class="reports-label">Repayment Date</span>
+            <input type="date" id="reports-date" value="${escapeHtml(filters.date || formatDateInput(today))}">
+          </div>
+        ` : ''}
+        ${period === 'weekly' ? `
+          <div class="reports-field">
+            <span class="reports-label">Repayment Week</span>
+            <input type="week" id="reports-week" value="${escapeHtml(filters.week || isoWeekInput(today))}">
           </div>
         ` : ''}
         ${period === 'quarterly' ? `
           <div class="reports-field">
             <span class="reports-label">Repayment Quarter</span>
-            <select id="reports-quarter">
-              ${quarterLabels.map((item) => `<option value="${escapeHtml(item.value)}" ${selectedAttr(filters.quarter || '1', item.value)}>${escapeHtml(item.label)} (${item.value === '1' ? 'May-Jul' : item.value === '2' ? 'Aug-Oct' : item.value === '3' ? 'Nov-Jan' : 'Feb-Apr'})</option>`).join('')}
+            <select id="reports-quarter" ${quarterOptions.length ? '' : 'disabled'}>
+              ${quarterOptions.length
+                ? quarterOptions.map((item) => `<option value="${escapeHtml(item.value)}" ${selectedAttr(selectedQuarter, item.value)}>${escapeHtml(item.label)}</option>`).join('')
+                : '<option value="">No repayment quarters</option>'}
             </select>
           </div>
         ` : ''}
+        ${period === 'custom' ? rangeControls : ''}
       `;
 
-    return `
-      <div class="reports-toolbar reports-filter-card">
-        <div class="reports-filter-grid reports-filter-grid--realtime">
-          <div class="reports-filter-group reports-search">
-            <span class="reports-label">Search</span>
-            <i class="fas fa-search" aria-hidden="true"></i>
-            <input type="search" id="reports-search" placeholder="Search person, business, or PDO" value="${escapeHtml(filters.search)}">
-          </div>
+    const repaymentControls = activeReport === 'repayments' ? `
           <div class="reports-field">
             <span class="reports-label">View Type</span>
             <select id="reports-period">
+              <option value="daily" ${selectedAttr(period, 'daily')}>Daily</option>
+              <option value="weekly" ${selectedAttr(period, 'weekly')}>Weekly</option>
               <option value="monthly" ${selectedAttr(period, 'monthly')}>Monthly</option>
               <option value="quarterly" ${selectedAttr(period, 'quarterly')}>Quarterly</option>
               <option value="yearly" ${selectedAttr(period, 'yearly')}>Yearly</option>
+              <option value="custom" ${selectedAttr(period, 'custom')}>Custom Range</option>
             </select>
           </div>
           ${periodControls}
-          <div class="reports-field">
-            <span class="reports-label">District</span>
-            <select id="reports-district">
-              <option value="" ${selectedAttr(filters.district, '')}>All districts</option>
-              ${optionList(options.districts).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.district, value)}>${escapeHtml(value)}</option>`).join('')}
-            </select>
-          </div>
-          <div class="reports-field">
-            <span class="reports-label">Sector</span>
-            <select id="reports-sector">
-              <option value="" ${selectedAttr(filters.sector, '')}>All sectors</option>
-              ${optionList(options.sectors).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.sector, value)}>${escapeHtml(value)}</option>`).join('')}
-            </select>
-          </div>
+      ` : '';
+
+    const authRole = String(window.SMARTLEAP_AUTH_USER?.role || '').toLowerCase();
+    const isPdo = authRole.includes('project');
+
+    const pdoControl = isPdo ? '' : `
           <div class="reports-field">
             <span class="reports-label">Assigned PDO</span>
             <select id="reports-pdo">
               <option value="" ${selectedAttr(filters.pdo, '')}>All PDOs</option>
               ${optionList(options.pdos).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.pdo, value)}>${escapeHtml(value)}</option>`).join('')}
+            </select>
+          </div>
+      `;
+
+    const populationControls = activeReport === 'demographics' ? `
+          <div class="reports-field">
+            <span class="reports-label">Sector</span>
+            <select id="reports-sector">
+              <option value="" ${selectedAttr(filters.sector, '')}>All sectors</option>
+              ${optionList(options.sectors).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.sector, value)}>${escapeHtml(value)}</option>`).join('')}
             </select>
           </div>
           <div class="reports-field">
@@ -332,9 +455,39 @@
               ${optionList(options.genders).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.gender, value)}>${escapeHtml(value)}</option>`).join('')}
             </select>
           </div>
+      ` : '';
+
+    const trainingControls = activeReport === 'training' ? `
+          <div class="reports-field">
+            <span class="reports-label">Training Session</span>
+            <select id="reports-training-session">
+              <option value="" ${selectedAttr(filters.trainingSession, '')}>All sessions</option>
+              ${optionList(options.trainingSessions || [1, 2, 3]).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.trainingSession, String(value))}>Session ${escapeHtml(value)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="reports-field">
+            <span class="reports-label">Training Group</span>
+            <select id="reports-training-group">
+              <option value="" ${selectedAttr(filters.trainingGroup, '')}>All groups</option>
+              ${optionList(options.trainingGroups || [1, 2, 3]).map((value) => `<option value="${escapeHtml(value)}" ${selectedAttr(filters.trainingGroup, String(value))}>Group ${escapeHtml(value)}</option>`).join('')}
+            </select>
+          </div>
+      ` : '';
+
+    return `
+      <div class="reports-toolbar reports-filter-card">
+        <div class="reports-filter-grid reports-filter-grid--realtime">
+          <div class="reports-filter-group reports-search">
+            <span class="reports-label">Search</span>
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input type="search" id="reports-search" placeholder="Search person, business, or PDO" value="${escapeHtml(filters.search)}">
+          </div>
+          ${repaymentControls}
+          ${pdoControl}
+          ${populationControls}
+          ${trainingControls}
         </div>
         <div class="reports-filter-actions">
-          <span class="reports-result-count" id="reports-summary-chips"></span>
           <div class="reports-toolbar__actions">
             <button class="app-btn-outline" id="reports-refresh" type="button">Refresh</button>
             <button class="app-btn-outline" id="reports-export-csv" type="button">Export CSV</button>
@@ -343,13 +496,6 @@
         </div>
       </div>
     `;
-  };
-
-  const buildSummaryChips = (items, metrics) => {
-    const node = qs('#reports-summary-chips');
-    if (!node) return;
-    const label = metrics?.label || reportData?.filters?.periodLabel || 'Selected period';
-    node.textContent = `${items.length} ${items.length === 1 ? 'unique person' : 'unique people'} shown - ${label}`;
   };
 
   const renderStatus = () => {
@@ -508,9 +654,26 @@
       ticks.push(value);
     }
 
-    const xAxisTitle = period === 'quarterly' ? 'Quarters' : period === 'yearly' ? 'Years' : 'Months';
+    const xAxisTitle = period === 'daily'
+      ? 'Days'
+      : period === 'weekly'
+        ? 'Weeks'
+        : period === 'quarterly'
+          ? 'Quarters'
+          : period === 'yearly'
+            ? 'Years'
+            : period === 'all'
+              ? 'Months'
+              : period === 'custom'
+                ? 'Selected Range'
+                : 'Months';
 
-    root.innerHTML = `
+    const chunks = [];
+    for (let index = 0; index < rows.length; index += 6) {
+      chunks.push(rows.slice(index, index + 6));
+    }
+
+    const renderChunk = (chunk, chunkIndex) => `
       <div class="reports-monthly-payment-chart" role="img" aria-label="${escapeHtml(`Repayment performance by ${xAxisTitle.toLowerCase()}`)}">
         <div class="reports-monthly-payment-chart__body">
           <div class="reports-monthly-payment-chart__axis-title">Payments</div>
@@ -518,12 +681,12 @@
             ${ticks.map((value) => `<span>${escapeHtml(Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}</span>`).join('')}
           </div>
           <div class="reports-monthly-payment-chart__plot">
-            <div class="reports-monthly-payment-chart__canvas" style="--month-count:${rows.length};">
+            <div class="reports-monthly-payment-chart__canvas" style="--month-count:${chunk.length};">
               <div class="reports-monthly-payment-chart__guides">
                 ${ticks.map(() => '<i></i>').join('')}
               </div>
               <div class="reports-monthly-payment-chart__groups">
-                ${rows.map((row) => `
+                ${chunk.map((row) => `
                   <article class="reports-monthly-payment-chart__group">
                     <div class="reports-monthly-payment-chart__bars">
                       ${series.map((item) => {
@@ -546,26 +709,90 @@
             ${series.map((item) => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)}</span>`).join('')}
           </div>
         </div>
-        <div class="reports-monthly-payment-chart__x-title">${escapeHtml(xAxisTitle)}</div>
+        <div class="reports-monthly-payment-chart__x-title">${escapeHtml(chunks.length > 1 ? `${xAxisTitle} - Part ${chunkIndex + 1}` : xAxisTitle)}</div>
       </div>
     `;
+
+    root.innerHTML = chunks.map((chunk, index) => renderChunk(chunk, index)).join('');
   };
 
-  const buildPerformanceSection = (metrics) => `
+  const reportCards = (summary, metrics) => [
+    {
+      key: 'repayments',
+      eyebrow: 'Repayments',
+      title: formatCurrency(metrics.actualCollectedAmount || 0),
+      copy: `${formatCurrency(metrics.targetAmount || 0)} target for ${metrics.label || 'selected period'}.`,
+    },
+    {
+      key: 'demographics',
+      eyebrow: 'Donut Graphs',
+      title: `${summary.totalPeople || 0} people`,
+      copy: 'Gender, service type, and sector distribution for current applicants and beneficiaries.',
+    },
+    {
+      key: 'training',
+      eyebrow: 'Training Attendance',
+      title: `${(reportData?.trainingAnalytics?.rows || []).length} rows`,
+      copy: 'Attendance table filtered by training session and group number.',
+    },
+  ];
+
+  const buildReportsLauncher = (summary, metrics) => {
+    const activeReport = String(state.filters.reports.activeReport || 'repayments');
+    return `
+    <section class="reports-report-tabs" aria-label="Report type">
+      ${reportCards(summary, metrics).map((card) => `
+        <button type="button" class="reports-report-chip ${activeReport === card.key ? 'is-active' : ''}" data-report-open="${escapeHtml(card.key)}">
+          <span>${escapeHtml(card.eyebrow)}</span>
+          <small>${escapeHtml(card.copy)}</small>
+        </button>
+      `).join('')}
+    </section>
+  `;
+  };
+
+  const repaymentKpiCards = (metrics) => {
+    const period = reportData?.filters?.period || state.filters.reports.period || 'all';
+    const isCustom = period === 'custom';
+    const isAll = period === 'all';
+    return [
+      {
+        label: isCustom ? 'Expected Due in Range' : (isAll ? 'Expected Due' : 'Expected Due'),
+        value: formatCurrency(metrics.targetAmount || 0),
+        meta: metrics.label || 'Selected period',
+        color: '#2563eb',
+      },
+      {
+        label: isCustom ? 'Collected in Range' : 'Actual Collected',
+        value: formatCurrency(metrics.actualCollectedAmount || 0),
+        meta: `${metrics.scopedBeneficiaries || 0} beneficiaries with due obligations`,
+        color: '#16a34a',
+      },
+      {
+        label: isCustom ? 'Uncollected in Range' : 'Gap',
+        value: formatCurrency(metrics.gapAmount || 0),
+        meta: `${metrics.obligationCount || 0} due obligations`,
+        color: '#dc2626',
+      },
+      {
+        label: 'ROI',
+        value: formatPercent(metrics.roiPercent || 0),
+        meta: 'Collected / expected due x 100',
+        color: '#7c3aed',
+      },
+    ];
+  };
+
+  const buildPerformanceSection = (metrics, reportType = 'all') => `
     <div class="charts-grid" id="reports-performance-shell">
-      <div class="chart-card chart-card--full">
+      ${['all', 'repayments'].includes(reportType) ? `<div class="chart-card chart-card--full">
         <div class="chart-card__header">
           <div>
             <h4>Repayment Performance</h4>
           </div>
         </div>
         <div class="reports-repayment-status-kpis">
-          ${[
-            { label: 'Target Amount', value: formatCurrency(metrics.targetAmount || 0), meta: metrics.label || 'Selected period', color: '#2563eb' },
-            { label: 'Actual Collected', value: formatCurrency(metrics.actualCollectedAmount || 0), meta: `${metrics.scopedBeneficiaries || 0} scoped beneficiaries`, color: '#16a34a' },
-            { label: 'Gap', value: formatCurrency(metrics.gapAmount || 0), meta: `${metrics.obligationCount || 0} repayment months covered`, color: '#dc2626' },
-            { label: 'ROI', value: formatPercent(metrics.roiPercent || 0), meta: 'Actual / target x 100', color: '#7c3aed' },
-          ].map((card) => `
+          ${repaymentKpiCards(metrics).map((card) => `
             <article class="reports-repayment-status-kpi" style="--kpi-color:${card.color}">
               <span>${escapeHtml(card.label)}</span>
               <strong>${escapeHtml(card.value)}</strong>
@@ -574,8 +801,8 @@
           `).join('')}
         </div>
         <div class="chart-wrap reports-monthly-payment-chart-wrap" id="reports-performance-bars"></div>
-      </div>
-      <div class="chart-card">
+      </div>` : ''}
+      ${['all', 'demographics'].includes(reportType) ? `<div class="chart-card">
         <div class="chart-card__header">
           <h4>Gender Segregation</h4>
         </div>
@@ -592,9 +819,66 @@
           <h4>Sector Distribution</h4>
         </div>
         <div class="chart-wrap" id="reports-sector-donut"></div>
-      </div>
+      </div>` : ''}
+      ${['all', 'training'].includes(reportType) ? `<div class="chart-card chart-card--full">
+        <div class="chart-card__header">
+          <div>
+            <h4>Training Attendance</h4>
+            <small>Filtered by session and group number.</small>
+          </div>
+        </div>
+        <div class="table-wrapper reports-training-attendance-wrap">
+          <table class="data-table reports-training-attendance-table">
+            <thead>
+              <tr>
+                <th>Participant Name</th>
+                <th>Session</th>
+                <th>Group</th>
+                <th>PDO</th>
+                <th>Activity</th>
+                <th>Location</th>
+                <th>Attendance</th>
+                <th>Proof</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="reports-training-attendance-body">
+              <tr><td colspan="9">No training attendance records found.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>` : ''}
     </div>
   `;
+
+  const attendanceLabel = (status) => {
+    const text = String(status || '').trim().toLowerCase();
+    if (['attended', 'completed', 'present'].includes(text)) return 'Present';
+    if (['missed', 'absent'].includes(text)) return 'Absent';
+    if (text === 'excused') return 'Excused';
+    if (text === 'notified') return 'Notified';
+    if (text === 'scheduled') return 'Scheduled';
+    return text ? text.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) : 'Pending';
+  };
+
+  const renderTrainingAttendanceTable = (rows) => {
+    const body = qs('#reports-training-attendance-body');
+    if (!body) return;
+    const list = Array.isArray(rows) ? rows : [];
+    body.innerHTML = list.length ? list.map((row) => `
+      <tr>
+        <td><strong>${escapeHtml(row.participantName || '--')}</strong><br><small>${escapeHtml(row.businessName || '')}</small></td>
+        <td>${escapeHtml(`Session ${row.sessionNumber || '--'}`)}</td>
+        <td>${escapeHtml(`Group ${row.groupNumber || '--'}`)}</td>
+        <td>${escapeHtml(row.assignedPdo || 'Unassigned')}</td>
+        <td>${escapeHtml(row.activityName || '--')}</td>
+        <td>${escapeHtml(row.location || '--')}</td>
+        <td>${escapeHtml(attendanceLabel(row.status))}</td>
+        <td>${row.proofPath ? `<a class="action-link" href="${escapeHtml(routeUrl(row.proofPath))}" target="_blank" rel="noopener">${escapeHtml(row.proofName || 'View proof')}</a>` : '--'}</td>
+        <td>${escapeHtml(row.remarks || '--')}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="9">No training attendance records found.</td></tr>';
+  };
 
   const renderToolbarOnly = () => {
     const content = qs('#reports-content');
@@ -613,7 +897,7 @@
     if (!content) return;
 
     const items = records();
-    const summary = currentSummary(items);
+    const summary = reportData?.summary || currentSummary(items);
     const metrics = reportData?.repaymentAnalytics?.periodMetrics || reportData?.summary?.repaymentPerformance || {
       label: 'Selected period',
       targetAmount: 0,
@@ -623,18 +907,20 @@
       scopedBeneficiaries: items.length,
       obligationCount: 0,
     };
-    const repaymentPeriod = reportData?.filters?.period || state.filters.reports.period || 'monthly';
-    const repaymentBreakdown = repaymentPeriod === 'monthly'
-      ? (Array.isArray(reportData?.repaymentAnalytics?.monthlyBreakdown) ? reportData.repaymentAnalytics.monthlyBreakdown : [])
-      : (Array.isArray(reportData?.repaymentAnalytics?.breakdown) ? reportData.repaymentAnalytics.breakdown : []);
-    if (refreshToolbar) {
-      renderToolbarOnly();
-    }
+    const repaymentPeriod = reportData?.filters?.period || state.filters.reports.period || 'all';
+    const repaymentBreakdown = Array.isArray(reportData?.repaymentAnalytics?.breakdown)
+      ? reportData.repaymentAnalytics.breakdown
+      : [];
+    const activeReport = String(state.filters.reports.activeReport || 'repayments');
+    content.innerHTML = `
+      ${buildReportsLauncher(summary, metrics)}
+      <div id="reports-toolbar-shell"></div>
+      <div id="reports-performance-body"></div>
+    `;
+    if (refreshToolbar) renderToolbarOnly();
     const performanceBody = qs('#reports-performance-body', content);
     if (!performanceBody) return;
-    performanceBody.innerHTML = buildPerformanceSection(metrics);
-    buildSummaryChips(items, metrics);
-
+    performanceBody.innerHTML = buildPerformanceSection(metrics, activeReport);
     renderMonthlyPaymentChart(qs('#reports-performance-bars'), repaymentBreakdown, repaymentPeriod);
     renderDistributionChart(qs('#reports-gender-donut'), summary.genderDistribution || [], {
       label: 'Gender distribution chart',
@@ -648,6 +934,7 @@
       label: 'Sector distribution chart',
       centerLabel: 'Sectors',
     });
+    renderTrainingAttendanceTable(reportData?.trainingAnalytics?.rows || []);
   };
 
   const renderReportShell = () => {
@@ -686,7 +973,8 @@
       const id = event.target?.id || '';
       if (id === 'reports-search') {
         state.filters.reports.search = event.target.value;
-        updateReportsView({ refreshToolbar: false });
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(fetchReportData, 350);
       }
     });
 
@@ -696,12 +984,22 @@
       if (id === 'reports-period') {
         state.filters.reports.period = event.target.value;
         if (state.filters.reports.period === 'monthly') {
-          const cycleBaseYear = String((Number.parseInt(state.filters.reports.year || currentYear, 10) || Number.parseInt(currentYear, 10)) + (String(state.filters.reports.repaymentYear || '1') === '2' ? 1 : 0));
-          const cycleMonths = buildRepaymentCycleMonths(cycleBaseYear);
-          state.filters.reports.month = cycleMonths.includes(state.filters.reports.month) ? state.filters.reports.month : cycleMonths[0];
+          const years = scheduledRepaymentYears('monthly');
+          if (years.length && !years.includes(String(state.filters.reports.year || ''))) {
+            state.filters.reports.year = years[0];
+          }
+          const cycleMonths = scheduledRepaymentMonthsForYear(state.filters.reports.year || currentYear);
+          state.filters.reports.month = cycleMonths.includes(state.filters.reports.month) ? state.filters.reports.month : (cycleMonths[0] || '');
         }
-        if (state.filters.reports.period === 'quarterly' && !quarterLabels.some((item) => item.value === String(state.filters.reports.quarter || ''))) {
-          state.filters.reports.quarter = '1';
+        if (state.filters.reports.period === 'quarterly') {
+          const years = scheduledRepaymentYears('quarterly');
+          if (years.length && !years.includes(String(state.filters.reports.year || ''))) {
+            state.filters.reports.year = years[0];
+          }
+          const quarters = scheduledRepaymentQuartersForYear(state.filters.reports.year || currentYear);
+          state.filters.reports.quarter = quarters.some((item) => item.value === String(state.filters.reports.quarter || ''))
+            ? String(state.filters.reports.quarter)
+            : String(quarters[0]?.value || '1');
         }
         renderToolbarOnly();
         updateReportsView();
@@ -709,24 +1007,32 @@
         return;
       }
       if (id === 'reports-year') state.filters.reports.year = event.target.value;
-      else if (id === 'reports-repayment-year') state.filters.reports.repaymentYear = event.target.value;
       else if (id === 'reports-month') state.filters.reports.month = event.target.value;
       else if (id === 'reports-quarter') state.filters.reports.quarter = event.target.value;
+      else if (id === 'reports-repayment-year') state.filters.reports.repaymentYear = event.target.value;
+      else if (id === 'reports-date') state.filters.reports.date = event.target.value;
+      else if (id === 'reports-week') state.filters.reports.week = event.target.value;
       else if (id === 'reports-from') state.filters.reports.from = event.target.value;
       else if (id === 'reports-to') state.filters.reports.to = event.target.value;
-      else if (id === 'reports-district') state.filters.reports.district = event.target.value;
       else if (id === 'reports-pdo') state.filters.reports.pdo = event.target.value;
       else if (id === 'reports-sector') state.filters.reports.sector = event.target.value;
       else if (id === 'reports-service-type') state.filters.reports.serviceType = event.target.value;
       else if (id === 'reports-gender') state.filters.reports.gender = event.target.value;
-      if (id === 'reports-year' || id === 'reports-repayment-year') {
-        const cycleBaseYear = String((Number.parseInt(state.filters.reports.year || currentYear, 10) || Number.parseInt(currentYear, 10)) + (String(state.filters.reports.repaymentYear || '1') === '2' ? 1 : 0));
-        const cycleMonths = buildRepaymentCycleMonths(cycleBaseYear);
-        if (!cycleMonths.includes(state.filters.reports.month)) {
-          state.filters.reports.month = cycleMonths[0];
+      else if (id === 'reports-training-session') state.filters.reports.trainingSession = event.target.value;
+      else if (id === 'reports-training-group') state.filters.reports.trainingGroup = event.target.value;
+      if (id === 'reports-year') {
+        if (state.filters.reports.period === 'monthly') {
+          const cycleMonths = scheduledRepaymentMonthsForYear(state.filters.reports.year || currentYear);
+          state.filters.reports.month = cycleMonths.includes(state.filters.reports.month) ? state.filters.reports.month : (cycleMonths[0] || '');
+        }
+        if (state.filters.reports.period === 'quarterly') {
+          const quarters = scheduledRepaymentQuartersForYear(state.filters.reports.year || currentYear);
+          state.filters.reports.quarter = quarters.some((item) => item.value === String(state.filters.reports.quarter || ''))
+            ? String(state.filters.reports.quarter)
+            : String(quarters[0]?.value || '1');
         }
       }
-      if (id === 'reports-year' || id === 'reports-repayment-year' || id === 'reports-period') {
+      if (id === 'reports-year' || id === 'reports-period' || id === 'reports-repayment-year') {
         renderToolbarOnly();
         updateReportsView();
       }
@@ -734,6 +1040,12 @@
     });
 
     section.addEventListener('click', (event) => {
+      const openReport = event.target.closest('[data-report-open]');
+      if (openReport) {
+        state.filters.reports.activeReport = openReport.getAttribute('data-report-open') || 'repayments';
+        updateReportsView();
+        return;
+      }
       const id = event.target?.id || '';
       if (id === 'reports-refresh') {
         fetchReportData();

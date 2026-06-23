@@ -64,7 +64,7 @@
                             <span class="interactive-card__icon" aria-hidden="true">+</span>
                         </span>
                         <span class="interactive-card__body" data-accordion-panel>
-                            <span class="interactive-card__text">The applicant side of SMART LEAP begins with one complete Stage 1 application. After you are selected and activate your account, the private portal is used to monitor progress, respond to follow-up requirements, and open any forms that become available in your application stage.</span>
+                            <span class="interactive-card__text">The applicant side of SMART LEAP begins with one complete Stage 1 application and email-code verification. After you are selected and set your password, the private portal is used to monitor progress, respond to follow-up requirements, and open any forms that become available in your application stage.</span>
                         </span>
                     </button>
                     <button class="content-card interactive-card" type="button" data-accordion-trigger aria-expanded="false">

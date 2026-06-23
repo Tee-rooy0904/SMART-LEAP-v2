@@ -6,11 +6,10 @@
   const routeUrl = (path) => `${baseUrl}/${String(path || '').replace(/^\/+/, '')}`;
 
   const state = {
-    data: { programs: [], rounds: [], summary: {}, statuses: [], seminarForms: [] },
-    view: 'overview',
-    activeRoundNumber: 0,
-    activeGroupNumber: 0,
-    activeProgram: null,
+    data: { programs: [], rounds: [], summary: {}, statuses: [], seminarForms: [], eligibleInvitees: [] },
+    filters: { session: '1', group: '1', activity: '', location: '' },
+    modalOpen: false,
+    modalProgram: null,
     loading: { list: false, detail: false, save: false, notices: false },
   };
 
@@ -57,6 +56,20 @@
     }
   };
 
+  const apiFormPost = async (path, formData) => {
+    try {
+      const response = await fetch(routeUrl(path), {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+        body: formData,
+      });
+      return await parseJson(response);
+    } catch (error) {
+      return { ok: false, message: 'Unable to reach the server right now.' };
+    }
+  };
+
   const init = () => {
     if (!section()) return;
     renderShell();
@@ -68,9 +81,9 @@
     const root = section();
     if (!root) return;
     setHTML(root, `
-      <div class="po-section-shell">
+      <div class="po-section-shell training-session-manager">
         <section id="admin-training-overview-view"></section>
-        <section id="admin-training-workspace-view" hidden></section>
+        <div id="admin-training-modal-root"></div>
         <div id="admin-training-notice" class="notice" hidden></div>
       </div>
     `);
@@ -80,82 +93,156 @@
     state.loading.list = true;
     render();
     const response = await apiGet('api/training');
-    state.loading.list = false;
     if (!response.ok) {
+      state.loading.list = false;
       showNotice(response.message || 'Unable to load the training workflow.', 'danger');
       render();
       return;
     }
 
     state.data = response.data || state.data;
-    syncActiveProgramFromListing();
+    await hydrateProgramDetails();
+    syncFiltersToCreatedSlots();
+    state.loading.list = false;
     render();
   }
 
-  function syncActiveProgramFromListing() {
-    if (!state.activeProgram) return;
-    const activeProgramId = Number(state.activeProgram.id || 0);
-    if (activeProgramId <= 0) {
-      const draftRound = resolveRound(state.activeRoundNumber);
-      if (!draftRound) {
-        state.view = 'overview';
-        state.activeProgram = null;
-      }
-      return;
-    }
+  async function hydrateProgramDetails() {
+    const programs = Array.isArray(state.data.programs) ? state.data.programs : [];
+    if (!programs.length) return;
 
-    const refreshed = (state.data.programs || []).find((program) => Number(program.id) === activeProgramId);
-    if (!refreshed) {
-      state.view = 'overview';
-      state.activeProgram = null;
-      return;
-    }
-
-    state.activeProgram = { ...state.activeProgram, ...refreshed };
+    const detailed = await Promise.all(programs.map(async (program) => {
+      if (!program?.id) return program;
+      const response = await apiGet('api/training/show', { id: program.id });
+      return response.ok && response.program ? { ...program, ...response.program } : program;
+    }));
+    state.data.programs = detailed;
   }
 
-  async function loadProgram(programId, roundNumber, groupNumber) {
-    state.loading.detail = true;
-    render();
-    const response = await apiGet('api/training/show', { id: programId });
-    state.loading.detail = false;
-    if (!response.ok) {
-      showNotice(response.message || 'Unable to load this training group slot.', 'danger');
-      render();
-      return;
-    }
-
-    state.activeRoundNumber = Number(roundNumber || response.program?.roundNumber || 1);
-    state.activeGroupNumber = Number(groupNumber || response.program?.targetGroupNumber || 1);
-    state.activeProgram = response.program || null;
-    state.view = 'workspace';
-    clearNotice();
-    render();
+  function render() {
+    renderOverview();
+    renderModal();
   }
 
-  function resolveRound(roundNumber) {
-    return (state.data.rounds || []).find((round) => Number(round.roundNumber) === Number(roundNumber)) || null;
-  }
+  function renderOverview() {
+    const root = qs('#admin-training-overview-view');
+    if (!root) return;
 
-  function resolveRoundSlot(roundNumber, groupNumber) {
-    const round = resolveRound(roundNumber);
-    if (!round) return null;
-    return (round.slots || []).find((slot) => Number(slot.groupNumber) === Number(groupNumber)) || null;
-  }
-
-  function slotProgram(slot) {
-    return slot?.program || null;
-  }
-
-  function draftInviteesForGroup(groupNumber) {
     const yearlyBatch = state.data.summary?.yearlyBatch || {};
-    const groupRosters = yearlyBatch.groupRosters || {};
-    const rows = groupRosters[`group${groupNumber}`] || [];
-    return rows.map((row, index) => ({
-      id: `draft-${groupNumber}-${index + 1}`,
+    const rows = filteredTrainingRows();
+    const selectedProgram = selectedFilterProgram();
+    const selectedGroupNumber = Number(state.filters.group || 0);
+    const selectedSessionNumber = Number(state.filters.session || 0);
+    const selectedInvitees = selectedProgram ? inviteesForProgram(selectedProgram) : [];
+    // notifyEnabled uses participantCount from the API summary so it works even before
+    // hydrateProgramDetails completes. Falls back to the hydrated invitees array length.
+    const programParticipantCount = Number(selectedProgram?.participantCount ?? selectedInvitees.length);
+    const notifyEnabled = Boolean(selectedProgram?.id && selectedGroupNumber > 0 && selectedSessionNumber > 0 && !selectedProgram.isLocked && programParticipantCount > 0);
+    const notifyLabel = selectedGroupNumber > 0 ? `Notify Group ${selectedGroupNumber}` : 'Notify Group';
+    const notifyTitle = !selectedProgram
+      ? 'Select a scheduled session and group first.'
+      : (notifyEnabled ? 'Send the training notice to the participants in this session and group.' : 'Assign at least one participant before sending notices.');
+
+    setHTML(root, `
+      <section class="admin-section-tools admin-training-tools training-session-toolbar">
+        <div>
+          <span class="po-panel-label">Training Pipeline</span>
+          <h3>Session and Attendance Manager</h3>
+        </div>
+        <div class="po-training-page-head__actions">
+          <button type="button" class="app-btn-outline" data-training-action="refresh">Refresh</button>
+          <button type="button" class="app-btn-primary" data-training-create-session>Create Training Session</button>
+        </div>
+      </section>
+      <section class="admin-training-summary metric-grid">
+        ${buildSummaryCard('Eligible for Training', (state.data.eligibleInvitees || []).length, 'Ready List')}
+        ${buildSummaryCard('Created Sessions', (state.data.programs || []).length, 'Session Table')}
+        ${buildSummaryCard('Group 1 Count', `${yearlyBatch.yearlyGroup1Count || 0}/${yearlyBatch.yearlyGroupSize || 85}`, 'Capacity')}
+        ${buildSummaryCard('Group 2 Count', `${yearlyBatch.yearlyGroup2Count || 0}/${yearlyBatch.yearlyGroupSize || 85}`, 'Capacity')}
+        ${buildSummaryCard('Group 3 Count', `${yearlyBatch.yearlyGroup3Count || 0}/${yearlyBatch.yearlyGroupSize || 85}`, 'Capacity')}
+      </section>
+      <section class="po-training-workspace training-session-filter-panel">
+        <header class="po-training-workspace__header">
+          <div><span class="po-panel-label">Filters</span><h4>Training Session Table</h4></div>
+          <button type="button" class="action-button po-case-action" data-training-notify-group ${notifyEnabled && !state.loading.notices ? '' : 'disabled'} title="${escapeHtml(notifyTitle)}">${state.loading.notices ? 'Sending...' : escapeHtml(notifyLabel)}</button>
+        </header>
+        <div class="training-session-filters">
+          ${selectField('Session', 'session', filterSessionOptions(), state.filters.session, '', false, true, false)}
+          ${selectField('Group', 'group', filterGroupOptions(), state.filters.group, '', false, true, false)}
+          <label class="po-training-field"><span>Activity</span><input class="section-filter" type="search" data-training-filter="activity" value="${escapeHtml(state.filters.activity)}" placeholder="Search activity name"></label>
+          <label class="po-training-field"><span>Location</span><input class="section-filter" type="search" data-training-filter="location" value="${escapeHtml(state.filters.location)}" placeholder="Search location"></label>
+        </div>
+        <div class="po-training-validation-banner">${escapeHtml(notifyTitle)}</div>
+        <div class="table-card po-training-work-block">
+          <div class="table-wrapper training-session-table-wrap">
+            <table class="data-table training-session-table">
+              <thead>
+                <tr>
+                  <th>Participant</th>
+                  <th>Session / Group</th>
+                  <th>Activity Name</th>
+                  <th>Time</th>
+                  <th>Location</th>
+                  <th>What to Bring</th>
+                  <th>Forms Assigned</th>
+                </tr>
+              </thead>
+              <tbody>${rows.length ? rows.map(renderTrainingRow).join('') : '<tr><td colspan="7">No training rows match the selected filters.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    `);
+  }
+
+  function renderTrainingRow(row) {
+    const program = row.program;
+    const invitee = row.invitee;
+    const forms = formLabels(program.seminarFormCodes || []);
+    return `
+      <tr>
+        <td><strong>${escapeHtml(invitee.user?.name || invitee.fullName || '--')}</strong><br><small>${escapeHtml(invitee.businessName || '')}</small></td>
+        <td>${escapeHtml(`Session ${program.roundNumber || '--'} / Group ${program.targetGroupNumber || invitee.batchGroupNumber || '--'}`)}</td>
+        <td>${escapeHtml(program.programName || '--')}</td>
+        <td>${escapeHtml(formatTimeRange(program.startTime, program.endTime))}</td>
+        <td>${escapeHtml(program.venue || '--')}</td>
+        <td>${escapeHtml(program.whatToBring || '--')}</td>
+        <td>${forms.length ? forms.map((label) => `<span class="training-form-chip">${escapeHtml(label)}</span>`).join('') : '<span class="po-status-chip is-muted">No forms</span>'}</td>
+      </tr>
+    `;
+  }
+
+  function filteredTrainingRows() {
+    const session = Number(state.filters.session || 0);
+    const group = Number(state.filters.group || 0);
+    const activity = state.filters.activity.toLowerCase();
+    const location = state.filters.location.toLowerCase();
+    const rows = [];
+
+    (state.data.programs || []).forEach((program) => {
+      if (session > 0 && Number(program.roundNumber) !== session) return;
+      if (group > 0 && Number(program.targetGroupNumber) !== group) return;
+      if (activity && !String(program.programName || '').toLowerCase().includes(activity)) return;
+      if (location && !String(program.venue || '').toLowerCase().includes(location)) return;
+
+      inviteesForProgram(program).forEach((invitee) => {
+        rows.push({ program, invitee });
+      });
+    });
+
+    return rows;
+  }
+
+  function inviteesForProgram(program) {
+    const invitees = Array.isArray(program?.invitees) ? program.invitees : [];
+    if (invitees.length) return invitees;
+
+    const groupNumber = Number(program?.targetGroupNumber || 0);
+    const groupRosters = state.data.summary?.yearlyBatch?.groupRosters || {};
+    return (groupRosters[`group${groupNumber}`] || []).map((row, index) => ({
+      id: `draft-${program?.id || groupNumber}-${index}`,
       applicantProfileId: Number(row.applicantProfileId || 0),
-      batchGroupNumber: Number(groupNumber),
-      remarks: '',
+      batchGroupNumber: groupNumber,
       status: 'Scheduled',
       inviteStatus: 'Scheduled',
       businessName: row.businessName || '--',
@@ -163,321 +250,269 @@
     }));
   }
 
-  function buildDraftProgram(roundNumber, groupNumber) {
-    const round = resolveRound(roundNumber);
-    const baseProgram = (round?.slots || [])
-      .map((slot) => slotProgram(slot))
-      .find((program) => program) || null;
-
-    return {
-      id: null,
-      roundNumber,
-      targetGroupNumber: groupNumber,
-      programName: baseProgram?.programName || '',
-      title: baseProgram?.programName || '',
-      description: baseProgram?.description || '',
-      date: baseProgram?.date || '',
-      startTime: baseProgram?.startTime || '',
-      endTime: baseProgram?.endTime || '',
-      venue: baseProgram?.venue || '',
-      speaker: baseProgram?.speaker || '',
-      whatToBring: baseProgram?.whatToBring || '',
-      instructions: baseProgram?.instructions || '',
-      seminarFormCodes: Array.isArray(baseProgram?.seminarFormCodes) ? [...baseProgram.seminarFormCodes] : [],
-      status: 'Scheduled',
-      storedStatus: 'Scheduled',
-      isLocked: false,
-      noticeSentCount: 0,
-      participantCount: draftInviteesForGroup(groupNumber).length,
-      invitees: draftInviteesForGroup(groupNumber),
-      yearlyBatch: state.data.summary?.yearlyBatch || {},
-    };
+  function selectedFilterProgram() {
+    const session = Number(state.filters.session || 0);
+    const group = Number(state.filters.group || 0);
+    if (session <= 0 || group <= 0) return null;
+    return (state.data.programs || []).find((program) => Number(program.roundNumber) === session && Number(program.targetGroupNumber) === group) || null;
   }
 
-  function openRoundSlot(roundNumber, groupNumber) {
-    const slot = resolveRoundSlot(roundNumber, groupNumber);
-    const program = slotProgram(slot);
-    state.activeRoundNumber = Number(roundNumber);
-    state.activeGroupNumber = Number(groupNumber);
-    state.view = 'workspace';
-
-    if (program?.id) {
-      return loadProgram(program.id, roundNumber, groupNumber);
-    }
-
-    state.activeProgram = buildDraftProgram(Number(roundNumber), Number(groupNumber));
-    clearNotice();
-    render();
-    return null;
+  function openCreateModal() {
+    const defaults = defaultSessionGroup();
+    state.modalProgram = buildModalProgram(defaults.session, defaults.group);
+    state.modalOpen = true;
+    renderModal();
   }
 
-  function openFirstAvailableSlot() {
-    const round = (state.data.rounds || []).find((entry) => Array.isArray(entry.availableGroups) && entry.availableGroups.length);
-    if (!round) {
-      showNotice('All three yearly training sessions and all group notices are already prepared.', 'info');
-      return;
-    }
-    openRoundSlot(round.roundNumber, round.availableGroups[0]);
+  function closeModal() {
+    state.modalOpen = false;
+    state.modalProgram = null;
+    renderModal();
   }
 
-  function render() {
-    renderOverview();
-    renderWorkspace();
-  }
-
-  function renderOverview() {
-    const root = qs('#admin-training-overview-view');
+  function renderModal() {
+    const root = qs('#admin-training-modal-root');
     if (!root) return;
-
-    const rounds = state.data.rounds || [];
-    const yearlyBatch = state.data.summary?.yearlyBatch || {};
-    const nextRound = rounds.find((round) => (round.availableGroups || []).length) || null;
-    const roundsStarted = rounds.filter((round) => (round.slots || []).some((slot) => slot.program)).length;
-    const loadingCopy = state.loading.list ? '<div class="po-empty">Loading training rounds...</div>' : '';
-
-    setHTML(root, `
-      <section class="admin-section-tools admin-training-tools">
-        <div class="po-training-page-head__actions">
-          <button type="button" class="app-btn-primary" id="training-focus-create" ${(nextRound ? '' : 'disabled')}>Prepare Next Group Schedule</button>
-        </div>
-      </section>
-      <section class="admin-training-summary metric-grid">
-        ${buildSummaryCard('Eligible for Training', (state.data.eligibleInvitees || []).length, 'Ready List')}
-        ${buildSummaryCard('Session Rounds Started', roundsStarted, 'Yearly Flow')}
-        ${buildSummaryCard('Current Unlocked Round', nextRound ? `Session ${nextRound.roundNumber}` : 'Complete', 'Scheduler')}
-        ${buildSummaryCard('Group 1 Count', `${yearlyBatch.yearlyGroup1Count || 0}/${yearlyBatch.yearlyGroupSize || 85}`, 'Capacity Grouping')}
-        ${buildSummaryCard('Group 2 Count', `${yearlyBatch.yearlyGroup2Count || 0}/${yearlyBatch.yearlyGroupSize || 85}`, 'Capacity Grouping')}
-        ${buildSummaryCard('Group 3 Count', `${yearlyBatch.yearlyGroup3Count || 0}/${yearlyBatch.yearlyGroupSize || 85}`, 'Capacity Grouping')}
-      </section>
-      <section class="po-training-program-list">
-        <div class="po-training-work-block__header">
-          <div>
-            <span class="po-panel-label">Round Workflow</span>
-            <h4>Yearly Training Sessions</h4>
-          </div>
-          <span class="po-summary-chip">${rounds.filter((round) => round.isComplete).length}/${rounds.length || 3} rounds complete</span>
-        </div>
-        ${loadingCopy || buildRoundBoard(rounds)}
-      </section>
-    `);
-  }
-
-  function buildRoundBoard(rounds) {
-    if (!rounds.length) {
-      return '<div class="po-empty">Training rounds are not available right now.</div>';
-    }
-
-    return `<div class="training-round-board">${rounds.map((round) => buildRoundCard(round)).join('')}</div>`;
-  }
-
-  function buildRoundCard(round) {
-    const slots = round.slots || [];
-    const status = round.isComplete ? 'Completed' : (round.isUnlocked ? 'Active' : 'Locked');
-    return `
-      <article class="training-round-card ${round.isUnlocked ? '' : 'is-disabled'}">
-        <div class="training-round-card__header">
-          <div>
-            <span class="po-panel-label">Yearly Session</span>
-            <h4>${escapeHtml(round.label || `Session ${round.roundNumber}`)}</h4>
-          </div>
-          <span class="po-status-chip ${round.isComplete ? 'is-success' : (round.isUnlocked ? 'is-warning' : 'is-muted')}">${escapeHtml(status)}</span>
-        </div>
-        <p class="training-round-card__copy">
-          ${round.isComplete
-            ? 'All three groups are already notified for this yearly session.'
-            : (round.isUnlocked
-              ? 'Prepare any group schedule for this session, then notify each group when its roster reaches capacity.'
-              : 'This session is currently locked.')}
-        </p>
-        <div class="training-round-card__groups">
-          ${slots.map((slot) => buildGroupButton(round, slot)).join('')}
-        </div>
-      </article>
-    `;
-  }
-
-  function buildGroupButton(round, slot) {
-    const program = slotProgram(slot);
-    const slotState = slot.state || 'available';
-    const slotLabel = slotState === 'locked'
-      ? 'Notified'
-      : (slotState === 'draft' ? 'Draft' : (slot.disabled ? 'Disabled' : 'Available'));
-    const isActive = Number(state.activeRoundNumber) === Number(round.roundNumber)
-      && Number(state.activeGroupNumber) === Number(slot.groupNumber)
-      && state.view === 'workspace';
-
-    return `
-      <button
-        type="button"
-        class="training-group-slot training-group-slot--${escapeHtml(slotState)} ${isActive ? 'is-active' : ''}"
-        data-training-round-slot="${round.roundNumber}:${slot.groupNumber}"
-        ${slot.disabled && !program ? 'disabled' : ''}
-      >
-        <strong>${escapeHtml(slot.label || `Group ${slot.groupNumber}`)}</strong>
-        <span>${escapeHtml(slotLabel)}</span>
-      </button>
-    `;
-  }
-
-  function renderWorkspace() {
-    const root = qs('#admin-training-workspace-view');
-    if (!root) return;
-
-    root.hidden = state.view !== 'workspace' || !state.activeProgram;
-    if (state.view !== 'workspace' || !state.activeProgram) {
+    if (!state.modalOpen || !state.modalProgram) {
       setHTML(root, '');
       return;
     }
 
-    const program = state.activeProgram;
-    const round = resolveRound(state.activeRoundNumber);
-    const invitees = Array.isArray(program.invitees) ? program.invitees : [];
-    const isLocked = Boolean(program.isLocked);
-    const allRoundGroupsDone = Boolean(round?.isComplete);
-    const groupSize = Number(program.yearlyBatch?.yearlyGroupSize || state.data.summary?.yearlyBatch?.yearlyGroupSize || 85);
-    const groupHasParticipants = invitees.length > 0;
+    const program = state.modalProgram;
+    const isEdit = Number(program.id || 0) > 0;
+    const locked = Boolean(program.isLocked);
 
     setHTML(root, `
-      <section class="po-training-session-shell training-workspace-shell">
-        <div class="po-training-session-shell__topbar">
-          <button type="button" class="app-btn-ghost" data-training-action="back-overview">Back</button>
-          <div class="po-training-session-shell__meta">
-            <span class="po-panel-label">Round Workspace</span>
-            <strong>${escapeHtml(`Session ${program.roundNumber} | Group ${program.targetGroupNumber}`)}</strong>
-          </div>
-          <button type="button" class="app-btn-outline" data-training-action="refresh-overview">Refresh</button>
-        </div>
-        <section class="po-training-session-hero training-workspace-hero">
-          <div class="po-training-session-hero__identity">
-            <span class="po-panel-label">Selected Group Slot</span>
-            <h3>${escapeHtml(program.programName || `Session ${program.roundNumber}`)}</h3>
-            <div class="po-training-session-context__meta">
-              <span>${escapeHtml(`Session ${program.roundNumber}`)}</span>
-              <span>${escapeHtml(`Group ${program.targetGroupNumber}`)}</span>
-              <span>${escapeHtml(`${invitees.length}/${groupSize} participants`)}</span>
-              <span>${escapeHtml(program.date ? formatDate(program.date) : 'No date yet')}</span>
+      <div class="training-session-modal is-open" role="dialog" aria-modal="true" aria-labelledby="trainingSessionModalTitle">
+        <div class="training-session-modal__backdrop" data-training-close-modal></div>
+        <form class="training-session-modal__dialog" id="training-session-modal-form">
+          <header class="training-session-modal__header modal-header">
+            <div class="po-modal-title-block">
+              <span class="po-modal-eyebrow">Training Schedule</span>
+              <h3 class="modal-title" id="trainingSessionModalTitle">${escapeHtml(isEdit ? 'Edit Training Session' : 'Create Training Session')}</h3>
+              <small>${escapeHtml(`Session ${program.roundNumber || '--'} / Group ${program.targetGroupNumber || '--'}`)}</small>
             </div>
-          </div>
-          <span class="po-status-chip po-status-chip--header ${isLocked ? 'is-success' : 'is-warning'}">${escapeHtml(isLocked ? 'Notified / Locked' : 'Draft / Editable')}</span>
-        </section>
-        <section class="training-workspace-group-strip">
-          ${(round?.slots || []).map((slot) => buildGroupButton(round, slot)).join('')}
-        </section>
-        ${isLocked
-          ? `<div class="po-training-validation-banner">This group slot is locked because notices were already sent. Use the remaining available groups in this round, or move to the next round once all three groups are notified.</div>`
-          : `<div class="po-training-validation-banner">Save the group schedule first. For defense/testing, notice sending is enabled as soon as this group has at least one assigned participant.</div>`}
-        <form id="training-round-form" class="po-training-session-form">
+            <button type="button" class="training-session-modal__close modal-close" data-training-close-modal aria-label="Close">&times;</button>
+          </header>
           <input type="hidden" name="programId" value="${escapeHtml(String(program.id || ''))}">
-          <input type="hidden" name="roundNumber" value="${escapeHtml(String(program.roundNumber || 1))}">
-          <input type="hidden" name="targetGroupNumber" value="${escapeHtml(String(program.targetGroupNumber || 1))}">
-          <section class="po-training-workspace po-training-workspace--setup">
-            <div class="po-training-work-block__header"><div><span class="po-panel-label">Session Details</span><h4>Shared Round Information</h4></div></div>
-            <div class="po-training-setup">
-              <label class="po-training-field po-training-setup__identity">
-                <span>Program Name</span>
-                <input class="section-filter" type="text" name="programName" value="${escapeHtml(program.programName || '')}" placeholder="Program Name" ${isLocked ? 'disabled' : ''}>
-              </label>
-              <div class="po-training-setup__grid">
-                ${field('Date', 'date', normalizeDate(program.date || program.startsAt), 'date', isLocked)}
-                ${field('Venue / Place', 'venue', program.venue || '', 'text', isLocked)}
-                ${field('Start Time', 'startTime', normalizeTime(program.startTime || program.startsAt), 'time', isLocked)}
-                ${field('Speaker / Facilitator', 'speaker', program.speaker || '', 'text', isLocked)}
-                ${field('End Time', 'endTime', normalizeTime(program.endTime || program.endsAt), 'time', isLocked)}
-              </div>
-              <div class="po-training-essentials">
-                ${textareaField('What to Bring', 'whatToBring', program.whatToBring || '', 3, isLocked)}
-                ${textareaField('Instructions / Reminders', 'instructions', program.instructions || '', 3, isLocked)}
-              </div>
+          <div class="training-session-modal__body">
+            <div class="training-session-modal__grid">
+              ${selectField('Session Number', 'roundNumber', sessionOptions(), String(program.roundNumber || ''), 'Choose session', locked, false)}
+              ${selectField('Group Number', 'targetGroupNumber', groupOptions(), String(program.targetGroupNumber || ''), 'Choose group', locked, false)}
+              ${field('Activity Name', 'programName', program.programName || '', 'text', locked)}
+              ${field('Location', 'venue', program.venue || '', 'text', locked)}
+              ${field('Date', 'date', normalizeDate(program.date || program.startsAt), 'date', locked)}
+              ${field('Start Time', 'startTime', normalizeTime(program.startTime || program.startsAt), 'time', locked)}
+              ${field('End Time', 'endTime', normalizeTime(program.endTime || program.endsAt), 'time', locked)}
+              ${field('Speaker / Facilitator', 'speaker', program.speaker || '', 'text', locked)}
             </div>
-          </section>
-          <section class="po-training-workspace">
-            <header class="po-training-workspace__header"><div><span class="po-panel-label">Training Forms</span><h4>Forms to Cover</h4></div></header>
-            <div class="po-training-form-list">
-              ${(state.data.seminarForms || []).map((form) => {
-                const checked = (program.seminarFormCodes || []).includes(form.code) ? 'checked' : '';
-                return `<label class="po-training-assignment__item ${isLocked ? 'is-blocked' : 'is-eligible'}"><input type="checkbox" name="seminarFormCodes[]" value="${escapeHtml(form.code)}" ${checked} ${isLocked ? 'disabled' : ''}><span class="po-training-assignment__copy"><strong>${escapeHtml(form.label)}</strong></span></label>`;
-              }).join('')}
-            </div>
-          </section>
-          <div class="po-training-session-actions">
-            <button type="submit" class="action-button po-case-action" ${isLocked || state.loading.save ? 'disabled' : ''}>${state.loading.save ? 'Saving...' : 'Save Group Schedule'}</button>
+            ${textareaField('What to Bring', 'whatToBring', program.whatToBring || '', 3, locked)}
+            ${textareaField('Instructions / Reminders', 'instructions', program.instructions || '', 3, locked)}
+            <section class="training-session-form-picker">
+              <span class="po-panel-label">Forms Assigned</span>
+              <div class="training-session-chip-list">
+                ${formPickerChips(program, locked)}
+              </div>
+            </section>
           </div>
+          <footer class="training-session-modal__footer">
+            <button type="button" class="app-btn-outline" data-training-close-modal>Cancel</button>
+            <button type="submit" class="app-btn-primary" ${locked || state.loading.save ? 'disabled' : ''}>${state.loading.save ? 'Saving...' : 'Save Session Schedule'}</button>
+          </footer>
         </form>
-        <section class="po-training-workspace">
-          <header class="po-training-workspace__header"><div><span class="po-panel-label">Notice Flow</span><h4>Notify This Group</h4></div></header>
-          <div class="po-training-summary-rail">
-            ${miniMetric('Group', `Group ${program.targetGroupNumber}`)}
-            ${miniMetric('Participants', `${invitees.length}/${groupSize}`)}
-            ${miniMetric('Notice Status', isLocked ? 'Locked' : (groupHasParticipants ? 'Ready' : 'No participants'))}
-            ${miniMetric('Round Complete', allRoundGroupsDone ? 'Yes' : 'No')}
-          </div>
-          <div class="po-training-announcement__preview training-notice-preview">
-            <div class="po-training-preview-grid">
-              <div><span>Date</span><strong>${escapeHtml(program.date ? formatDate(program.date) : '--')}</strong></div>
-              <div><span>Time</span><strong>${escapeHtml(`${normalizeTime(program.startTime || program.startsAt) || '--'} - ${normalizeTime(program.endTime || program.endsAt) || '--'}`)}</strong></div>
-              <div><span>Venue</span><strong>${escapeHtml(program.venue || '--')}</strong></div>
-              <div><span>Speaker</span><strong>${escapeHtml(program.speaker || '--')}</strong></div>
-            </div>
-          </div>
-          <div class="po-training-row-actions">
-            <button type="button" class="action-button po-case-action" data-training-notify-group ${(!program.id || isLocked || !groupHasParticipants || state.loading.notices) ? 'disabled' : ''}>${state.loading.notices ? 'Sending...' : `Notify Group ${program.targetGroupNumber}`}</button>
-          </div>
-          <div class="table-card po-training-work-block">
-            <div class="table-wrapper">
-              <table class="data-table">
-                <thead><tr><th>Participant</th><th>Business</th><th>Group</th><th>Workflow</th><th>Last Notice</th></tr></thead>
-                <tbody>
-                  ${invitees.length ? invitees.map((invitee) => `
-                    <tr>
-                      <td>${escapeHtml(invitee.user?.name || invitee.fullName || '--')}</td>
-                      <td>${escapeHtml(invitee.businessName || '--')}</td>
-                      <td>${escapeHtml(`Group ${invitee.batchGroupNumber || program.targetGroupNumber || '--'}`)}</td>
-                      <td><span class="po-status-chip ${isInviteeNotified(invitee) ? 'is-success' : 'is-warning'}">${escapeHtml(isInviteeNotified(invitee) ? 'Notified' : 'Scheduled')}</span></td>
-                      <td>${escapeHtml(formatDateTime(invitee.lastNoticeSentAt || invitee.notifiedAt || ''))}</td>
-                    </tr>
-                  `).join('') : '<tr><td colspan="5">No participants are currently assigned to this group slot.</td></tr>'}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-        <section class="po-training-workspace">
-          <header class="po-training-workspace__header"><div><span class="po-panel-label">Attendance Snapshot</span><h4>Group Attendance</h4></div></header>
-          <div class="po-training-summary-rail">
-            ${miniMetric('Present', invitees.filter((invitee) => deriveAttendanceStatus(invitee) === 'Present').length)}
-            ${miniMetric('Absent', invitees.filter((invitee) => deriveAttendanceStatus(invitee) === 'Absent').length)}
-            ${miniMetric('Excused', invitees.filter((invitee) => deriveAttendanceStatus(invitee) === 'Excused').length)}
-          </div>
-          <div class="table-card po-training-work-block">
-            <div class="table-wrapper">
-              <table class="data-table po-training-attendance-table">
-                <thead><tr><th>Participant</th><th>Attendance</th><th>Remarks</th></tr></thead>
-                <tbody>
-                  ${invitees.length ? invitees.map((invitee) => `
-                    <tr>
-                      <td>${escapeHtml(invitee.user?.name || invitee.fullName || '--')}</td>
-                      <td><span class="po-status-chip ${attendanceClass(deriveAttendanceStatus(invitee))}">${escapeHtml(deriveAttendanceStatus(invitee))}</span></td>
-                      <td>${escapeHtml(invitee.remarks || '--')}</td>
-                    </tr>
-                  `).join('') : '<tr><td colspan="3">Attendance will appear here after PDO/Admin records it for this group slot.</td></tr>'}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      </section>
+      </div>
     `);
   }
 
+  function formPickerChips(program, locked) {
+    const selected = new Set(program.seminarFormCodes || []);
+    const assigned = assignedFormSessions(Number(program.id || 0));
+    return (state.data.seminarForms || []).map((form) => {
+      const assignedSession = assigned.get(form.code);
+      const disabled = locked || (assignedSession && Number(assignedSession) !== Number(program.roundNumber));
+      const checked = selected.has(form.code);
+      const helper = disabled && assignedSession ? `Assigned to Session ${assignedSession}` : (checked ? 'Selected' : 'Available');
+      return `
+        <label class="training-form-select-chip ${checked ? 'is-selected' : ''} ${disabled ? 'is-disabled' : ''}">
+          <input type="checkbox" name="seminarFormCodes[]" value="${escapeHtml(form.code)}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+          <strong>${escapeHtml(form.label)}</strong>
+          <span>${escapeHtml(helper)}</span>
+        </label>
+      `;
+    }).join('');
+  }
+
+  function assignedFormSessions(excludeProgramId = 0) {
+    const map = new Map();
+    (state.data.programs || []).forEach((program) => {
+      if (excludeProgramId > 0 && Number(program.id) === excludeProgramId) return;
+      (program.seminarFormCodes || []).forEach((code) => {
+        if (!map.has(code)) map.set(code, Number(program.roundNumber || 0));
+      });
+    });
+    return map;
+  }
+
+  async function saveModal(form) {
+    if (!(form instanceof HTMLFormElement)) return;
+    const formData = new FormData(form);
+    const payload = {
+      programId: formData.get('programId') || '',
+      roundNumber: formData.get('roundNumber') || '',
+      targetGroupNumber: formData.get('targetGroupNumber') || '',
+      programName: formData.get('programName') || '',
+      description: '',
+      date: formData.get('date') || '',
+      startTime: formData.get('startTime') || '',
+      endTime: formData.get('endTime') || '',
+      venue: formData.get('venue') || '',
+      speaker: formData.get('speaker') || '',
+      whatToBring: formData.get('whatToBring') || '',
+      instructions: formData.get('instructions') || '',
+      trainingMode: 'batch',
+      status: state.modalProgram?.storedStatus || state.modalProgram?.status || 'Scheduled',
+      seminarFormCodes: formData.getAll('seminarFormCodes[]'),
+    };
+
+    state.loading.save = true;
+    renderModal();
+    const response = await apiPost(payload.programId ? 'api/training/update' : 'api/training', payload);
+    state.loading.save = false;
+    if (!response.ok) {
+      renderModal();
+      return showNotice(firstError(response.errors) || response.message || 'Unable to save this training session.', 'danger');
+    }
+
+    closeModal();
+    clearNotice();
+    state.filters.session = String(payload.roundNumber || state.filters.session || '1');
+    state.filters.group = String(payload.targetGroupNumber || state.filters.group || '1');
+    await load();
+  }
+
+  async function sendGroupNotice() {
+    const program = selectedFilterProgram();
+    if (!program?.id) {
+      return showNotice('Select a scheduled session and group before sending notices.', 'warning');
+    }
+
+    state.loading.notices = true;
+    render();
+    const response = await apiPost('api/training/notices', {
+      programId: program.id,
+      inviteeIds: [],
+      groupNumber: program.targetGroupNumber || state.filters.group || 0,
+    });
+    state.loading.notices = false;
+    if (!response.ok) {
+      render();
+      return showNotice(firstError(response.errors) || response.message || 'Unable to notify this group.', 'danger');
+    }
+
+    clearNotice();
+    await load();
+  }
+
+  function defaultSessionGroup() {
+    const sessions = [1, 2, 3];
+    const groups = [1, 2, 3];
+    const filteredSession = Number(state.filters.session || 1);
+    const filteredGroup = Number(state.filters.group || 1);
+    const filteredExists = (state.data.programs || []).some((program) => Number(program.roundNumber) === filteredSession && Number(program.targetGroupNumber) === filteredGroup);
+    if (!filteredExists) return { session: filteredSession, group: filteredGroup };
+
+    for (const session of sessions) {
+      for (const group of groups) {
+        const exists = (state.data.programs || []).some((program) => Number(program.roundNumber) === session && Number(program.targetGroupNumber) === group);
+        if (!exists) return { session, group };
+      }
+    }
+    return { session: 1, group: 1 };
+  }
+
+  function buildModalProgram(session, group) {
+    const sameSessionProgram = (state.data.programs || []).find((program) => Number(program.roundNumber) === Number(session));
+    return {
+      id: null,
+      roundNumber: session,
+      targetGroupNumber: group,
+      programName: sameSessionProgram?.programName || '',
+      venue: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      speaker: sameSessionProgram?.speaker || '',
+      whatToBring: sameSessionProgram?.whatToBring || '',
+      instructions: sameSessionProgram?.instructions || '',
+      seminarFormCodes: Array.isArray(sameSessionProgram?.seminarFormCodes) ? [...sameSessionProgram.seminarFormCodes] : [],
+      status: 'Scheduled',
+    };
+  }
+
+  function bind() {
+    const root = section();
+    if (!root || root.dataset.trainingBound === 'true') return;
+    root.dataset.trainingBound = 'true';
+
+    root.addEventListener('input', (event) => {
+      const filter = event.target.closest('[data-training-filter]');
+      if (!filter) return;
+      state.filters[filter.dataset.trainingFilter] = String(filter.value || '');
+      render();
+    });
+
+    root.addEventListener('change', (event) => {
+      const filter = event.target.closest('[data-training-filter]');
+      if (filter) {
+        state.filters[filter.dataset.trainingFilter] = String(filter.value || '');
+        if (filter.dataset.trainingFilter === 'session') {
+          const groups = filterGroupOptions();
+          state.filters.group = groups[0]?.value || '';
+        }
+        render();
+        return;
+      }
+
+      const modalSession = event.target.closest('select[name="roundNumber"]');
+      if (modalSession && state.modalProgram) {
+        state.modalProgram.roundNumber = Number(modalSession.value || state.modalProgram.roundNumber || 1);
+        if (!Number(state.modalProgram.id || 0)) {
+          applySessionTemplateToModalProgram(state.modalProgram.roundNumber);
+        }
+        renderModal();
+        return;
+      }
+
+      const modalGroup = event.target.closest('select[name="targetGroupNumber"]');
+      if (modalGroup && state.modalProgram) {
+        state.modalProgram.targetGroupNumber = Number(modalGroup.value || state.modalProgram.targetGroupNumber || 1);
+        renderModal();
+      }
+    });
+
+    root.addEventListener('click', (event) => {
+      if (event.target.closest('[data-training-create-session]')) return openCreateModal();
+      if (event.target.closest('[data-training-action="refresh"]')) return load();
+      if (event.target.closest('[data-training-close-modal]')) return closeModal();
+      const notify = event.target.closest('[data-training-notify-group]');
+      if (notify) return sendGroupNotice();
+    });
+
+    root.addEventListener('submit', (event) => {
+      const form = event.target.closest('#training-session-modal-form');
+      if (!form) return;
+      event.preventDefault();
+      saveModal(form);
+    });
+  }
+
   function buildSummaryCard(label, value, eyebrow) {
-    return `
-      <article class="metric-card metric-card--soft admin-training-summary-card">
-        <span class="metric-card__label">${escapeHtml(eyebrow)}</span>
-        <div class="metric-card__body">
-          <strong class="metric-card__value">${escapeHtml(String(value))}</strong>
-        </div>
-      </article>
-    `;
+    return `<article class="metric-card metric-card--soft admin-training-summary-card"><span class="metric-card__label">${escapeHtml(eyebrow)}</span><div class="metric-card__body"><strong class="metric-card__value">${escapeHtml(String(value))}</strong></div><p>${escapeHtml(label)}</p></article>`;
+  }
+
+  function selectField(label, name, options, value, placeholder, disabled = false, bindFilter = true, includeBlank = true) {
+    const blankOption = includeBlank ? `<option value="">${escapeHtml(placeholder)}</option>` : '';
+    return `<label class="po-training-field"><span>${escapeHtml(label)}</span><select class="section-filter" name="${escapeHtml(name)}" ${bindFilter ? `data-training-filter="${escapeHtml(name)}"` : ''} ${disabled ? 'disabled' : ''}>${blankOption}${options.map((option) => `<option value="${escapeHtml(option.value)}" ${String(value) === String(option.value) ? 'selected' : ''}>${escapeHtml(option.label)}</option>`).join('')}</select></label>`;
   }
 
   function field(label, name, value, type = 'text', disabled = false) {
@@ -488,30 +523,65 @@
     return `<label class="po-training-field po-training-field--stacked"><span>${escapeHtml(label)}</span><textarea class="po-inline-remarks po-training-compact-textarea" name="${escapeHtml(name)}" rows="${rows}" ${disabled ? 'disabled' : ''}>${escapeHtml(value)}</textarea></label>`;
   }
 
-  function miniMetric(label, value) {
-    return `<article class="po-summary-card"><span class="po-summary-card__label">${escapeHtml(label)}</span><strong class="po-summary-card__value">${escapeHtml(String(value))}</strong></article>`;
+  function sessionOptions() {
+    return [1, 2, 3].map((value) => ({ value: String(value), label: `Session ${value}` }));
   }
 
-  function deriveAttendanceStatus(invitee) {
-    const value = String(invitee?.status || invitee?.inviteStatus || '').toLowerCase();
-    if (value === 'attended' || value === 'present') return 'Present';
-    if (value === 'missed' || value === 'absent') return 'Absent';
-    if (value === 'excused') return 'Excused';
-    return 'Not Marked';
+  function groupOptions() {
+    return [1, 2, 3].map((value) => ({ value: String(value), label: `Group ${value}` }));
   }
 
-  function attendanceClass(status) {
-    if (status === 'Present') return 'is-success';
-    if (status === 'Excused') return 'is-warning';
-    if (status === 'Absent') return 'is-danger';
-    return 'is-muted';
+  function filterSessionOptions() {
+    const sessions = [...new Set((state.data.programs || [])
+      .map((program) => Number(program.roundNumber || 0))
+      .filter((value) => value > 0))]
+      .sort((left, right) => left - right);
+    return sessions.map((value) => ({ value: String(value), label: `Session ${value}` }));
+  }
+
+  function filterGroupOptions() {
+    const session = Number(state.filters.session || 0);
+    const groups = [...new Set((state.data.programs || [])
+      .filter((program) => Number(program.roundNumber || 0) === session)
+      .map((program) => Number(program.targetGroupNumber || 0))
+      .filter((value) => value > 0))]
+      .sort((left, right) => left - right);
+    return groups.map((value) => ({ value: String(value), label: `Group ${value}` }));
+  }
+
+  function syncFiltersToCreatedSlots() {
+    const sessions = filterSessionOptions();
+    if (!sessions.length) return;
+    if (!sessions.some((option) => option.value === String(state.filters.session))) {
+      state.filters.session = sessions[0].value;
+    }
+
+    const groups = filterGroupOptions();
+    if (groups.length && !groups.some((option) => option.value === String(state.filters.group))) {
+      state.filters.group = groups[0].value;
+    }
+  }
+
+  function applySessionTemplateToModalProgram(session) {
+    const sameSessionProgram = (state.data.programs || []).find((program) => Number(program.roundNumber) === Number(session));
+    state.modalProgram.programName = sameSessionProgram?.programName || state.modalProgram.programName || '';
+    state.modalProgram.speaker = sameSessionProgram?.speaker || state.modalProgram.speaker || '';
+    state.modalProgram.whatToBring = sameSessionProgram?.whatToBring || state.modalProgram.whatToBring || '';
+    state.modalProgram.instructions = sameSessionProgram?.instructions || state.modalProgram.instructions || '';
+    state.modalProgram.seminarFormCodes = Array.isArray(sameSessionProgram?.seminarFormCodes) ? [...sameSessionProgram.seminarFormCodes] : [];
+  }
+
+  function formLabels(codes) {
+    const forms = new Map((state.data.seminarForms || []).map((form) => [form.code, form.label]));
+    return (codes || []).map((code) => forms.get(code) || code);
   }
 
   function normalizeDate(value) {
     if (!value) return '';
+    const raw = String(value);
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toISOString().slice(0, 10);
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
   }
 
   function normalizeTime(value) {
@@ -521,138 +591,26 @@
     return raw.slice(0, 5);
   }
 
-  function formatDateTime(value) {
-    if (!value) return '--';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat('en-PH', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
+  function formatTimeRange(start, end) {
+    const left = formatTimeLabel(start);
+    const right = formatTimeLabel(end);
+    if (!left && !right) return '--';
+    if (!right) return left;
+    if (!left) return right;
+    return `${left} - ${right}`;
   }
 
-  function isInviteeNotified(invitee) {
-    return Boolean(invitee?.lastNoticeSentAt || invitee?.notifiedAt);
-  }
-
-  function bind() {
-    const root = section();
-    if (!root || root.dataset.trainingBound === 'true') return;
-    root.dataset.trainingBound = 'true';
-
-    root.addEventListener('click', async (event) => {
-      const create = event.target.closest('#training-focus-create');
-      if (create) return openFirstAvailableSlot();
-
-      const refresh = event.target.closest('[data-training-action="refresh-overview"]');
-      if (refresh) return load();
-
-      const back = event.target.closest('[data-training-action="back-overview"]');
-      if (back) {
-        state.view = 'overview';
-        state.activeProgram = null;
-        clearNotice();
-        return render();
-      }
-
-      const slotButton = event.target.closest('[data-training-round-slot]');
-      if (slotButton) {
-        const [roundNumber, groupNumber] = String(slotButton.dataset.trainingRoundSlot || '').split(':').map(Number);
-        if (roundNumber > 0 && groupNumber > 0) {
-          return openRoundSlot(roundNumber, groupNumber);
-        }
-      }
-
-      const notify = event.target.closest('[data-training-notify-group]');
-      if (notify && state.activeProgram) {
-        return sendGroupNotice();
-      }
-    });
-
-    root.addEventListener('submit', (event) => {
-      const form = event.target.closest('#training-round-form');
-      if (!form) return;
-      event.preventDefault();
-      saveProgram(form);
-    });
-  }
-
-  async function saveProgram(form) {
-    if (!(form instanceof HTMLFormElement) || !state.activeProgram) return;
-    const formData = new FormData(form);
-    const payload = {
-      programId: formData.get('programId') || '',
-      roundNumber: formData.get('roundNumber') || state.activeProgram.roundNumber || 1,
-      targetGroupNumber: formData.get('targetGroupNumber') || state.activeProgram.targetGroupNumber || 1,
-      programName: formData.get('programName') || '',
-      description: state.activeProgram.description || '',
-      date: formData.get('date') || '',
-      startTime: formData.get('startTime') || '',
-      endTime: formData.get('endTime') || '',
-      venue: formData.get('venue') || '',
-      speaker: formData.get('speaker') || '',
-      whatToBring: formData.get('whatToBring') || '',
-      instructions: formData.get('instructions') || '',
-      trainingMode: 'batch',
-      status: state.activeProgram.storedStatus || state.activeProgram.status || 'Scheduled',
-      seminarFormCodes: formData.getAll('seminarFormCodes[]'),
-    };
-
-    state.loading.save = true;
-    render();
-    const response = await apiPost(state.activeProgram.id ? 'api/training/update' : 'api/training', payload);
-    state.loading.save = false;
-    if (!response.ok) {
-      render();
-      return showNotice(firstError(response.errors) || response.message || 'Unable to save this group schedule.', 'danger');
-    }
-
-    clearNotice();
-    const savedProgramId = Number(response.programId || state.activeProgram.id || 0);
-    await load();
-    if (savedProgramId > 0) {
-      await loadProgram(savedProgramId, Number(payload.roundNumber), Number(payload.targetGroupNumber));
-    }
-  }
-
-  async function sendGroupNotice() {
-    if (!state.activeProgram?.id) {
-      return showNotice('Save this group schedule first before sending notices.', 'warning');
-    }
-
-    state.loading.notices = true;
-    render();
-    const response = await apiPost('api/training/notices', {
-      programId: state.activeProgram.id,
-      inviteeIds: [],
-      groupNumber: state.activeProgram.targetGroupNumber || state.activeGroupNumber || 0,
-    });
-    state.loading.notices = false;
-    if (!response.ok) {
-      render();
-      return showNotice(firstError(response.errors) || response.message || 'Unable to notify this group.', 'danger');
-    }
-
-    clearNotice();
-    const currentRoundNumber = Number(state.activeProgram.roundNumber || state.activeRoundNumber || 1);
-    await load();
-    const currentRound = resolveRound(currentRoundNumber);
-    if (currentRound && Array.isArray(currentRound.availableGroups) && currentRound.availableGroups.length) {
-      return openRoundSlot(currentRoundNumber, currentRound.availableGroups[0]);
-    }
-
-    const nextRound = resolveRound(currentRoundNumber + 1);
-    if (nextRound && Array.isArray(nextRound.availableGroups) && nextRound.availableGroups.length) {
-      return openRoundSlot(nextRound.roundNumber, nextRound.availableGroups[0]);
-    }
-
-    state.view = 'overview';
-    state.activeProgram = null;
-    render();
-    return null;
+  function formatTimeLabel(value) {
+    const raw = normalizeTime(value);
+    if (!raw) return '';
+    const parts = raw.split(':');
+    if (parts.length !== 2) return raw;
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return raw;
+    const suffix = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${String(minutes).padStart(2, '0')} ${suffix}`;
   }
 
   function showNotice(message, tone = 'info') {

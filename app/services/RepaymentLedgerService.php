@@ -693,13 +693,15 @@ class RepaymentLedgerService
             $coverageMonths = $coverageByRepayment[$repaymentId] ?? [];
             $month = $coverageMonths[0] ?? date('Y-m', strtotime((string) $row['payment_date']));
             $proofPath = trim((string) ($row['proof_file_path'] ?? ''));
+            $stage = $this->normalizeFrontendStage((string) ($row['status'] ?: ($row['verification_status'] ?? 'uploaded')));
+            $submittedAmount = (float) ($row['amount'] ?? 0);
 
             return [
                 'id' => $repaymentId,
                 'month' => $month,
                 'paymentDate' => $row['payment_date'],
-                'amount' => (float) ($row['amount'] ?? 0),
-                'stage' => $this->normalizeFrontendStage((string) ($row['status'] ?: ($row['verification_status'] ?? 'uploaded'))),
+                'amount' => $submittedAmount,
+                'stage' => $stage,
                 'verifiedBy' => (string) ($row['reviewed_by'] ?? ''),
                 'verifiedAt' => $row['verified_at'] ?? '',
                 'notes' => (string) ($row['verification_remarks'] ?? ''),
@@ -729,7 +731,7 @@ class RepaymentLedgerService
                 'parentSubmissionId' => (string) ($row['submission_group_id'] ?? ''),
                 'coverageFrom' => $coverageMonths[0] ?? $month,
                 'coverageTo' => $coverageMonths !== [] ? $coverageMonths[count($coverageMonths) - 1] : $month,
-                'allocatedAmount' => (float) ($row['amount'] ?? 0),
+                'allocatedAmount' => $stage === 'verified' ? $submittedAmount : 0,
                 'creditApplied' => 0,
                 'remainingCredit' => 0,
                 'duplicateOrReferences' => $duplicateOrReferences[$repaymentId] ?? [],

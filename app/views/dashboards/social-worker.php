@@ -358,12 +358,14 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                       <th>Assigned PDO</th>
                       <th>Repayment</th>
                       <th>Verified Amount</th>
-                      <th>Rate</th>
+                      <th>Months Passed</th>
+                      <th>Months Paid</th>
+                      <th>Repayment Rate</th>
                       <th class="actions">Action</th>
                     </tr>
                   </thead>
                   <tbody data-sw-beneficiaries-body>
-                    <tr><td colspan="10">Loading beneficiaries...</td></tr>
+                    <tr><td colspan="12">Loading beneficiaries...</td></tr>
                   </tbody>
                 </table>
               </div>

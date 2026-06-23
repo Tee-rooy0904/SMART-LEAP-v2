@@ -34,6 +34,7 @@ return [
     'GET /portal/help' => ['handler' => [PortalController::class, 'showHelp']],
     'GET /portal/tracker' => ['handler' => [PortalController::class, 'trackStatus']],
     'GET /portal/apply' => ['handler' => [StageOneRegistrationController::class, 'show']],
+    'POST /portal/apply/email-code' => ['handler' => [StageOneRegistrationController::class, 'requestEmailVerification']],
     'POST /portal/apply' => ['handler' => [StageOneRegistrationController::class, 'submit']],
     'GET /signup' => ['handler' => [SignupController::class, 'show'], 'middleware' => ['guest']],
     'POST /signup' => ['handler' => [SignupController::class, 'register'], 'middleware' => ['guest']],

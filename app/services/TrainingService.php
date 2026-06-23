@@ -329,6 +329,12 @@ class TrainingService
                 $programId = (int) db()->lastInsertId();
             }
 
+            $this->syncSeminarFormsForRound(
+                $targetYear,
+                (int) $input['data']['roundNumber'],
+                $input['data']['seminarFormCodes'],
+                $programId
+            );
             $this->syncYearlyAssignmentsAfterProgramSave($programId, $targetYear, $previousYear, (int) $actor['id']);
         } catch (\Throwable $exception) {
             log_database_query_failure('training.save_program', $exception, ['program_id' => $programId]);
@@ -354,6 +360,11 @@ class TrainingService
         }
 
         $batchYear = $this->batchYearForProgram($program);
+        if ($this->countInvitees($programId) === 0) {
+            $this->syncProgramInviteesToEligibleRoster($programId, $batchYear, (int) ($actor['id'] ?? 0));
+            $program = $this->findProgram($programId, $actor) ?? $program;
+        }
+
         $invitees = $this->programInvitees($programId, $actor);
         $program = $this->applyLiveInviteeCounts($program, $invitees);
 
@@ -543,6 +554,7 @@ class TrainingService
         if ($selected === []) {
             return ['ok' => false, 'errors' => ['invitees' => 'No eligible training participants were found for notice sending.']];
         }
+
         $notificationService = new NotificationService();
         $sentCount = 0;
 
@@ -624,6 +636,93 @@ class TrainingService
         return $result;
     }
 
+    public function uploadApplicantAttendanceProof(int $trainingInviteeId, int $actorUserId, ?array $proofAttachment, ?string $remarks = null): array
+    {
+        if ($this->schemaError() !== null) {
+            return ['ok' => false, 'errors' => ['general' => $this->schemaError()]];
+        }
+
+        if ($trainingInviteeId <= 0 || $actorUserId <= 0) {
+            return ['ok' => false, 'errors' => ['invitee' => 'Training attendance record not found.']];
+        }
+
+        $statement = db()->prepare(
+            'SELECT
+                training_invitees.id,
+                training_invitees.training_program_id,
+                training_invitees.applicant_profile_id,
+                training_invitees.beneficiary_profile_id,
+                COALESCE(attendance_records.attendance_status, training_invitees.invite_status) AS attendance_status
+             FROM training_invitees
+             INNER JOIN applicant_profiles ON applicant_profiles.id = training_invitees.applicant_profile_id
+             LEFT JOIN attendance_records ON attendance_records.training_invitee_id = training_invitees.id
+             WHERE training_invitees.id = :id
+               AND applicant_profiles.user_id = :user_id
+             LIMIT 1'
+        );
+        $statement->execute([
+            'id' => $trainingInviteeId,
+            'user_id' => $actorUserId,
+        ]);
+        $invitee = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($invitee)) {
+            return ['ok' => false, 'errors' => ['invitee' => 'Training participant not found in your account.']];
+        }
+
+        $status = $this->normalizeStatus((string) ($invitee['attendance_status'] ?? ''));
+        if (!in_array($status, [TRAINING_STATUS_MISSED, TRAINING_STATUS_EXCUSED], true)) {
+            return ['ok' => false, 'errors' => ['status' => 'Proof upload is only available when attendance is Absent or Excused.']];
+        }
+
+        $hasUploadedProof = $proofAttachment !== null
+            && ((string) ($proofAttachment['name'] ?? '')) !== ''
+            && (int) ($proofAttachment['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+        if (!$hasUploadedProof) {
+            return ['ok' => false, 'errors' => ['proofAttachment' => 'Choose a proof file before submitting.']];
+        }
+
+        try {
+            $proofMeta = (new UploadService())->storePostApprovalAsset('supporting-upload', $proofAttachment);
+        } catch (\Throwable $exception) {
+            return ['ok' => false, 'errors' => ['proofAttachment' => $exception->getMessage()]];
+        }
+
+        try {
+            db()->prepare(
+                'INSERT INTO attendance_records
+                 (training_invitee_id, training_program_id, applicant_profile_id, beneficiary_profile_id, attendance_status, remarks, proof_file_path, proof_original_name, proof_mime_type, proof_file_size, recorded_by_user_id, checked_in_at)
+                 VALUES (:training_invitee_id, :training_program_id, :applicant_profile_id, :beneficiary_profile_id, :attendance_status, :remarks, :proof_file_path, :proof_original_name, :proof_mime_type, :proof_file_size, :recorded_by_user_id, NULL)
+                 ON DUPLICATE KEY UPDATE
+                    remarks = COALESCE(VALUES(remarks), remarks),
+                    proof_file_path = VALUES(proof_file_path),
+                    proof_original_name = VALUES(proof_original_name),
+                    proof_mime_type = VALUES(proof_mime_type),
+                    proof_file_size = VALUES(proof_file_size),
+                    updated_at = CURRENT_TIMESTAMP'
+            )->execute([
+                'training_invitee_id' => (int) $invitee['id'],
+                'training_program_id' => (int) $invitee['training_program_id'],
+                'applicant_profile_id' => (int) $invitee['applicant_profile_id'],
+                'beneficiary_profile_id' => $invitee['beneficiary_profile_id'] !== null ? (int) $invitee['beneficiary_profile_id'] : null,
+                'attendance_status' => $status,
+                'remarks' => trim((string) $remarks) !== '' ? trim((string) $remarks) : null,
+                'proof_file_path' => $proofMeta['file_path'] ?? null,
+                'proof_original_name' => $proofMeta['original_name'] ?? null,
+                'proof_mime_type' => $proofMeta['mime_type'] ?? null,
+                'proof_file_size' => $proofMeta['file_size'] ?? null,
+                'recorded_by_user_id' => $actorUserId,
+            ]);
+        } catch (\Throwable $exception) {
+            log_database_query_failure('training.applicant_attendance_proof', $exception, [
+                'training_invitee_id' => $trainingInviteeId,
+                'user_id' => $actorUserId,
+            ]);
+            return ['ok' => false, 'errors' => ['general' => 'Unable to upload attendance proof right now.']];
+        }
+
+        return ['ok' => true];
+    }
+
     public function removeProgram(int $programId, array $actor): array
     {
         if ($this->schemaError() !== null) {
@@ -694,6 +793,25 @@ class TrainingService
             return [];
         }
 
+        $params = ['training_program_id' => $programId];
+        $scopeWhere = '';
+        if ($this->isProjectOfficer($actor)) {
+            $staffProfileId = $this->findStaffProfileIdForUser((int) ($actor['id'] ?? 0));
+            if ($staffProfileId === null) {
+                return [];
+            }
+
+            $params['scope_staff_profile_id'] = $staffProfileId;
+            $scopeWhere = '
+                AND EXISTS (
+                    SELECT 1
+                    FROM staff_barangay_assignments AS scope_assignments
+                    WHERE scope_assignments.barangay_id = applicant_profiles.barangay_id
+                      AND scope_assignments.staff_profile_id = :scope_staff_profile_id
+                      AND scope_assignments.ended_at IS NULL
+                )';
+        }
+
         $sql = '
             SELECT
                 training_invitees.id,
@@ -742,12 +860,13 @@ class TrainingService
             LEFT JOIN attendance_records ON attendance_records.training_invitee_id = training_invitees.id
             LEFT JOIN users AS updated_by ON updated_by.id = training_invitees.updated_by_user_id
             WHERE training_invitees.training_program_id = :training_program_id
+            ' . $scopeWhere . '
             ORDER BY users.full_name ASC
         ';
 
         try {
             $statement = db()->prepare($sql);
-            $statement->execute(['training_program_id' => $programId]);
+            $statement->execute($params);
             $rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (\Throwable $exception) {
             log_database_query_failure('training.program_invitees', $exception, ['program_id' => $programId]);
@@ -1046,6 +1165,28 @@ class TrainingService
     private function encodeSeminarFormCodes(array $codes): string
     {
         return json_encode($this->sanitizeSeminarFormCodes($codes), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '[]';
+    }
+
+    private function syncSeminarFormsForRound(int $year, int $roundNumber, array $codes, int $sourceProgramId): void
+    {
+        if ($year <= 0 || $roundNumber <= 0 || $sourceProgramId <= 0) {
+            return;
+        }
+
+        $statement = db()->prepare(
+            'UPDATE training_programs
+             SET seminar_form_codes = :seminar_form_codes,
+                 updated_at = NOW()
+             WHERE id <> :source_program_id
+               AND YEAR(starts_at) = :year
+               AND training_round_number = :round_number'
+        );
+        $statement->execute([
+            'seminar_form_codes' => $this->encodeSeminarFormCodes($codes),
+            'source_program_id' => $sourceProgramId,
+            'year' => $year,
+            'round_number' => $roundNumber,
+        ]);
     }
 
     private function decodeSeminarFormCodes(mixed $raw): array
@@ -1827,9 +1968,17 @@ class TrainingService
         ];
         $capacity = $this->currentTrainingCapacity();
         $groupSize = $this->currentTrainingGroupSize();
-        $capacityGrouping = $this->currentEligibleGroupAssignments();
-        if (($capacityGrouping['groupRosters'] ?? null) !== null) {
-            $groupRosters = $capacityGrouping['groupRosters'];
+        $createdSessionRoster = array_values($this->fetchYearlyRosterForAssignments($year));
+        if ($createdSessionRoster !== []) {
+            $capacityGrouping = $this->buildCapacityGroupAssignments($createdSessionRoster, $groupSize);
+            if (($capacityGrouping['groupRosters'] ?? null) !== null) {
+                $groupRosters = $capacityGrouping['groupRosters'];
+            }
+        } else {
+            $capacityGrouping = $this->currentEligibleGroupAssignments();
+            if (($capacityGrouping['groupRosters'] ?? null) !== null) {
+                $groupRosters = $capacityGrouping['groupRosters'];
+            }
         }
 
         $yearlyAssignedCount = count($groupRosters['group1']) + count($groupRosters['group2']) + count($groupRosters['group3']);

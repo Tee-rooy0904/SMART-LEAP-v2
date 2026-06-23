@@ -431,78 +431,17 @@ $butuanBarangays = array_map(
                     <div class="beneficiary-repayment-stack">
                         <section class="panel dash-section panel--info application-workspace-panel repayment-block repayment-actions" aria-labelledby="repaymentActionsHeading">
                             <div class="panel-header panel-header--compact">
-                                <h3 id="repaymentActionsHeading">I-upload ang opisyal nga resibo</h3>
+                                <h3 id="repaymentActionsHeading">Repayment schedule</h3>
                             </div>
                             <div class="repayment-actions__grid repayment-actions__grid--single">
                                 <div class="repayment-action-card repayment-action-card--form">
-                                    <p class="repayment-action-card__intro">Log your payment record for review.</p>
+                                    <p class="repayment-action-card__intro">Choose a month below to submit an official receipt.</p>
                                     <div class="repayment-flow-steps" aria-label="Repayment upload steps">
-                                        <span class="repayment-flow-step is-active">1. Add official receipt</span>
-                                        <span class="repayment-flow-step">2. Submit</span>
+                                        <span class="repayment-flow-step is-active">1. Pick repayment month</span>
+                                        <span class="repayment-flow-step">2. Upload receipt in modal</span>
+                                        <span class="repayment-flow-step">3. Wait for verification</span>
                                     </div>
                                     <div class="repayment-due-list" id="repaymentDueList" aria-live="polite"></div>
-                                    <form id="uploadForm" class="form-grid repayment-upload-form">
-                                        <div id="singleMonthFields" class="repayment-form-mode">
-                                            <label class="form-field">
-                                                <span>OR month *</span>
-                                                <input type="month" id="uploadMonth" name="month" required>
-                                            </label>
-                                            <label class="form-field">
-                                                <span>Amount paid *</span>
-                                                <input type="number" id="uploadAmount" name="amount" min="0" step="0.01" placeholder="&#8369;625.00" required>
-                                            </label>
-                                            <label class="form-field">
-                                                <span>Payment date *</span>
-                                                <input type="date" id="uploadDate" name="paymentDate" required>
-                                            </label>
-                                            <label class="form-field">
-                                                <span>OR number *</span>
-                                                <input type="text" id="uploadOr" name="or" placeholder="BC 2670412" required>
-                                                <small class="field-helper">Use the official receipt number printed beside "NO." on the receipt.</small>
-                                            </label>
-                                            <label class="form-field full repayment-upload-form__file">
-                                                <span>Upload OR file *</span>
-                                                <input type="file" id="uploadFile" name="file" accept=".jpg,.jpeg,.png,.pdf" required>
-                                                <small class="field-helper">Accepted file types: JPG, PNG, or PDF.</small>
-                                            </label>
-                                            <label class="form-field full repayment-upload-form__notes">
-                                                <span>Notes for verifier</span>
-                                                <textarea id="uploadNotes" name="notes" rows="3" placeholder="Optional message"></textarea>
-                                            </label>
-                                        </div>
-                                        <div class="form-actions full">
-                                            <button type="submit" class="btn-primary repayment-upload-form__submit">Submit receipt</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="panel dash-section panel--summary application-workspace-panel repayment-block beneficiary-repayment-tracker" aria-labelledby="repaymentTrackerHeading">
-                            <div class="panel-header panel-header--compact">
-                                <h3 id="repaymentTrackerHeading">Repayment tracker</h3>
-                            </div>
-                            <div class="progress-body">
-                                <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                                    <div class="progress-bar__fill" id="progressFill"></div>
-                                </div>
-                                <div class="repayment-tracker-metrics" role="list">
-                                    <article class="repayment-tracker-metric" role="listitem">
-                                        <span class="overview-label">Verified</span>
-                                        <strong class="overview-value" id="progressVerified">0 months verified</strong>
-                                    </article>
-                                    <article class="repayment-tracker-metric" role="listitem">
-                                        <span class="overview-label">Pending verification</span>
-                                        <strong class="overview-value" id="progressPending">0 pending verification</strong>
-                                    </article>
-                                    <article class="repayment-tracker-metric" role="listitem">
-                                        <span class="overview-label">Na-upload</span>
-                                        <strong class="overview-value" id="progressUploaded">0 na-upload</strong>
-                                    </article>
-                                    <article class="repayment-tracker-metric" role="listitem">
-                                        <span class="overview-label">Kinahanglan follow-up</span>
-                                        <strong class="overview-value" id="progressOverdue">0 resibo</strong>
-                                    </article>
                                 </div>
                             </div>
                         </section>
@@ -570,6 +509,54 @@ $butuanBarangays = array_map(
                         </section>
                     </div>
                 </section>
+
+                <div class="beneficiary-repayment-modal" id="repaymentUploadModal" hidden>
+                    <button type="button" class="beneficiary-repayment-modal__backdrop" data-repayment-modal-close aria-label="Close repayment upload"></button>
+                    <section class="beneficiary-repayment-modal__panel" role="dialog" aria-modal="true" aria-labelledby="repaymentUploadModalTitle">
+                        <header class="beneficiary-repayment-modal__header">
+                            <div>
+                                <span class="support-card__eyebrow">Submit Official Receipt</span>
+                                <h3 id="repaymentUploadModalTitle">Repayment receipt</h3>
+                                <p id="repaymentUploadModalCopy">Upload the OR for the selected repayment month.</p>
+                            </div>
+                            <button type="button" class="beneficiary-repayment-modal__close" data-repayment-modal-close aria-label="Close">&times;</button>
+                        </header>
+                        <form id="uploadForm" class="form-grid repayment-upload-form beneficiary-repayment-modal__form">
+                            <div id="singleMonthFields" class="repayment-form-mode">
+                                <label class="form-field">
+                                    <span>OR month *</span>
+                                    <input type="month" id="uploadMonth" name="month" required readonly>
+                                </label>
+                                <label class="form-field">
+                                    <span>Amount paid *</span>
+                                    <input type="number" id="uploadAmount" name="amount" min="0" step="0.01" placeholder="&#8369;625.00" required>
+                                </label>
+                                <label class="form-field">
+                                    <span>Payment date *</span>
+                                    <input type="date" id="uploadDate" name="paymentDate" required>
+                                </label>
+                                <label class="form-field">
+                                    <span>OR number *</span>
+                                    <input type="text" id="uploadOr" name="or" placeholder="BC 2670412" required>
+                                    <small class="field-helper">Use the official receipt number printed beside "NO." on the receipt.</small>
+                                </label>
+                                <label class="form-field full repayment-upload-form__file">
+                                    <span>Upload OR file *</span>
+                                    <input type="file" id="uploadFile" name="file" accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="field-helper">Accepted file types: JPG, PNG, or PDF.</small>
+                                </label>
+                                <label class="form-field full repayment-upload-form__notes">
+                                    <span>Notes for verifier</span>
+                                    <textarea id="uploadNotes" name="notes" rows="3" placeholder="Optional message"></textarea>
+                                </label>
+                            </div>
+                            <div class="form-actions full beneficiary-repayment-modal__actions">
+                                <button type="button" class="btn-outline" data-repayment-modal-close>Cancel</button>
+                                <button type="submit" class="btn-primary repayment-upload-form__submit">Submit receipt</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
 
                 <section id="support-feedback" class="dash-page dash-section helpdesk-page" aria-label="Support Center" data-helpdesk-root>
                     <header class="helpdesk-header panel">

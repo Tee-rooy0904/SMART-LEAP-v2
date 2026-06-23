@@ -91,6 +91,10 @@ class ProjectOfficerController extends Controller
         return [
             'from' => $_GET['from'] ?? '',
             'to' => $_GET['to'] ?? '',
+            'date' => $_GET['date'] ?? '',
+            'week' => $_GET['week'] ?? '',
+            'search' => $_GET['search'] ?? '',
+            'district' => $_GET['district'] ?? '',
             'barangay' => $_GET['barangay'] ?? '',
             'serviceType' => $_GET['serviceType'] ?? ($_GET['businessType'] ?? ''),
             'businessType' => $_GET['businessType'] ?? ($_GET['serviceType'] ?? ''),

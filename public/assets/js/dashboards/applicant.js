@@ -44,6 +44,7 @@
         document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebarMenuOnMobile);
         bindApplicantAccountSheet();
         document.addEventListener('click', handleWorkspaceShortcuts);
+        document.addEventListener('change', handleApplicantTrainingProofUpload);
         document.addEventListener('click', handleApplicantAccountOutsideClick);
         document.addEventListener('smartleap:profile-state', handleProfileStateSync);
         document.addEventListener('smartleap:notifications-toggle', (event) => {
@@ -366,6 +367,17 @@
             const file = task?.file || null;
             const statusText = normalizeFormCardStatus(task);
             const statusClass = formCardStatusClass(statusText);
+            const accomplishment = buildFormAccomplishmentState(task, statusText);
+            const sessionInfo = definition.finalRequirement
+                ? {
+                    label: 'Final proof',
+                    title: '',
+                    meta: task?.interactive
+                        ? 'Available after your earlier form requirements are verified.'
+                        : 'Locked until your earlier form requirements are verified.',
+                    opened: Boolean(task?.interactive),
+                }
+                : findFormSessionInfo(definition.code);
             const directFormFiles = {
                 availment_form: 'availment_form.php',
                 mungkahing_proyekto: 'mungkahing_proyekto.php',
@@ -373,19 +385,34 @@
             const onlineUrl = directFormFiles[definition.code]
                 ? routeUrl(directFormFiles[definition.code])
                 : routeUrl(`application-form-file?code=${encodeURIComponent(definition.code)}`);
-            const canOpenOnline = Boolean(task?.interactive);
+            const canOpenOnline = Boolean(task?.interactive)
+                && String(task?.status || '').toLowerCase() !== 'locked';
             const fileMeta = file
                 ? `Hardcopy upload: ${file.name || 'Uploaded form'}${file.size ? ` | ${formatFileSize(file.size)}` : ''}${file.type ? ` | ${file.type}` : ''}`
-                : (canOpenOnline ? 'No PDO/Admin hardcopy upload yet' : 'Available only when your training is scheduled/notified and admin opens this form');
-            const helperText = buildFormRequirementHelper(task);
+                : (definition.finalRequirement
+                    ? (canOpenOnline ? 'Upload the proof that assistance was received.' : 'This final proof opens after earlier requirements are verified.')
+                    : (canOpenOnline ? 'Online form opened for your training session.' : 'Waiting for Admin to open this form in a training session.'));
+            const helperText = buildFormRequirementHelper(task, definition);
             const reviewerNote = task?.reviewerRemarks || '';
             const onlineLabel = onlineFormActionLabel(task);
+            const sessionMeta = sessionInfo.meta
+                ? `${sessionInfo.title ? `${sessionInfo.title} | ` : ''}${sessionInfo.meta}`
+                : (definition.finalRequirement ? 'Final requirement before beneficiary approval.' : (sessionInfo.title || 'No training schedule linked yet.'));
             return `
                 <article class="doc-tile application-form-card ${statusClass}">
                     <div class="doc-header">
                         <strong>${escapeHtml(task?.title || definition.title)}</strong>
                         <span class="doc-status ${statusClass === 'is-approved' ? 'is-approved' : (statusClass === 'is-uploaded' ? 'is-uploaded' : (statusClass === 'is-rejected' ? 'is-rejected' : ''))}">${escapeHtml(statusText)}</span>
                     </div>
+                    <div class="application-form-card__accomplishment ${accomplishment.className}">
+                        <span>${escapeHtml(definition.finalRequirement ? 'Final requirement' : 'Training form status')}</span>
+                        <strong>${escapeHtml(accomplishment.label)}</strong>
+                    </div>
+                    <div class="application-form-card__session ${sessionInfo.opened ? 'is-opened' : 'is-locked'}">
+                        <span>${escapeHtml(sessionInfo.label)}</span>
+                        <strong>${escapeHtml(sessionInfo.opened ? 'Opened by Admin' : 'Not opened yet')}</strong>
+                    </div>
+                    <div class="application-form-card__schedule">${escapeHtml(sessionMeta)}</div>
                     <div class="doc-meta">${escapeHtml(fileMeta)}</div>
                     <div class="doc-note">${escapeHtml(helperText)}</div>
                     ${reviewerNote ? `<div class="doc-note application-form-card__review-note"><strong>Reviewer note:</strong> ${escapeHtml(truncateText(reviewerNote, 120))}</div>` : ''}
@@ -410,27 +437,6 @@
                     window.location.href = href;
                 }
             });
-        });
-
-        // Diagnostics: log click target and elementFromPoint for troubleshooting laptop-only click blocking
-        root.addEventListener('click', (ev) => {
-            try {
-                const x = ev.clientX, y = ev.clientY;
-                const el = document.elementFromPoint(x, y);
-                console.info('applicationFormCards click:', {
-                    eventTarget: ev.target,
-                    elementFromPoint: el,
-                    clientX: x,
-                    clientY: y,
-                    href: ev.target?.closest ? ev.target.closest('[data-online-form-link]')?.dataset?.onlineFormLink : null,
-                });
-                if (el) {
-                    const cs = window.getComputedStyle(el);
-                    console.info('elementFromPoint styles', { pointerEvents: cs.pointerEvents, zIndex: cs.zIndex });
-                }
-            } catch (e) {
-                console.warn('Diagnostics logging failed', e);
-            }
         });
 
         // Capture-phase handler to open online form links even when an overlay accidentally sits above the cards.
@@ -826,6 +832,56 @@
         }).join('');
     }
 
+    function trainingProofMarkup(invitee) {
+        const proof = invitee?.proofAttachment || null;
+        if (proof?.filePath) {
+            return `<a class="action-link" href="${escapeHtml(routeUrl(proof.filePath))}" target="_blank" rel="noopener">${escapeHtml(proof.originalName || 'View proof')}</a>`;
+        }
+
+        const needsProof = ['Absent', 'Excused', 'Missed'].includes(String(invitee?.status || ''));
+        if (!needsProof) {
+            return 'No proof required';
+        }
+
+        return `
+            <label class="attendance-proof-upload">
+                <span>Upload proof required</span>
+                <input type="file" data-training-proof-upload="${escapeHtml(String(invitee?.id || ''))}" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf">
+            </label>
+        `;
+    }
+
+    async function handleApplicantTrainingProofUpload(event) {
+        const input = event.target?.closest?.('[data-training-proof-upload]');
+        if (!input || !(input instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const trainingInviteeId = Number.parseInt(input.getAttribute('data-training-proof-upload') || '0', 10);
+        const file = input.files?.[0] || null;
+        if (!trainingInviteeId || !file) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('trainingInviteeId', String(trainingInviteeId));
+        formData.append('proofAttachment', file);
+
+        input.disabled = true;
+        try {
+            await fetchJson('api/training/attendance-proof', {
+                method: 'POST',
+                body: formData,
+            });
+            showToast('Attendance proof uploaded.', 'success');
+            await loadDashboardState();
+        } catch (error) {
+            showToast(error.message || 'Unable to upload attendance proof.', 'warning');
+            input.value = '';
+            input.disabled = false;
+        }
+    }
+
     function renderAttendanceTable(invitees) {
         const body = document.getElementById('attendanceTableBody');
         const cardList = document.getElementById('attendanceCardList');
@@ -843,6 +899,7 @@
 
         const rows = invitees.map((invitee) => {
             const program = invitee.program || {};
+            const proofMarkup = trainingProofMarkup(invitee);
             return `
                 <tr>
                     <td>
@@ -855,7 +912,7 @@
                     </td>
                     <td><span class="badge-status ${attendanceBadgeClass(invitee.status)}">${escapeHtml(invitee.status || 'Not Scheduled')}</span></td>
                     <td>${escapeHtml(invitee.remarks || 'No remarks yet.')}</td>
-                    <td>${escapeHtml(buildNoticeMeta(invitee))}</td>
+                    <td>${escapeHtml(buildNoticeMeta(invitee))}<br><small class="table-secondary">Proof: ${proofMarkup}</small></td>
                 </tr>
             `;
         }).join('');
@@ -865,6 +922,7 @@
         if (cardList) {
             cardList.innerHTML = invitees.map((invitee) => {
                 const program = invitee.program || {};
+                const proofMarkup = trainingProofMarkup(invitee);
                 return `
                     <article class="attendance-card">
                         <div class="attendance-card__top">
@@ -874,6 +932,7 @@
                         <p class="attendance-card__meta">${escapeHtml(formatDate(program.startsAt))} | ${escapeHtml(formatTimeRange(program.startsAt, program.endsAt))}</p>
                         <p class="attendance-card__meta">${escapeHtml(program.venue || 'Venue TBA')}</p>
                         <p class="attendance-card__copy">${escapeHtml(invitee.remarks || 'No remarks yet.')}</p>
+                        <p class="attendance-card__hint">Proof: ${proofMarkup}</p>
                         <p class="attendance-card__hint">${escapeHtml(buildNoticeMeta(invitee))}</p>
                     </article>
                 `;
@@ -1656,15 +1715,15 @@
 
         const status = String(application?.status || '').toLowerCase();
         if (status === 'draft') {
-            return 'Upload your required files and complete the form requirements before you submit.';
+            return 'Upload your required files, then submit them for PDO/Admin verification.';
         }
         if (status.includes('checked') || status.includes('review')) {
             return 'Wait for the latest review result and check if any requirement needs fixing.';
         }
         if (status.includes('approved')) {
-            return 'Your application is approved. Continue watching your training schedule and certificate status.';
+            return 'Your application is approved. Open Training to check scheduled sessions and available fill-up forms.';
         }
-        return 'Review the latest updates and complete any missing requirement.';
+        return 'Complete any missing upload requirement and submit it for review.';
     }
 
     function sanitizeApplicantWording(text) {
@@ -1692,6 +1751,32 @@
         return parts.join(' | ');
     }
 
+    function findFormSessionInfo(code) {
+        const normalizedCode = String(code || '').toLowerCase();
+        const invitees = state.dashboard?.training?.invitees || [];
+        const index = invitees.findIndex((invitee) => {
+            const codes = invitee.program?.seminarFormCodes || [];
+            return codes.map((value) => String(value || '').toLowerCase()).includes(normalizedCode);
+        });
+
+        if (index < 0) {
+            return {
+                label: 'No session yet',
+                title: '',
+                meta: '',
+                opened: false,
+            };
+        }
+
+        const invitee = invitees[index];
+        return {
+            label: `Session ${index + 1}`,
+            title: invitee.program?.programName || 'Training session',
+            meta: buildTrainingMeta(invitee),
+            opened: true,
+        };
+    }
+
     function buildNoticeMeta(invitee) {
         if (invitee.lastNoticeSentAt) {
             return `Last sent ${formatDateTime(invitee.lastNoticeSentAt)}`;
@@ -1710,10 +1795,21 @@
         return 'This file is needed before your application can move to the next step.';
     }
 
+    function buildFormAccomplishmentState(task, statusText) {
+        const normalizedStatus = String(task?.status || statusText || '').toLowerCase();
+        const accomplished = ['verified', 'approved', 'completed'].includes(normalizedStatus)
+            || String(statusText || '').toLowerCase() === 'approved';
+        return {
+            label: accomplished ? 'Accomplished' : 'Not accomplished',
+            className: accomplished ? 'is-accomplished' : 'is-not-accomplished',
+        };
+    }
+
     function normalizeFormCardStatus(task) {
         if (!task) return 'Locked';
         const raw = String(task?.status || '').toLowerCase();
         if (['verified', 'approved', 'completed'].includes(raw)) return 'Approved';
+        if (raw === 'locked') return 'Locked';
         if (raw === 'submitted') return 'Submitted';
         if (task?.file?.url) return 'Hardcopy uploaded';
         if (raw === 'in progress') return 'In progress';
@@ -1729,7 +1825,25 @@
         return '';
     }
 
-    function buildFormRequirementHelper(task) {
+    function buildFormRequirementHelper(task, definition = {}) {
+        if (definition.finalRequirement) {
+            if (!task) {
+                return 'This proof opens only after the earlier training form requirements are verified.';
+            }
+            if (task?.reviewerRemarks) {
+                return 'This proof needs correction based on the latest review remarks.';
+            }
+            if (String(task?.status || '').toLowerCase() === 'verified') {
+                return 'PDO/Admin verified your proof of assistance received.';
+            }
+            if (String(task?.status || '').toLowerCase() === 'submitted') {
+                return 'Your proof of assistance received is submitted and waiting for PDO/Admin review.';
+            }
+            if (task?.interactive) {
+                return 'Upload the proof that you already received the SMART LEAP assistance.';
+            }
+            return 'This final proof is still locked until the earlier requirements are verified.';
+        }
         if (!task) {
             return 'This form opens only when it is linked to one of your assigned training sessions by admin.';
         }

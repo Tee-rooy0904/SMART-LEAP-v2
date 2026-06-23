@@ -3815,7 +3815,9 @@ textarea {
 .application-form-card .doc-meta,
 .application-form-card .doc-note,
 .application-form-card .doc-actions,
+.application-form-card .application-form-card__accomplishment,
 .application-form-card .application-form-card__schedule,
+.application-form-card .application-form-card__session,
 .application-form-card .application-form-card__review-note {
     position: relative;
     z-index: 1;
@@ -3825,11 +3827,6 @@ textarea {
     position: relative;
     z-index: 2;
     pointer-events: auto;
-}
-
-/* Ensure form action buttons stay on top of any accidental overlays on desktop */
-.application-form-card .doc-actions > * {
-    z-index: 9999 !important;
 }
 
 .application-form-card__link {
@@ -3858,6 +3855,82 @@ textarea {
     border-radius: 14px;
     background: rgba(245, 158, 11, 0.1);
     color: #7c2d12;
+}
+
+.application-form-card__accomplishment {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.application-form-card__accomplishment span {
+    color: var(--slate-500);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.application-form-card__accomplishment strong {
+    color: #92400e;
+    font-size: 0.92rem;
+}
+
+.application-form-card__accomplishment.is-accomplished {
+    border-color: rgba(16, 185, 129, 0.28);
+    background: rgba(209, 250, 229, 0.72);
+}
+
+.application-form-card__accomplishment.is-accomplished strong {
+    color: #047857;
+}
+
+.application-form-card__session {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 11px;
+    border-radius: 14px;
+    background: rgba(51, 103, 214, 0.08);
+    border: 1px solid rgba(51, 103, 214, 0.14);
+    color: var(--slate-700);
+    font-size: 0.84rem;
+}
+
+.application-form-card__session span,
+.application-form-card__session strong {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 3px 9px;
+}
+
+.application-form-card__session span {
+    background: #ffffff;
+    color: var(--indigo-500);
+    font-weight: 800;
+}
+
+.application-form-card__session strong {
+    background: rgba(29, 191, 159, 0.14);
+    color: #0f766e;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.application-form-card__session.is-locked strong {
+    background: rgba(148, 163, 184, 0.18);
+    color: var(--slate-500);
 }
 
 .application-form-card__schedule {
@@ -4148,6 +4221,24 @@ textarea {
 
 .attendance-card__copy {
     color: var(--slate-700);
+}
+
+.attendance-proof-upload {
+    align-items: center;
+    border: 1px dashed rgba(37, 99, 235, 0.45);
+    border-radius: 14px;
+    color: #0f3f8f;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.82rem;
+    font-weight: 800;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    padding: 0.45rem 0.7rem;
+}
+
+.attendance-proof-upload input {
+    max-width: 12rem;
 }
 
 @media (max-width: 960px) {

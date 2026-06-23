@@ -1,8 +1,8 @@
 <?php
 /**
  * SMART LEAP FILE GUIDE
- * Applicant account activation and co-maker account creation page.
- * Lets selected Stage 1 registrants activate a private applicant account, and also supports co-maker account creation when accessed from a co-maker invitation flow.
+ * Applicant portal password setup and co-maker account creation page.
+ * Lets selected Stage 1 registrants set their private applicant portal password, and also supports co-maker account creation when accessed from a co-maker invitation flow.
  */
 /** @var string $baseUrl */
 /** @var string[] $butuanBarangays */
@@ -38,11 +38,11 @@ $signupJsVersion = @filemtime(base_path('public/assets/js/public/signup.js')) ?:
                 <div class="container signup-shell">
                     <section class="auth-card signup-card" aria-labelledby="signupHeading">
                         <div class="auth-card__top">
-                            <h2 id="signupHeading"><?= $isCoMakerMode ? 'Create co-maker account' : 'Activate your account' ?></h2>
+                            <h2 id="signupHeading"><?= $isCoMakerMode ? 'Create co-maker account' : 'Set your portal password' ?></h2>
                             <p>
                                 <?= $isCoMakerMode
                                     ? 'Complete your co-maker account details for the deceased primary beneficiary record before continuing to the beneficiary portal.'
-                                    : 'Your Stage 1 application is already on file. Set your portal password to activate your applicant account.' ?>
+                                    : 'Your Stage 1 application is already on file. Set your portal password to open your applicant portal.' ?>
                             </p>
                         </div>
 
@@ -145,7 +145,7 @@ $signupJsVersion = @filemtime(base_path('public/assets/js/public/signup.js')) ?:
                                     </label>
                                 </div>
                                 <?php if (!$isCoMakerMode): ?>
-                                    <p class="auth-card__subaction">We’ll send a six-digit verification code to this email before your portal access goes live.</p>
+                                    <p class="auth-card__subaction">Your email was verified during registration. Set your password to open your applicant portal.</p>
                                 <?php endif; ?>
                             </section>
 
@@ -203,7 +203,7 @@ $signupJsVersion = @filemtime(base_path('public/assets/js/public/signup.js')) ?:
                                 </section>
                             <?php endif; ?>
 
-                            <button type="submit" class="auth-submit signup-submit" id="signupSubmit"<?= $signupError !== '' ? ' disabled' : '' ?>><?= $isCoMakerMode ? 'Create co-maker account' : 'Activate account' ?></button>
+                            <button type="submit" class="auth-submit signup-submit" id="signupSubmit"<?= $signupError !== '' ? ' disabled' : '' ?>><?= $isCoMakerMode ? 'Create co-maker account' : 'Continue to portal' ?></button>
 
                             <p class="auth-feedback" id="signupFeedback" role="alert" hidden></p>
                         </form>
