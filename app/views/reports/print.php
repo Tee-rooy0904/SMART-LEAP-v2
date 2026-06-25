@@ -6,8 +6,18 @@
 <?php
 $assetBase = rtrim((string) ($baseUrl ?? ''), '/');
 $e = static fn(mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES);
+$formatCoverageMonth = static function (mixed $value): string {
+    $month = trim((string) $value);
+    if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+        return $month;
+    }
+
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $month . '-01');
+    return $date instanceof DateTimeImmutable ? $date->format('F Y') : $month;
+};
 $generatedAt = (string) ($report['generatedAt'] ?? date(DATE_ATOM));
 $periodLabel = (string) (($report['filters']['periodLabel'] ?? $filters['period'] ?? '') ?: 'Selected period');
+$selectedPdoName = trim((string) ($filters['pdo'] ?? ''));
 $repaymentMetrics = $report['repaymentAnalytics']['periodMetrics'] ?? ($report['summary']['repaymentPerformance'] ?? []);
 $trainingRows = is_array($report['trainingAnalytics']['rows'] ?? null) ? $report['trainingAnalytics']['rows'] : [];
 $adminReportsCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-reports.css')) ?: time();
@@ -578,6 +588,12 @@ $summary = $report['summary'] ?? [];
                         <span>Period</span>
                         <strong><?= $e($periodLabel) ?></strong>
                     </article>
+                    <?php if ($selectedPdoName !== ''): ?>
+                    <article>
+                        <span>Selected PDO</span>
+                        <strong><?= $e($selectedPdoName) ?></strong>
+                    </article>
+                    <?php endif; ?>
                     <article>
                         <span>ROI</span>
                         <strong><?= $e(number_format((float) ($repaymentMetrics['roiPercent'] ?? 0), 2)) ?>%</strong>
@@ -643,6 +659,188 @@ $summary = $report['summary'] ?? [];
                             </div>
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <div class="standard-footer-wrap">
+                <img class="standard-footer" src="<?= $e($assetBase) ?>/assets/img/report-footer-2026.jpg" alt="City Government of Butuan report footer">
+            </div>
+        </section>
+
+        <?php if (false): ?>
+        <section class="sheet">
+            <div class="standard-header-wrap">
+                <img class="standard-header" src="<?= $e($assetBase) ?>/assets/img/report-header-2026.jpg" alt="City Government of Butuan report header">
+            </div>
+
+            <div class="report-body">
+                <div class="report-heading">
+                    <h1>SMART LEAP PAYMENT PARTICIPANTS</h1>
+                    <p>City Social Welfare and Development Department</p>
+                </div>
+                <p class="report-page-subtitle">Beneficiaries with verified payments — <?= $e($periodLabel) ?></p>
+
+                <?php
+                $obligations = $report['repaymentAnalytics']['obligations'] ?? [];
+                $paymentRows = [];
+                foreach ($obligations as $ob) {
+                    $status = strtolower((string) ($ob['status'] ?? ''));
+                    $hasPaid = in_array($status, ['paid_on_time', 'partial_delayed', 'pending_verification'], true);
+                    if (!$hasPaid) continue;
+                    $payments = is_array($ob['verifiedPayments'] ?? null) && count($ob['verifiedPayments']) > 0
+                        ? $ob['verifiedPayments']
+                        : [['amount' => $ob['amountRepresented'] ?? 0, 'paymentDate' => $ob['paymentDate'] ?? '']];
+                    foreach ($payments as $payment) {
+                        $paymentRows[] = [
+                            'beneficiaryName' => (string) ($ob['beneficiaryName'] ?? '--'),
+                            'businessName'    => (string) ($ob['businessName'] ?? '--'),
+                            'barangay'        => (string) ($ob['barangay'] ?? '--'),
+                            'assignedPdo'     => (string) ($ob['assignedPdo'] ?? '--'),
+                            'dueMonth'        => (string) ($ob['dueMonth'] ?? '--'),
+                            'paymentDate'     => (string) ($payment['paymentDate'] ?? $ob['paymentDate'] ?? '--'),
+                            'expectedAmount'  => (float) ($ob['expectedAmount'] ?? 0),
+                            'amountPaid'      => (float) ($payment['amount'] ?? $ob['amountRepresented'] ?? 0),
+                            'statusLabel'     => (string) ($ob['statusLabel'] ?? ucwords(str_replace('_', ' ', $ob['status'] ?? '--'))),
+                        ];
+                    }
+                }
+                usort($paymentRows, static fn(array $a, array $b): int => strcmp($a['dueMonth'], $b['dueMonth']) ?: strcmp($a['beneficiaryName'], $b['beneficiaryName']));
+                ?>
+
+                <div class="report-table-card">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Beneficiary</th>
+                                <th>Business</th>
+                                <th>Barangay</th>
+                                <th>Assigned PDO</th>
+                                <th>Coverage Month</th>
+                                <th>Payment Date</th>
+                                <th>Expected (PHP)</th>
+                                <th>Paid (PHP)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($paymentRows === []): ?>
+                                <tr>
+                                    <td class="report-table__empty" colspan="9">No verified payments for the selected period.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($paymentRows as $pr): ?>
+                                    <tr>
+                                        <td><?= $e($pr['beneficiaryName']) ?></td>
+                                        <td><?= $e($pr['businessName']) ?></td>
+                                        <td><?= $e($pr['barangay']) ?></td>
+                                        <td><?= $e($pr['assignedPdo']) ?></td>
+                                        <td><?= $e($pr['dueMonth']) ?></td>
+                                        <td><?= $e($pr['paymentDate']) ?></td>
+                                        <td><?= $e(number_format($pr['expectedAmount'], 2)) ?></td>
+                                        <td><?= $e(number_format($pr['amountPaid'], 2)) ?></td>
+                                        <td><?= $e($pr['statusLabel']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="standard-footer-wrap">
+                <img class="standard-footer" src="<?= $e($assetBase) ?>/assets/img/report-footer-2026.jpg" alt="City Government of Butuan report footer">
+            </div>
+        </section>
+        <?php endif; ?>
+
+        <section class="sheet">
+            <div class="standard-header-wrap">
+                <img class="standard-header" src="<?= $e($assetBase) ?>/assets/img/report-header-2026.jpg" alt="City Government of Butuan report header">
+            </div>
+
+            <div class="report-body">
+                <div class="report-heading">
+                    <h1>SMART LEAP PAYMENT PARTICIPANTS</h1>
+                    <p>City Social Welfare and Development Department</p>
+                </div>
+                <p class="report-page-subtitle">Beneficiaries with verified payments — <?= $e($periodLabel) ?></p>
+
+                <?php
+                $obligations = is_array($report['repaymentAnalytics']['obligations'] ?? null)
+                    ? $report['repaymentAnalytics']['obligations']
+                    : [];
+                $period = (string) ($report['filters']['period'] ?? 'monthly');
+                $usePaymentDate = in_array($period, ['daily', 'weekly', 'custom'], true);
+
+                $paymentRows = [];
+                foreach ($obligations as $ob) {
+                    $hasActivity = in_array((string) ($ob['status'] ?? ''), ['paid_on_time', 'partial_delayed', 'pending_verification'], true);
+                    if ($usePaymentDate) {
+                        foreach ((array) ($ob['verifiedPayments'] ?? []) as $payment) {
+                            $paymentRows[] = [
+                                'name'     => (string) ($ob['beneficiaryName'] ?? '--'),
+                                'business' => (string) ($ob['businessName'] ?? '--'),
+                                'barangay' => (string) ($ob['barangay'] ?? '--'),
+                                'pdo'      => (string) ($ob['assignedPdo'] ?? '--'),
+                                'month'    => (string) ($ob['dueMonth'] ?? '--'),
+                                'payDate'  => (string) ($payment['paymentDate'] ?? '--'),
+                                'expected' => (float)  ($ob['expectedAmount'] ?? 0),
+                                'paid'     => (float)  ($payment['amount'] ?? 0),
+                                'status'   => (string) ($ob['statusLabel'] ?? $ob['status'] ?? '--'),
+                            ];
+                        }
+                    } elseif ($hasActivity) {
+                        $paymentRows[] = [
+                            'name'     => (string) ($ob['beneficiaryName'] ?? '--'),
+                            'business' => (string) ($ob['businessName'] ?? '--'),
+                            'barangay' => (string) ($ob['barangay'] ?? '--'),
+                            'pdo'      => (string) ($ob['assignedPdo'] ?? '--'),
+                            'month'    => (string) ($ob['dueMonth'] ?? '--'),
+                            'payDate'  => (string) ($ob['paymentDate'] ?? '--'),
+                            'expected' => (float)  ($ob['expectedAmount'] ?? 0),
+                            'paid'     => (float)  ($ob['amountRepresented'] ?? 0),
+                            'status'   => (string) ($ob['statusLabel'] ?? $ob['status'] ?? '--'),
+                        ];
+                    }
+                }
+                usort($paymentRows, static fn ($a, $b) => strcmp((string) ($a['month'] ?? ''), (string) ($b['month'] ?? '')) ?: strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')));
+                ?>
+
+                <div class="report-table-card">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Beneficiary</th>
+                                <th>Business</th>
+                                <th>Barangay</th>
+                                <th>Assigned PDO</th>
+                                <th>Coverage Month</th>
+                                <th>Payment Date</th>
+                                <th>Expected (PHP)</th>
+                                <th>Amount Paid (PHP)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($paymentRows === []): ?>
+                                <tr><td class="report-table__empty" colspan="9">No verified payments for the selected period.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($paymentRows as $pr): ?>
+                                    <tr>
+                                        <td><?= $e($pr['name']) ?></td>
+                                        <td><?= $e($pr['business']) ?></td>
+                                        <td><?= $e($pr['barangay']) ?></td>
+                                        <td><?= $e($pr['pdo']) ?></td>
+                                        <td><?= $e($formatCoverageMonth($pr['month'])) ?></td>
+                                        <td><?= $e($pr['payDate']) ?></td>
+                                        <td><?= $e(number_format($pr['expected'], 2)) ?></td>
+                                        <td><strong><?= $e(number_format($pr['paid'], 2)) ?></strong></td>
+                                        <td><?= $e($pr['status']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -802,11 +1000,28 @@ $summary = $report['summary'] ?? [];
             };
 
             const renderKpis = (metrics, itemCount) => {
+                const period = report.filters?.period || 'all';
+                const isPaymentDriven = metrics?.targetMode === 'payment_beneficiaries';
+                const periodUnit = period === 'weekly' ? 'week' : 'day';
                 const cards = [
                     { label: 'Target Amount', value: formatCurrency(metrics.targetAmount || 0), meta: metrics.label || 'Selected period', color: '#2563eb' },
-                    { label: 'Actual Collected', value: formatCurrency(metrics.actualCollectedAmount || 0), meta: `${metrics.scopedBeneficiaries || itemCount || 0} scoped beneficiaries`, color: '#16a34a' },
-                    { label: 'Gap', value: formatCurrency(metrics.gapAmount || 0), meta: `${metrics.obligationCount || 0} repayment months covered`, color: '#dc2626' },
-                    { label: 'ROI', value: formatPercent(metrics.roiPercent || 0), meta: 'Actual / target x 100', color: '#7c3aed' },
+                    {
+                        label: 'Actual Collected',
+                        value: formatCurrency(metrics.actualCollectedAmount || 0),
+                        meta: isPaymentDriven
+                            ? `${metrics.paymentBeneficiaryCount || 0} beneficiaries paid in the selected ${periodUnit}`
+                            : `${metrics.scopedBeneficiaries || itemCount || 0} scoped beneficiaries`,
+                        color: '#16a34a'
+                    },
+                    {
+                        label: 'Gap',
+                        value: formatCurrency(metrics.gapAmount || 0),
+                        meta: isPaymentDriven
+                            ? `${metrics.obligationCount || 0} paid beneficiaries counted for target`
+                            : `${metrics.obligationCount || 0} repayment months covered`,
+                        color: '#dc2626'
+                    },
+                    { label: 'ROI', value: formatPercent(metrics.roiPercent || 0), meta: isPaymentDriven ? 'Actual / payment-based target x 100' : 'Actual / target x 100', color: '#7c3aed' },
                 ];
                 setHtml('#report-print-kpis', cards.map((card) => `
                     <article class="reports-repayment-status-kpi" style="--kpi-color:${card.color}">
@@ -914,9 +1129,17 @@ $summary = $report['summary'] ?? [];
                     }
                     return amount.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                 };
+                const chartGranularity = (selectedPeriod, points) => {
+                    const hasDailyDates = Array.isArray(points) && points.some((row) => /^\d{4}-\d{2}-\d{2}$/.test(String(row?.period || '')));
+                    if (hasDailyDates) return 'daily';
+                    return selectedPeriod;
+                };
+                const granularity = chartGranularity(period, rows);
                 const xAxisTitle = period === 'daily'
                     ? 'Days'
-                    : period === 'weekly'
+                    : granularity === 'daily'
+                        ? 'Days'
+                        : period === 'weekly'
                         ? 'Weeks'
                         : period === 'quarterly'
                             ? 'Quarters'

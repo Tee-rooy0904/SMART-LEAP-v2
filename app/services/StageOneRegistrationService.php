@@ -206,6 +206,13 @@ class StageOneRegistrationService
             ];
         }
 
+        // Run duplicate detection asynchronously after commit (safe to fail silently)
+        try {
+            $this->detectAndFlagDuplicates($registrationId);
+        } catch (Throwable $exception) {
+            log_database_query_failure('stage_one_registration.duplicate_detection', $exception, ['id' => $registrationId]);
+        }
+
         return [
             'ok' => true,
             'message' => $channel === 'staff_hardcopy'
@@ -244,20 +251,30 @@ class StageOneRegistrationService
         )->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
         $items = array_map(fn (array $row): array => $this->formatRegistrationRow($row), $rows);
-        $pending = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_PENDING));
-        $selected = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_SELECTED));
-        $saved = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_SAVED));
+        $pending          = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_PENDING && !$row['isMarkedDuplicate']));
+        $possibleDups     = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_PENDING && $row['isPossibleDuplicate'] && !$row['isMarkedDuplicate']));
+        $markedDups       = array_values(array_filter($items, fn (array $row): bool => $row['isMarkedDuplicate']));
+        $selected         = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_SELECTED));
+        $saved            = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_SAVED));
+
+        // Clean pending = pending minus possible duplicates (possible dups still show in pending tab with a badge but are separated)
+        $cleanPending     = array_values(array_filter($pending, fn (array $row): bool => !$row['isPossibleDuplicate']));
 
         return [
             'summary' => [
                 'batchCapacity' => $this->currentBatchCapacity(),
                 'pending' => count($pending),
+                'pendingClean' => count($cleanPending),
+                'possibleDuplicates' => count($possibleDups),
+                'markedDuplicates' => count($markedDups),
                 'selected' => count($selected),
                 'saved' => count($saved),
                 'selectionEmailFailures' => count(array_filter($selected, static fn (array $row): bool => (bool) ($row['selectionEmailNeedsResend'] ?? false))),
                 'remaining' => max(0, $this->currentBatchCapacity() - count($selected)),
             ],
-            'pending' => $pending,
+            'pending' => $cleanPending,
+            'possibleDuplicates' => $possibleDups,
+            'markedDuplicates' => $markedDups,
             'selected' => $selected,
             'saved' => $saved,
         ];
@@ -421,8 +438,13 @@ class StageOneRegistrationService
             'sector' => trim((string) ($input['sector'] ?? '')),
             'sectorOtherSpecify' => trim((string) ($input['sectorOtherSpecify'] ?? '')),
             'livelihood' => trim((string) ($input['livelihood'] ?? '')),
+            'livelihoodOtherSpecify' => trim((string) ($input['livelihoodOtherSpecify'] ?? '')),
             'businessName' => trim((string) ($input['businessName'] ?? '')),
         ];
+
+        if (strcasecmp($clean['livelihood'], 'Other') === 0 && $clean['livelihoodOtherSpecify'] !== '') {
+            $clean['livelihood'] = $clean['livelihoodOtherSpecify'];
+        }
 
         if ($clean['age'] === '') {
             $derivedAge = $this->calculateAgeFromBirthdate($clean['birthdate']);
@@ -499,8 +521,12 @@ class StageOneRegistrationService
             $errors['sectorOtherSpecify'] = 'Please specify your sector.';
         }
 
-        if ($clean['livelihood'] === '') {
-            $errors['livelihood'] = 'Enter your specific business type.';
+        if (trim((string) ($clean['livelihood'] ?? '')) === '') {
+            $errors['livelihood'] = 'Select your specific business type.';
+        }
+
+        if (strcasecmp(trim((string) ($clean['livelihood'] ?? '')), 'Other') === 0 && trim((string) ($clean['livelihoodOtherSpecify'] ?? '')) === '') {
+            $errors['livelihoodOtherSpecify'] = 'Please specify your business type.';
         }
 
         if ($clean['businessName'] === '') {
@@ -567,9 +593,202 @@ class StageOneRegistrationService
         return $birth->diff($today)->y;
     }
 
+    // ── Duplicate detection ─────────────────────────────────────────────────
+
+    public const DUPLICATE_NONE        = 'No Duplicate';
+    public const DUPLICATE_POSSIBLE    = 'Possible Duplicate';
+    public const DUPLICATE_APPROVED    = 'Approved Anyway';
+    public const DUPLICATE_MARKED      = 'Marked Duplicate';
+
+    /**
+     * Scan all existing registrations for records that share critical fields
+     * with $newId. Sets duplicate_status on $newId to "Possible Duplicate"
+     * (with matched id and note) or "No Duplicate".
+     */
+    public function detectAndFlagDuplicates(int $newId): void
+    {
+        if ($newId <= 0) {
+            return;
+        }
+
+        $statement = db()->prepare(
+            'SELECT id, full_name, email, contact_number, birthdate,
+                    complete_address, barangay, business_name,
+                    validation_status
+             FROM stage_one_registrations
+             WHERE id = :id LIMIT 1'
+        );
+        $statement->execute(['id' => $newId]);
+        $new = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($new)) {
+            return;
+        }
+
+        $statement = db()->prepare(
+            'SELECT id, full_name, email, contact_number, birthdate,
+                    complete_address, barangay, business_name,
+                    validation_status
+             FROM stage_one_registrations
+             WHERE id <> :id
+               AND validation_status <> :archived'
+        );
+        $statement->execute(['id' => $newId, 'archived' => self::STATUS_ARCHIVED]);
+        $all = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $matchedId    = null;
+        $matchedFields = [];
+
+        $norm  = static fn (?string $v): string => strtolower(trim((string) $v));
+        $normPhone = static fn (?string $v): string => preg_replace('/\D/', '', (string) $v) ?? '';
+
+        $newName    = $norm($new['full_name']);
+        $newBirth   = $norm($new['birthdate']);
+        $newAddress = $norm($new['complete_address']);
+        $newBrgy    = $norm($new['barangay']);
+        $newBiz     = $norm($new['business_name']);
+        $newEmail   = $norm($new['email']);
+        $newPhone   = $normPhone($new['contact_number']);
+
+        foreach ($all as $row) {
+            $fields = [];
+            $rName    = $norm($row['full_name']);
+            $rBirth   = $norm($row['birthdate']);
+            $rAddress = $norm($row['complete_address']);
+            $rBrgy    = $norm($row['barangay']);
+            $rBiz     = $norm($row['business_name']);
+            $rEmail   = $norm($row['email']);
+            $rPhone   = $normPhone($row['contact_number']);
+
+            if ($rEmail !== '' && $rEmail === $newEmail)                                  $fields[] = 'Same email';
+            if ($rPhone !== '' && strlen($rPhone) >= 10 && $rPhone === $newPhone)         $fields[] = 'Same contact number';
+            if ($rName !== '' && $rName === $newName && $rBirth !== '' && $rBirth === $newBirth)   $fields[] = 'Same full name + birthdate';
+            if ($rName !== '' && $rName === $newName && $rAddress !== '' && $rAddress === $newAddress) $fields[] = 'Same full name + complete address';
+            if ($rName !== '' && $rName === $newName && $rBrgy !== '' && $rBrgy === $newBrgy)     $fields[] = 'Same full name + barangay';
+            if ($rName !== '' && $rName === $newName && $rBiz !== '' && $rBiz === $newBiz)        $fields[] = 'Same full name + microbusiness name';
+            if ($rBirth !== '' && $rBirth === $newBirth && $rAddress !== '' && $rAddress === $newAddress) $fields[] = 'Same birthdate + complete address';
+
+            if ($fields !== [] && $matchedId === null) {
+                $matchedId    = (int) $row['id'];
+                $matchedFields = $fields;
+            }
+        }
+
+        if ($matchedId !== null) {
+            db()->prepare(
+                'UPDATE stage_one_registrations
+                 SET duplicate_status = :status,
+                     duplicate_of = :of,
+                     duplicate_note = :note,
+                     updated_at = NOW()
+                 WHERE id = :id'
+            )->execute([
+                'status' => self::DUPLICATE_POSSIBLE,
+                'of'     => $matchedId,
+                'note'   => 'System detected possible duplicate: ' . implode('; ', $matchedFields) . '.',
+                'id'     => $newId,
+            ]);
+        } else {
+            db()->prepare(
+                'UPDATE stage_one_registrations
+                 SET duplicate_status = :status,
+                     duplicate_of = NULL,
+                     duplicate_note = NULL,
+                     updated_at = NOW()
+                 WHERE id = :id'
+            )->execute([
+                'status' => self::DUPLICATE_NONE,
+                'id'     => $newId,
+            ]);
+        }
+    }
+
+    /**
+     * Admin action: "Approve Anyway" or "Mark as Duplicate" for a possible-duplicate record.
+     */
+    public function reviewDuplicate(int $registrationId, string $action, array $actor): array
+    {
+        $this->ensureSchema();
+        $registration = $this->getRegistrationDetail($registrationId);
+        if ($registration === null) {
+            return ['ok' => false, 'message' => 'Registration not found.'];
+        }
+
+        $normalized = strtolower(trim($action));
+
+        if ($normalized === 'approve_anyway') {
+            $targetStatus = self::STATUS_SELECTED;
+            $autoSaved = false;
+            if ($this->selectedCount() >= $this->currentBatchCapacity()) {
+                $targetStatus = self::STATUS_SAVED;
+                $autoSaved = true;
+            }
+            db()->prepare(
+                'UPDATE stage_one_registrations
+                 SET validation_status = :vs,
+                     validated_by_user_id = :uid,
+                     validated_at = NOW(),
+                     duplicate_status = :ds,
+                     duplicate_note = :dn,
+                     duplicate_reviewed_at = NOW(),
+                     updated_at = NOW()
+                 WHERE id = :id'
+            )->execute([
+                'vs'  => $targetStatus,
+                'uid' => (int) ($actor['id'] ?? 0) ?: null,
+                'ds'  => self::DUPLICATE_APPROVED,
+                'dn'  => 'Admin approved this applicant despite duplicate warning.',
+                'id'  => $registrationId,
+            ]);
+            if ($targetStatus === self::STATUS_SELECTED) {
+                $updated = $this->getRegistrationDetail($registrationId);
+                $emailSent = is_array($updated) ? $this->sendSelectionEmail($updated) : false;
+                $this->persistSelectionEmailStatus($registrationId, (string) ($registration['email'] ?? ''), $emailSent);
+                $this->syncOverflowRegistrationsToSaved();
+            }
+            return [
+                'ok'           => true,
+                'message'      => $autoSaved
+                    ? 'Batch is full — applicant saved for next batch despite duplicate warning.'
+                    : 'Applicant approved for current batch despite duplicate warning.',
+                'registration' => $this->getRegistrationDetail($registrationId),
+                'state'        => $this->validationState(),
+            ];
+        }
+
+        if ($normalized === 'mark_duplicate') {
+            // Find matched id from the duplicate_of field or payload
+            $duplicateOf = (int) ($_POST['duplicateOf'] ?? $registration['duplicateOf'] ?? 0);
+            db()->prepare(
+                'UPDATE stage_one_registrations
+                 SET duplicate_status = :ds,
+                     duplicate_of = :of,
+                     duplicate_note = :dn,
+                     duplicate_reviewed_at = NOW(),
+                     updated_at = NOW()
+                 WHERE id = :id'
+            )->execute([
+                'ds' => self::DUPLICATE_MARKED,
+                'of' => $duplicateOf > 0 ? $duplicateOf : null,
+                'dn' => 'Admin confirmed this record as a duplicate submission.',
+                'id' => $registrationId,
+            ]);
+            return [
+                'ok'           => true,
+                'message'      => 'Applicant marked as duplicate. Record remains pending but will not count toward the current batch.',
+                'registration' => $this->getRegistrationDetail($registrationId),
+                'state'        => $this->validationState(),
+            ];
+        }
+
+        return ['ok' => false, 'message' => 'Unsupported duplicate action.'];
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+
     private function formatRegistrationRow(array $row): array
     {
         $statusKey = $this->normalizeStatusKey((string) ($row['validation_status'] ?? self::STATUS_PENDING));
+        $duplicateStatus = (string) ($row['duplicate_status'] ?? '');
 
         return [
             'id' => (int) ($row['id'] ?? 0),
@@ -597,6 +816,12 @@ class StageOneRegistrationService
                 self::STATUS_SAVED => 'Saved for Next Batch',
                 default => 'Pending Validation',
             },
+            'duplicateStatus' => $duplicateStatus,
+            'duplicateOf' => $row['duplicate_of'] !== null ? (int) $row['duplicate_of'] : null,
+            'duplicateNote' => (string) ($row['duplicate_note'] ?? ''),
+            'duplicateReviewedAt' => (string) ($row['duplicate_reviewed_at'] ?? ''),
+            'isPossibleDuplicate' => $duplicateStatus === self::DUPLICATE_POSSIBLE,
+            'isMarkedDuplicate' => $duplicateStatus === self::DUPLICATE_MARKED,
             'selectionEmailSentAt' => (string) ($row['selection_email_sent_at'] ?? ''),
             'selectionEmailFailedAt' => (string) ($row['selection_email_failed_at'] ?? ''),
             'selectionEmailError' => (string) ($row['selection_email_error'] ?? ''),
@@ -1431,6 +1656,12 @@ class StageOneRegistrationService
         $this->ensureNullableDateColumn('stage_one_registrations', 'selection_email_sent_at', 'validated_at');
         $this->ensureNullableDateColumn('stage_one_registrations', 'selection_email_failed_at', 'selection_email_sent_at');
         $this->ensureNullableTextColumn('stage_one_registrations', 'selection_email_error', 'selection_email_failed_at');
+
+        // Duplicate detection columns
+        $this->ensureColumn('stage_one_registrations', 'duplicate_status',      'VARCHAR(40) NULL DEFAULT NULL AFTER selection_email_error');
+        $this->ensureColumn('stage_one_registrations', 'duplicate_of',           'BIGINT UNSIGNED NULL AFTER duplicate_status');
+        $this->ensureColumn('stage_one_registrations', 'duplicate_note',         'TEXT NULL AFTER duplicate_of');
+        $this->ensureNullableDateColumn('stage_one_registrations', 'duplicate_reviewed_at', 'duplicate_note');
 
         $ready = true;
     }

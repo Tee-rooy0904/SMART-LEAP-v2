@@ -9,6 +9,13 @@ $stageOneFeedbackTone = $stageOneSuccess ? 'success' : 'danger';
 $oldValue = static function (string $key) use ($stageOneOldInput): string {
     return trim((string) ($stageOneOldInput[$key] ?? ''));
 };
+$businessTypeOptions = ['Sari-sari store', 'Fruit stand', 'Ukay-ukay', 'Other'];
+$oldLivelihoodValue = $oldValue('livelihood');
+$isCustomLivelihood = $oldLivelihoodValue !== '' && !in_array($oldLivelihoodValue, ['Sari-sari store', 'Fruit stand', 'Ukay-ukay'], true);
+$selectedLivelihood = $isCustomLivelihood ? 'Other' : $oldLivelihoodValue;
+$oldLivelihoodOtherSpecify = $oldValue('livelihoodOtherSpecify') !== ''
+    ? $oldValue('livelihoodOtherSpecify')
+    : ($isCustomLivelihood ? $oldLivelihoodValue : '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -183,8 +190,19 @@ $oldValue = static function (string $key) use ($stageOneOldInput): string {
                                 <div class="auth-grid">
                                     <label class="field">
                                         <span>Specific business type</span>
-                                        <input type="text" id="stageOneLivelihood" name="livelihood" placeholder="e.g., Sari-sari store" value="<?= htmlspecialchars($oldValue('livelihood'), ENT_QUOTES) ?>" required>
+                                        <select id="stageOneLivelihood" name="livelihood" required>
+                                            <option value=""<?= $selectedLivelihood === '' ? ' selected' : '' ?>>Select business type</option>
+                                            <?php foreach ($businessTypeOptions as $businessType): ?>
+                                                <option value="<?= htmlspecialchars($businessType, ENT_QUOTES) ?>"<?= $selectedLivelihood === $businessType ? ' selected' : '' ?>><?= htmlspecialchars($businessType === 'Other' ? 'Other (please specify)' : $businessType, ENT_QUOTES) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                         <small data-error-for="stageOneLivelihood"></small>
+                                    </label>
+
+                                    <label class="field" id="stageOneLivelihoodOtherWrap"<?= $selectedLivelihood === 'Other' ? '' : ' hidden' ?>>
+                                        <span>Other business type</span>
+                                        <input type="text" id="stageOneLivelihoodOtherSpecify" name="livelihoodOtherSpecify" placeholder="Please specify" value="<?= htmlspecialchars($oldLivelihoodOtherSpecify, ENT_QUOTES) ?>"<?= $selectedLivelihood === 'Other' ? '' : ' disabled' ?>>
+                                        <small data-error-for="stageOneLivelihoodOtherSpecify"></small>
                                     </label>
 
                                     <label class="field">

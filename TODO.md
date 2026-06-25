@@ -1,17 +1,10 @@
-?# Update Requirements sections from requirement files
+- [ ] Add backend metrics needed for admin donut to reflect applicants+beneficiaries totals and training attendance.
+- [ ] Update `DashboardMetricsService` to compute:
+  - applicants count (10)
+  - beneficiaries count (4)
+  - total (14)
+  - training attendance counts based on `attendance_records`
+- [ ] Update admin dashboard section / JS chart hydration to use new metrics.
+- [ ] Add/adjust admin report training attendance data source so it’s not missing.
+- [ ] Test by comparing dashboard donut values against actual known dataset (10 applicants, 4 beneficiaries, 14 total) and ensure attendance section shows expected rows.
 
-**Status: Active**
-
-## Plan Summary
-Make Requirements sections dynamic, pulling from `initial_requirement_types` DB table via seeds.sql data. Add Business Plan and forms as per user feedback.
-
-## Steps:
-- [ ] 1. Update `database/seeds.sql` to add 'business_plan' to initial_requirement_types.
-- [ ] 2. Implement `app/models/InitialRequirementType.php` with `static::all()` method.
-- [ ] 3. Update `app/controllers/PortalController.php` to fetch requirements and pass to view.
-- [ ] 4. Refactor `app/views/public/requirements.php` to render dynamically from `$requirements`.
-- [ ] 5. Update `app/views/public/profile-completion.php` hardcoded doc count to dynamic (via JS/API).
-- [ ] 6. Test: seed DB, visit /portal/requirements.
-- [ ] 7. Mark complete.
-
-**Progress:** Steps 1-4 complete. Next: profile-completion update & test.

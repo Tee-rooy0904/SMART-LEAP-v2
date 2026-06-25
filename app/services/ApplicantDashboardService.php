@@ -27,6 +27,7 @@ class ApplicantDashboardService
         $postApprovalState = (new PostApprovalComplianceService())->stateForApplicant($userId);
         $postApproval = $this->mapPostApprovalState($postApprovalState, $training);
         $certificate = (new CertificateService())->stateForDashboard($user, $profile, $training, $postApproval);
+        $beneficiaryPortal = $this->buildBeneficiaryPortalState($userId, (string) ($user['role'] ?? ''));
 
         return [
             'authUser' => $user,
@@ -37,8 +38,26 @@ class ApplicantDashboardService
             'training' => $training,
             'postApproval' => $postApproval,
             'certificate' => $certificate,
+            'beneficiaryPortal' => $beneficiaryPortal,
             'nextStep' => $this->resolveNextStep($profile, $application, $applicationDetail, $training, $postApproval),
         ];
+    }
+
+    private function buildBeneficiaryPortalState(int $userId, string $role): array
+    {
+        if (!str_contains(strtolower($role), 'beneficiary')) {
+            return [
+                'isBeneficiary' => false,
+                'lockedMessage' => 'Beneficiary tools become available after your PDO/Admin confirms your approval as a SMART LEAP beneficiary.',
+            ];
+        }
+
+        $applicationService = new ApplicationService();
+
+        return array_merge($applicationService->getBeneficiaryProfileState($userId), [
+            'isBeneficiary' => true,
+            'repayments' => (new RepaymentLedgerService())->listForBeneficiary($userId),
+        ]);
     }
 
     private function mapProfileState(array $user, ?array $profile, ?array $application): ?array
@@ -286,9 +305,20 @@ class ApplicantDashboardService
 
     private function fetchTrainingState(int $applicantProfileId, int $userId): array
     {
-        $isEligible = (new TrainingEligibilityService())->isApplicantEligible($applicantProfileId);
-        if (!$isEligible) {
-            return $this->emptyTrainingState();
+        // For the beneficiary portal: bypass the eligibility gate entirely.
+        // TrainingEligibilityService excludes beneficiaries by design (it is used
+        // to decide who to invite, not who can view their own history).
+        // Beneficiaries must still see their historical training records.
+        $user = db()->prepare('SELECT roles.name FROM users INNER JOIN roles ON roles.id = users.role_id WHERE users.id = :uid LIMIT 1');
+        $user->execute(['uid' => $userId]);
+        $roleName = strtolower(trim((string) ($user->fetchColumn() ?: '')));
+        $isBeneficiary = str_contains($roleName, 'beneficiary');
+
+        if (!$isBeneficiary) {
+            $isEligible = (new TrainingEligibilityService())->isApplicantEligible($applicantProfileId);
+            if (!$isEligible) {
+                return $this->emptyTrainingState();
+            }
         }
 
         $statement = db()->prepare(

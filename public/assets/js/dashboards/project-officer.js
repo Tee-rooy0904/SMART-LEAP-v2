@@ -180,11 +180,14 @@
     document.getElementById('poApplicationModal')?.addEventListener('click', handleReviewClick);
     document.getElementById('poApplicationModal')?.addEventListener('change', handleReviewChange);
     document.getElementById('po-app-modal-livelihood-category-input')?.addEventListener('change', handleLivelihoodCategoryChange);
-    document.getElementById('po-app-modal-reject')?.addEventListener('click', () => submitApplicationDecision('reject'));
     document.getElementById('po-app-modal-approve')?.addEventListener('click', openApprovalSummary);
     document.getElementById('po-app-modal-assisted')?.addEventListener('change', () => {
       state.assistanceReceivedSelection = !!document.getElementById('po-app-modal-assisted')?.checked;
       renderAssistanceStatus(state.activeApplication);
+      setText('po-app-assistance-proof-status', assistanceProofStatusLabel(assistanceProofTaskFor(state.activeApplication), state.activeApplication));
+      renderRequirementNavigator();
+      renderPreviewPanel();
+      renderRequirementInspector();
       updateFinalApprovalDecisionState(state.activeApplication);
     });
     document.getElementById('po-app-assisted-record')?.addEventListener('click', recordAssistanceReceivedNow);
@@ -842,7 +845,11 @@
     const roiPercent = safeNumber(metrics.roiPercent);
     const beneficiaryCount = safeNumber(metrics.scopedBeneficiaries ?? records.length);
     const obligationCount = safeNumber(metrics.obligationCount);
-    const summary = buildPoReportSummary(visibleRecords);
+    // Use the server-computed summary directly — it runs through currentPopulationRecords()
+    // and normalizeServiceType() so distributions are consistent with the full report data.
+    // Client-side re-computation via buildPoReportSummary produces different buckets because
+    // it skips the isCurrentPopulation filter and uses different service-type keyword matching.
+    const summary = report.summary || {};
 
     setText('poReportsResultCount', `${visibleRecords.length} unique ${visibleRecords.length === 1 ? 'person' : 'people'} shown - ${label}`);
     setText('poReportsTargetAmount', formatPesoAmount(targetAmount));
@@ -2419,18 +2426,18 @@
     setText('po-app-readiness-status', ready.overallStatus || 'Under Review');
     setText('po-app-upload-summary', `${ready.uploadSummary?.approved || 0} / ${ready.uploadSummary?.total || 0}`);
     const trainingForms = (app.formRequirements || []).filter((r) => String(r.key || '').toLowerCase() !== 'fund_release_evidence');
-    const trainingFormsApproved = trainingForms.filter((r) => ['verified', 'approved'].includes(String(r.status || '').toLowerCase())).length;
-    setText('po-app-form-summary', `${trainingFormsApproved} / ${trainingForms.length}`);
+    setText('po-app-form-summary', `${ready.formSummary?.approved || 0} / ${ready.formSummary?.total || trainingForms.length}`);
 
     const trainingProgress = ready.trainingStatus?.displayStatus || ready.trainingStatus?.status || '--';
     const trainingCompletion = ready.trainingStatus?.completionStatus || '';
     setText('po-app-training-status', trainingCompletion ? `${trainingProgress} - ${trainingCompletion}` : trainingProgress);
     setText('po-app-training-chip', ready.trainingStatus?.completed ? 'Training Completed' : 'Training Pending');
     setStatusChipClass('po-app-training-chip', ready.trainingStatus?.completed ? 'Completed' : 'Pending');
-    const assistanceProofTask = (app.formRequirements || []).find((r) => String(r.key || '').toLowerCase() === 'fund_release_evidence');
-    const assistanceProofStatus = assistanceProofTask ? (String(assistanceProofTask.status || '').toLowerCase() === 'verified' ? 'Verified' : (String(assistanceProofTask.status || '').toLowerCase() === 'submitted' ? 'Submitted' : 'Pending')) : 'Not yet uploaded';
-    setText('po-app-assistance-proof-status', assistanceProofStatus);    setText('po-upload-review-count', formatRequirementCount(app.requirements || []));
-    setText('po-form-review-count', formatRequirementCount(app.formRequirements || []));
+    const assistanceProofTask = assistanceProofTaskFor(app);
+    const assistanceProofStatus = assistanceProofStatusLabel(assistanceProofTask, app);
+    setText('po-app-assistance-proof-status', assistanceProofStatus);
+    setText('po-upload-review-count', formatRequirementCount(app.requirements || []));
+    setText('po-form-review-count', formatRequirementCount(trainingForms));
     setText('po-review-total-count', formatRequirementCount([...(app.requirements || []), ...(app.formRequirements || [])]));
     const blockerList = document.getElementById('po-app-readiness-blockers');
     if (blockerList) blockerList.innerHTML = (ready.blockers || []).length
@@ -2459,6 +2466,7 @@
     const assistanceToggle = document.getElementById('po-app-modal-assisted');
     const alreadyApproved = !!assistance?.isApprovedBeneficiary || String(app?.status || '').toLowerCase() === 'completed';
     const assistanceConfirmed = alreadyApproved || !!state.assistanceReceivedSelection || !!assistanceToggle?.checked;
+    const assistanceProofTask = assistanceProofTaskFor(app);
 
     if (alreadyApproved) {
       return {
@@ -2470,6 +2478,17 @@
     }
 
     if (!ready.canApprove) {
+      if (assistanceConfirmed
+        && assistanceProofTask
+        && String(assistanceProofTask.status || '').toLowerCase() === 'locked'
+        && !formRequirementFile(assistanceProofTask)?.url) {
+        return {
+          enabled: false,
+          title: 'Upload and review the proof of assistance before final approval.',
+          statusTitle: 'Proof of assistance still needed.',
+          statusCopy: 'Upload the proof of assistance received, then review and approve that requirement before final approval.',
+        };
+      }
       return {
         enabled: false,
         title: ((ready.blockers || []).slice(0, 2).join(' | ')) || 'Resolve the blocking reasons before approval.',
@@ -2504,6 +2523,50 @@
       approveButton.disabled = !finalApproval.enabled;
       approveButton.title = finalApproval.title;
     }
+  }
+
+  function isAssistanceConfirmed(app = state.activeApplication) {
+    const assistance = app?.assistanceStatus || null;
+    const assistanceToggle = document.getElementById('po-app-modal-assisted');
+    const alreadyApproved = !!assistance?.isApprovedBeneficiary || String(app?.status || '').toLowerCase() === 'completed';
+    return alreadyApproved || !!state.assistanceReceivedSelection || !!assistanceToggle?.checked;
+  }
+
+  function isAssistanceProofRequirement(item) {
+    return String(item?.key || item?.type || '').toLowerCase() === 'fund_release_evidence'
+      || String(item?.type || '').toLowerCase() === 'final_assistance_proof';
+  }
+
+  function assistanceProofTaskFor(app = state.activeApplication) {
+    return (app?.formRequirements || []).find((item) => isAssistanceProofRequirement(item)) || null;
+  }
+
+  function isAssistanceProofLocked(item, app = state.activeApplication) {
+    if (!isAssistanceProofRequirement(item)) return false;
+    const status = String(item?.status || '').toLowerCase();
+    if (['submitted', 'verified', 'approved', 'needs correction', 'needs_correction', 'rejected'].includes(status)) return false;
+    if (formRequirementFile(item)?.url) return false;
+    return !isAssistanceConfirmed(app);
+  }
+
+  function assistanceProofStatusLabel(item, app = state.activeApplication) {
+    if (!item) return 'Not yet uploaded';
+    if (isAssistanceProofLocked(item, app)) return 'Locked';
+    const status = String(item.status || '').toLowerCase();
+    if (status === 'verified' || status === 'approved') return 'Verified';
+    if (status === 'submitted') return 'Submitted';
+    if (status === 'needs correction' || status === 'needs_correction') return 'Needs Correction';
+    if (status === 'rejected') return 'Rejected';
+    if (formRequirementFile(item)?.url) return 'Uploaded';
+    return 'Pending';
+  }
+
+  function visualRequirementStatus(item, app = state.activeApplication) {
+    if (isAssistanceProofRequirement(item) && !isAssistanceProofLocked(item, app)) {
+      const status = String(item?.status || '').toLowerCase();
+      if (status === 'locked' || status === '') return 'Pending';
+    }
+    return item?.status || 'Pending';
   }
 
   function renderAssistanceStatus(app = state.activeApplication) {
@@ -2584,9 +2647,13 @@
     }
 
     const item = preview.item;
+    const isFinalAssistanceProof = preview.kind === 'form' && isAssistanceProofRequirement(item);
+    const proofLocked = isFinalAssistanceProof && isAssistanceProofLocked(item);
     const submittedLabel = preview.kind === 'upload' ? (item.file?.name || item.label || '--') : (item.label || '--');
     setText('po-preview-title', submittedLabel);
-    setText('po-preview-chip', preview.kind === 'upload' ? 'Upload Requirement' : 'Fill-up Form Requirement');
+    setText('po-preview-chip', preview.kind === 'upload'
+      ? 'Upload Requirement'
+      : (isFinalAssistanceProof ? 'Final Assistance Requirement' : 'Fill-up Form Requirement'));
 
     if (preview.kind === 'upload') {
       const url = item.file?.url || '';
@@ -2609,16 +2676,34 @@
 
     const uploadedFormFile = preview.kind === 'form' ? formRequirementFile(item) : null;
     const reviewUrl = formReviewUrl(item, false);
-    root.innerHTML = `<div class="po-preview-file-card"><strong>${escapeHtml(item.label || 'Fill-up form')}</strong><span>Review the requirement status here, or open the applicant-filled form separately for full paper-form checking.</span><a class="action-button" href="${escapeHtml(reviewUrl)}" data-open-form-review="${escapeHtml(reviewUrl)}">Review applicant form</a>${uploadedFormFile?.url ? `<a class="action-button action-button--quiet" href="${escapeHtml(uploadedFormFile.url)}" target="_blank" rel="noopener">Open uploaded copy</a>` : ''}</div>`;
+    if (isFinalAssistanceProof && uploadedFormFile?.url) {
+      renderPreviewFile(root, uploadedFormFile, item.label || 'Proof of Assistance Received');
+      return;
+    }
+    if (isFinalAssistanceProof && proofLocked) {
+      root.innerHTML = `<div class="po-preview-file-card"><strong>${escapeHtml(item.label || 'Proof of Assistance Received')}</strong><span>Check "Already received assistance" first to unlock this upload requirement in the review modal.</span></div>`;
+      return;
+    }
+    root.innerHTML = `<div class="po-preview-file-card"><strong>${escapeHtml(item.label || 'Fill-up form')}</strong><span>${escapeHtml(isFinalAssistanceProof
+      ? 'Upload the official proof here, then open the review sheet to verify it before approval.'
+      : 'Review the requirement status here, or open the applicant-filled form separately for full paper-form checking.')}</span>${isFinalAssistanceProof
+      ? (uploadedFormFile?.url
+        ? `<a class="action-button" href="${escapeHtml(reviewUrl)}" data-open-form-review="${escapeHtml(reviewUrl)}">Open review sheet</a><a class="action-button action-button--quiet" href="${escapeHtml(uploadedFormFile.url)}" target="_blank" rel="noopener">Open uploaded proof</a>`
+        : '<span class="po-preview-empty">Upload the proof file from the requirement navigator to continue.</span>')
+      : `<a class="action-button" href="${escapeHtml(reviewUrl)}" data-open-form-review="${escapeHtml(reviewUrl)}">Review applicant form</a>${uploadedFormFile?.url ? `<a class="action-button action-button--quiet" href="${escapeHtml(uploadedFormFile.url)}" target="_blank" rel="noopener">Open uploaded copy</a>` : ''}`}</div>`;
   }
 
   function requirementSubmissionLabel(kind, item) {
     if (kind === 'upload') return item.file?.url ? 'Submitted' : 'Missing';
+    if (isAssistanceProofLocked(item)) return 'Locked';
     return ['submitted', 'verified', 'rejected', 'needs correction'].includes(String(item.status || '').toLowerCase()) ? 'Submitted' : 'Missing';
   }
 
   function requirementSubmissionClass(kind, item) {
-    return requirementSubmissionLabel(kind, item) === 'Submitted' ? 'is-info' : 'is-danger';
+    const label = requirementSubmissionLabel(kind, item);
+    if (label === 'Submitted') return 'is-info';
+    if (label === 'Locked') return 'is-muted';
+    return 'is-danger';
   }
 
   function formReviewUrl(item, embedded = false) {
@@ -2650,10 +2735,13 @@
       const itemKey = String(kind === 'upload' ? item.key : item.id);
       const formUploadKey = String(kind === 'form' ? item.key : itemKey);
       const uploadedFormFile = kind === 'form' ? formRequirementFile(item) : null;
+      const proofLocked = kind === 'form' && isAssistanceProofLocked(item);
+      const statusValue = visualRequirementStatus(item);
+      const statusLabel = requirementStatusLabel(statusValue);
       const uploadControl = kind === 'form'
-        ? `<div class="po-requirement-card__actions"><input class="po-review-upload-input" id="po-form-upload-${escapeAttribute(formUploadKey)}" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" data-form-upload-input="${escapeAttribute(formUploadKey)}" hidden><button type="button" class="action-button action-button--quiet po-requirement-card__upload" data-trigger-form-upload="${escapeAttribute(formUploadKey)}">${uploadedFormFile?.url ? 'Replace uploaded file' : 'Upload file'}</button></div>`
+        ? `<div class="po-requirement-card__actions"><input class="po-review-upload-input" id="po-form-upload-${escapeAttribute(formUploadKey)}" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" data-form-upload-input="${escapeAttribute(formUploadKey)}" hidden><button type="button" class="action-button action-button--quiet po-requirement-card__upload" data-trigger-form-upload="${escapeAttribute(formUploadKey)}" ${proofLocked ? 'disabled title="Confirm \\"Already received assistance\\" first."' : ''}>${proofLocked ? 'Locked until assistance is confirmed' : (uploadedFormFile?.url ? 'Replace uploaded file' : 'Upload file')}</button></div>`
         : '';
-      return `<article class="po-requirement-card ${selected ? 'is-active' : ''}"><button type="button" class="po-requirement-card__select" data-select-requirement="${escapeAttribute(token)}"><div class="po-requirement-card__top"><strong>${escapeHtml(item.label || '--')}</strong><span class="po-status-pill ${requirementStatusClass(item.status)}">${escapeHtml(requirementStatusLabel(item.status))}</span></div><div class="po-requirement-card__meta"><span>${escapeHtml(item.typeLabel || '--')}</span><span class="po-status-pill ${requirementSubmissionClass(kind, item)}">${escapeHtml(requirementSubmissionLabel(kind, item))}</span></div></button>${uploadControl}</article>`;
+      return `<article class="po-requirement-card ${selected ? 'is-active' : ''}"><button type="button" class="po-requirement-card__select" data-select-requirement="${escapeAttribute(token)}"><div class="po-requirement-card__top"><strong>${escapeHtml(item.label || '--')}</strong><span class="po-status-pill ${requirementStatusClass(statusValue)}">${escapeHtml(statusLabel)}</span></div><div class="po-requirement-card__meta"><span>${escapeHtml(item.typeLabel || '--')}</span><span class="po-status-pill ${requirementSubmissionClass(kind, item)}">${escapeHtml(requirementSubmissionLabel(kind, item))}</span></div></button>${uploadControl}</article>`;
     }).join('');
   }
 
@@ -2669,12 +2757,15 @@
     }
     const { kind, item } = preview;
     const itemKey = String(kind === 'upload' ? item.key : item.id);
-    const statusLabel = requirementStatusLabel(item.status);
+    const statusValue = visualRequirementStatus(item);
+    const statusLabel = requirementStatusLabel(statusValue);
     const reviewUrl = kind === 'upload' ? '' : formReviewUrl(item, false);
     const uploadedFormFile = kind === 'form' ? formRequirementFile(item) : null;
     const formSubmittedOnline = kind === 'form' && requirementSubmissionLabel(kind, item) === 'Submitted';
     const canReviewUpload = kind === 'upload' && !!item.file?.url;
-    const canReviewForm = kind === 'form' && (item.canReview !== false) && (requirementSubmissionLabel(kind, item) === 'Submitted');
+    const isFinalAssistanceProof = kind === 'form' && isAssistanceProofRequirement(item);
+    const proofLocked = isFinalAssistanceProof && isAssistanceProofLocked(item);
+    const canReviewForm = kind === 'form' && !proofLocked && (item.canReview !== false) && (requirementSubmissionLabel(kind, item) === 'Submitted');
     const canReviewItem = canReviewUpload || canReviewForm;
     const reviewActions = canReviewItem
       ? `<div class="po-inspector-actions">
@@ -2687,11 +2778,15 @@
       : `<div class="po-inspector-note">${
           kind === 'upload'
             ? 'This requirement cannot be reviewed until a file is uploaded.'
-            : 'This form requirement cannot be reviewed until the PDO form upload is submitted.'
+            : (isFinalAssistanceProof
+              ? (proofLocked
+                ? 'Check "Already received assistance" first to unlock this proof upload.'
+                : 'Upload the proof file first, then review it here before final approval.')
+              : 'This form requirement cannot be reviewed until the PDO form upload is submitted.')
         }</div>`;
     setText('po-inspector-title', item.label || 'Requirement');
     setText('po-inspector-chip', item.typeLabel || '--');
-    root.innerHTML = `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>Submission State</span><strong><span class="po-status-pill ${requirementSubmissionClass(kind, item)}">${escapeHtml(requirementSubmissionLabel(kind, item))}</span></strong></div><div class="po-inspector-summary__row"><span>Requirement Status</span><strong><span class="po-status-pill ${requirementStatusClass(item.status)}">${escapeHtml(statusLabel)}</span></strong></div></div>${kind === 'form' ? `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>Online form</span><strong>${escapeHtml(formSubmittedOnline ? 'Submitted by applicant' : 'Not submitted yet')}</strong></div><div class="po-inspector-summary__row"><span>Optional uploaded copy</span><strong>${escapeHtml(uploadedFormFile?.name || 'No file uploaded')}</strong></div><div class="po-inspector-summary__row"><span>Staff upload</span><strong>${uploadedFormFile?.uploadedAt ? escapeHtml(formatDate(uploadedFormFile.uploadedAt)) : '--'}</strong></div></div><div class="po-inspector-actions"><a class="action-button" href="${escapeHtml(formReviewUrl(item, false))}" data-open-form-review="${escapeHtml(formReviewUrl(item, false))}">Review applicant form</a></div>` : ''}${reviewActions}${reviewNote}`;
+    root.innerHTML = `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>Submission State</span><strong><span class="po-status-pill ${requirementSubmissionClass(kind, item)}">${escapeHtml(requirementSubmissionLabel(kind, item))}</span></strong></div><div class="po-inspector-summary__row"><span>Requirement Status</span><strong><span class="po-status-pill ${requirementStatusClass(statusValue)}">${escapeHtml(statusLabel)}</span></strong></div></div>${kind === 'form' ? `<div class="po-inspector-summary"><div class="po-inspector-summary__row"><span>${escapeHtml(isFinalAssistanceProof ? 'Upload control' : 'Online form')}</span><strong>${escapeHtml(isFinalAssistanceProof ? (proofLocked ? 'Locked until assistance is confirmed' : 'Pending') : (formSubmittedOnline ? 'Submitted by applicant' : 'Not submitted yet'))}</strong></div><div class="po-inspector-summary__row"><span>${escapeHtml(isFinalAssistanceProof ? 'Uploaded proof' : 'Optional uploaded copy')}</span><strong>${escapeHtml(uploadedFormFile?.name || 'No file uploaded')}</strong></div><div class="po-inspector-summary__row"><span>Submitted / uploaded</span><strong>${uploadedFormFile?.uploadedAt ? escapeHtml(formatDate(uploadedFormFile.uploadedAt)) : '--'}</strong></div></div><div class="po-inspector-actions">${isFinalAssistanceProof ? `${uploadedFormFile?.url ? `<a class="action-button" href="${escapeHtml(uploadedFormFile.url)}" target="_blank" rel="noopener">Open uploaded proof</a>` : ''}${uploadedFormFile?.url ? `<a class="action-button action-button--quiet" href="${escapeHtml(formReviewUrl(item, false))}" data-open-form-review="${escapeHtml(formReviewUrl(item, false))}">Open review sheet</a>` : ''}` : `<a class="action-button" href="${escapeHtml(formReviewUrl(item, false))}" data-open-form-review="${escapeHtml(formReviewUrl(item, false))}">Review applicant form</a>`}</div>` : ''}${reviewActions}${reviewNote}`;
   }
 
   async function handleReviewClick(event) {
@@ -2738,11 +2833,20 @@
     if (!(input instanceof HTMLInputElement) || !input.files?.[0]) return;
     const requirementKey = String(input.dataset.formUploadInput || '').trim();
     if (!requirementKey || !state.activeApplication?.id) return;
+    const formRequirement = (state.activeApplication.formRequirements || []).find((item) => String(item.key || '') === requirementKey);
+    if (isAssistanceProofRequirement(formRequirement) && !isAssistanceConfirmed(state.activeApplication)) {
+      input.value = '';
+      showToast('Confirm "Already received assistance" first before uploading the proof of assistance.', 'warning');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('applicationId', String(state.activeApplication.id));
     formData.append('requirementKey', requirementKey);
     formData.append('file', input.files[0]);
+    if (isAssistanceProofRequirement(formRequirement)) {
+      formData.append('assistanceConfirmed', '1');
+    }
 
     const response = await apiFormPost('api/applications/upload-form-requirement', formData);
     input.value = '';
@@ -2846,12 +2950,9 @@
     const trainingSummary = ready.trainingStatus?.completionStatus
       ? `${ready.trainingStatus?.displayStatus || ready.trainingStatus?.status || '--'} - ${ready.trainingStatus?.completionStatus}`
       : (ready.trainingStatus?.displayStatus || ready.trainingStatus?.status || '--');
-    const assistanceProofTask = (state.activeApplication.formRequirements || []).find((r) => String(r.key || '').toLowerCase() === 'fund_release_evidence');
-    const assistanceProofStatus = assistanceProofTask
-      ? (String(assistanceProofTask.status || '').toLowerCase() === 'verified' ? 'Verified'
-        : String(assistanceProofTask.status || '').toLowerCase() === 'submitted' ? 'Submitted'
-        : 'Pending')
-      : 'Not yet uploaded';
+    const assistanceProofTask = assistanceProofTaskFor(state.activeApplication);
+    const assistanceProofStatus = assistanceProofStatusLabel(assistanceProofTask, state.activeApplication);
+    const assistanceConfirmed = isAssistanceConfirmed(state.activeApplication);
     setText('po-summary-applicant', state.activeApplication.applicantName || 'Applicant');
     setText('po-summary-case-title', `${state.activeApplication.applicantName || 'Applicant'} approval check`);
     setText('po-summary-barangay', state.activeApplication.barangay || '--');
@@ -2859,10 +2960,17 @@
     setText('po-summary-form', `${ready.formSummary?.approved || 0} / ${ready.formSummary?.total || 0}`);
     setText('po-summary-training', trainingSummary);
     setText('po-summary-assistance-proof', assistanceProofStatus);
+    setText('po-summary-assistance-confirmation', assistanceConfirmed ? 'Confirmed' : 'Waiting for checkbox');
+    setText(
+      'po-summary-checklist-intro',
+      assistanceConfirmed
+        ? 'Each approval group below is ready to be double-checked before confirming the beneficiary record.'
+        : 'Confirm "Already received assistance" first, then complete the final proof review before confirming approval.'
+    );
     setText(
       'po-summary-readiness-text',
       finalApproval.enabled
-        ? 'All required application requirements, training conditions, and assistance confirmation are satisfied. Assistance received will be recorded when this approval is confirmed.'
+        ? 'All required application requirements, training conditions, proof checks, and assistance confirmation are satisfied. Assistance received will be recorded when this approval is confirmed.'
         : finalApproval.statusCopy
     );
     setText('po-summary-status-chip', finalApproval.enabled ? 'Ready for Approval' : 'Approval Blocked');
@@ -2881,8 +2989,17 @@
           label: 'Proof of Assistance Received',
           status: assistanceProofTask ? assistanceProofTask.status : 'missing',
           detail: assistanceProofTask
-            ? (assistanceProofTask.submittedAt ? `Submitted ${formatDate(assistanceProofTask.submittedAt)}` : assistanceProofStatus)
+            ? (isAssistanceProofLocked(assistanceProofTask, state.activeApplication)
+              ? 'Locked until "Already received assistance" is checked.'
+              : (assistanceProofTask.submittedAt ? `Submitted ${formatDate(assistanceProofTask.submittedAt)}` : assistanceProofStatus))
             : 'PDO has not yet uploaded proof of assistance release.',
+        }]),
+        buildApprovalSummaryGroup('Approval Confirmation', [{
+          label: 'Already received assistance',
+          status: assistanceConfirmed ? 'approved' : 'pending',
+          detail: assistanceConfirmed
+            ? 'Assistance release has been confirmed in this approval flow.'
+            : 'Check the assistance confirmation box in the application review modal to unlock final approval.',
         }]),
       ].join('');
     }
@@ -2905,13 +3022,18 @@
   }
 
   function buildApprovalSummaryGroup(title, items) {
+    const approvedCount = Array.isArray(items)
+      ? items.filter((item) => requirementStatusLabel(visualRequirementStatus(item, state.activeApplication)) === 'Approved').length
+      : 0;
+    const totalCount = Array.isArray(items) ? items.length : 0;
     const rows = Array.isArray(items) && items.length
       ? items.map((item) => {
         const detail = item?.detail ? `<small>${escapeHtml(item.detail)}</small>` : '';
-        return `<div class="po-summary-checkitem"><div class="po-summary-checkitem__copy"><strong>${escapeHtml(item?.label || '--')}</strong>${detail}</div><span class="po-status-pill ${requirementStatusClass(item?.status || 'missing')}">${escapeHtml(requirementStatusLabel(item?.status || 'missing'))}</span></div>`;
+        const statusValue = visualRequirementStatus(item, state.activeApplication);
+        return `<div class="po-summary-checkitem"><div class="po-summary-checkitem__copy"><strong>${escapeHtml(item?.label || '--')}</strong>${detail}</div><span class="po-status-pill ${requirementStatusClass(statusValue)}">${escapeHtml(requirementStatusLabel(statusValue))}</span></div>`;
       }).join('')
       : '<div class="po-summary-checkitem po-summary-checkitem--empty"><div class="po-summary-checkitem__copy"><strong>No items recorded</strong></div></div>';
-    return `<section class="po-summary-group"><div class="po-summary-group__header"><span>${escapeHtml(title)}</span></div><div class="po-summary-group__items">${rows}</div></section>`;
+    return `<section class="po-summary-group"><div class="po-summary-group__header"><span>${escapeHtml(title)}</span><strong class="po-summary-group__count">${totalCount > 0 ? `${approvedCount} / ${totalCount}` : '0 / 0'}</strong></div><div class="po-summary-group__items">${rows}</div></section>`;
   }
 
   function formRequirementFile(item) {
@@ -4330,4 +4452,3 @@
     return escapeHtml(value);
   }
 })();
-

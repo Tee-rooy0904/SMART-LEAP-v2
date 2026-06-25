@@ -3143,6 +3143,70 @@
         return '';
     }
 
+    function buildTaskSchedule(task) {
+        const schedule = task?.schedule || {};
+        const openedAt = schedule.openedAt || task?.startedAt || '';
+        const closesAt = task?.dueDate || schedule.closesAt || schedule.trainingEndsAt || schedule.trainingStartsAt || '';
+
+        return {
+            openedAt,
+            closesAt,
+            openedText: openedAt ? formatDateTime(openedAt) : 'Not set yet',
+            closesText: closesAt ? formatDateTime(closesAt) : 'No expiration date set',
+            countdownText: buildTaskScheduleCountdown(closesAt),
+        };
+    }
+
+    function buildTaskScheduleCountdown(closesAt) {
+        if (!closesAt) {
+            return 'No expiration date set';
+        }
+
+        const deadline = new Date(closesAt).getTime();
+        if (Number.isNaN(deadline)) {
+            return `Expires on ${closesAt}`;
+        }
+
+        const diff = deadline - Date.now();
+        if (diff <= 0) {
+            return 'Expired';
+        }
+
+        const totalMinutes = Math.ceil(diff / 60000);
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const minutes = totalMinutes % 60;
+        const parts = [];
+        if (days > 0) parts.push(`${days}d`);
+        if (hours > 0 || days > 0) parts.push(`${hours}h`);
+        parts.push(`${minutes}m`);
+
+        return parts.join(' ');
+    }
+
+    function renderTaskSchedule(task) {
+        const strip = document.getElementById('formScheduleStrip');
+        if (!strip) {
+            return;
+        }
+
+        if (state.reviewerMode) {
+            strip.hidden = true;
+            return;
+        }
+
+        const schedule = buildTaskSchedule(task);
+        const hasSchedule = !!(schedule.openedAt || schedule.closesAt);
+        strip.hidden = !hasSchedule;
+        if (!hasSchedule) {
+            return;
+        }
+
+        setText('formScheduleOpened', schedule.openedText);
+        setText('formScheduleCloses', schedule.closesText);
+        setText('formScheduleCountdown', schedule.countdownText);
+    }
+
     function buildFormGuidance(task) {
         const taskGuides = {
             availment_form: {
@@ -7083,6 +7147,7 @@
         setText('postApprovalWorkspaceStatus', task.status);
         document.title = `SMART LEAP | ${task.title || 'Online Form'}`;
         document.body.dataset.renderMode = state.renderMode;
+        renderTaskSchedule(task);
         renderFormGuidance(task);
         renderSectionNavigator(task);
         renderReviewerHeader(task);

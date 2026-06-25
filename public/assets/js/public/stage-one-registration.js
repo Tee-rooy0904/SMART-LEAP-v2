@@ -22,6 +22,7 @@
         sector: document.getElementById('stageOneSector'),
         sectorOtherSpecify: document.getElementById('stageOneSectorOtherSpecify'),
         livelihood: document.getElementById('stageOneLivelihood'),
+        livelihoodOtherSpecify: document.getElementById('stageOneLivelihoodOtherSpecify'),
         businessName: document.getElementById('stageOneBusinessName'),
         profilePhoto: document.getElementById('stageOneProfilePhoto'),
         businessPhoto: document.getElementById('stageOneBusinessPhoto'),
@@ -36,6 +37,7 @@
     const profilePreview = document.getElementById('stageOneProfilePhotoPreview');
     const profilePlaceholder = document.getElementById('stageOneProfilePhotoPlaceholder');
     const sectorOtherWrap = document.getElementById('stageOneSectorOtherWrap');
+    const livelihoodOtherWrap = document.getElementById('stageOneLivelihoodOtherWrap');
     const codeModal = document.getElementById('stageOneCodeModal');
     const codeInput = document.getElementById('stageOneEmailCode');
     const codeFeedback = document.getElementById('stageOneCodeFeedback');
@@ -143,6 +145,17 @@
         }
     }
 
+    function toggleLivelihoodOther() {
+        if (!fields.livelihood || !livelihoodOtherWrap || !fields.livelihoodOtherSpecify) return;
+        const isOther = fields.livelihood.value === 'Other';
+        livelihoodOtherWrap.hidden = !isOther;
+        fields.livelihoodOtherSpecify.disabled = !isOther;
+        if (!isOther) {
+            fields.livelihoodOtherSpecify.value = '';
+            clearFieldError('stageOneLivelihoodOtherSpecify');
+        }
+    }
+
     function resetErrors() {
         feedback.hidden = true;
         feedback.textContent = '';
@@ -227,7 +240,8 @@
         formData.append('educationalAttainment', fields.educationalAttainment.value);
         formData.append('sector', fields.sector.value);
         formData.append('sectorOtherSpecify', fields.sectorOtherSpecify.value.trim());
-        formData.append('livelihood', fields.livelihood.value.trim());
+        formData.append('livelihood', fields.livelihood.value);
+        formData.append('livelihoodOtherSpecify', fields.livelihoodOtherSpecify.value.trim());
         formData.append('businessName', fields.businessName.value.trim());
         if (verificationCode) {
             formData.append('emailVerificationCode', verificationCode);
@@ -279,7 +293,7 @@
             ['stageOne4ps', fields.is4ps.value, 'Select your 4Ps membership.'],
             ['stageOneEducationalAttainment', fields.educationalAttainment.value, 'Select your educational attainment.'],
             ['stageOneSector', fields.sector.value, 'Select your sector.'],
-            ['stageOneLivelihood', fields.livelihood.value.trim(), 'Enter your specific business type.'],
+            ['stageOneLivelihood', fields.livelihood.value, 'Select your specific business type.'],
             ['stageOneBusinessName', fields.businessName.value.trim(), 'Enter your microbusiness name.'],
         ];
 
@@ -312,6 +326,11 @@
         if (fields.sector.value === 'Other' && !fields.sectorOtherSpecify.value.trim()) {
             valid = false;
             showFieldError('stageOneSectorOtherSpecify', 'Please specify the other sector.');
+        }
+
+        if (fields.livelihood.value === 'Other' && !fields.livelihoodOtherSpecify.value.trim()) {
+            valid = false;
+            showFieldError('stageOneLivelihoodOtherSpecify', 'Please specify the other business type.');
         }
 
         const profileFile = fields.profilePhoto.files?.[0];
@@ -348,6 +367,7 @@
     fields.validIdPhoto?.addEventListener('change', () => updateFileLabel(fields.validIdPhoto, 'stageOneValidIdPhotoName'));
     fields.birthdate?.addEventListener('change', syncAgeFromBirthdate);
     fields.sector?.addEventListener('change', toggleSectorOther);
+    fields.livelihood?.addEventListener('change', toggleLivelihoodOther);
     fields.address?.addEventListener('input', () => autoResizeTextarea(fields.address));
     codeInput?.addEventListener('input', () => {
         codeInput.value = codeInput.value.replace(/\D+/g, '').slice(0, 6);
@@ -371,6 +391,7 @@
     autoResizeTextarea(fields.address);
     syncAgeFromBirthdate();
     toggleSectorOther();
+    toggleLivelihoodOther();
 
     async function submitVerifiedRegistration() {
         const verificationCode = codeInput?.value.trim() || '';

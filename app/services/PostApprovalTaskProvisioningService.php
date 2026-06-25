@@ -205,48 +205,6 @@ class PostApprovalTaskProvisioningService
             'task_type_id' => $typeMap[POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE],
             'status' => POST_APPROVAL_STATUS_LOCKED,
         ]);
-
-        db()->prepare(
-            'UPDATE post_approval_tasks AS final_task
-             INNER JOIN post_approval_task_types AS final_type
-                ON final_type.id = final_task.task_type_id
-               AND final_type.code = :final_code
-             INNER JOIN (
-                SELECT
-                    post_approval_tasks.beneficiary_profile_id
-                FROM post_approval_tasks
-                INNER JOIN post_approval_task_types
-                    ON post_approval_task_types.id = post_approval_tasks.task_type_id
-                WHERE post_approval_tasks.beneficiary_profile_id = :ready_profile_id
-                  AND post_approval_task_types.code IN (
-                    :availment_code,
-                    :validation_code,
-                    :proposal_code,
-                    :business_plan_code,
-                    :oath_code
-                  )
-                GROUP BY post_approval_tasks.beneficiary_profile_id
-                HAVING COUNT(DISTINCT post_approval_task_types.code) = 5
-                   AND SUM(CASE WHEN post_approval_tasks.status = :verified_status THEN 1 ELSE 0 END) = 5
-             ) AS ready_profiles
-                ON ready_profiles.beneficiary_profile_id = final_task.beneficiary_profile_id
-             SET final_task.status = :unlocked_status,
-                 final_task.updated_at = CURRENT_TIMESTAMP
-             WHERE final_task.beneficiary_profile_id = :beneficiary_profile_id
-               AND final_task.status IN (:locked_status, "Pending")'
-        )->execute([
-            'final_code' => POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE,
-            'ready_profile_id' => $beneficiaryProfileId,
-            'availment_code' => POST_APPROVAL_TASK_AVAILMENT_FORM,
-            'validation_code' => POST_APPROVAL_TASK_VALIDATION_FORM,
-            'proposal_code' => POST_APPROVAL_TASK_MUNGKAHING_PROYEKTO,
-            'business_plan_code' => POST_APPROVAL_TASK_BUSINESS_PLAN,
-            'oath_code' => POST_APPROVAL_TASK_BUHAT_SA_PAGPANUMPA,
-            'verified_status' => POST_APPROVAL_STATUS_VERIFIED,
-            'unlocked_status' => POST_APPROVAL_STATUS_UNLOCKED,
-            'beneficiary_profile_id' => $beneficiaryProfileId,
-            'locked_status' => POST_APPROVAL_STATUS_LOCKED,
-        ]);
     }
 
     private function ensureTaskTypes(array $definitions): array

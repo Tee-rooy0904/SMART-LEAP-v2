@@ -945,6 +945,173 @@ a:hover {
     display: none !important;
 }
 
+body.is-beneficiary-portal [data-applicant-nav],
+body.is-beneficiary-portal #dashboard-home {
+    display: none !important;
+}
+/* NOTE: #application-page and #training-page are NOT hidden in beneficiary mode.
+   Beneficiaries can still access their historical application and training records.
+   Visibility is controlled solely by .is-route-hidden set by applyRouteVisibility(). */
+
+.unified-beneficiary-page {
+    display: grid;
+    gap: 18px;
+}
+
+.unified-beneficiary-hero {
+    margin: 0;
+}
+
+.unified-beneficiary-balance-card {
+    min-height: 150px;
+}
+
+.unified-beneficiary-balance-card p {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-weight: 700;
+}
+
+.unified-repayments-panel {
+    margin: 0;
+}
+
+.unified-beneficiary-locked {
+    min-height: min(620px, calc(100vh - 160px));
+    align-items: center;
+}
+
+.unified-beneficiary-locked__card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 22px;
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 28px;
+    text-align: left;
+    overflow: hidden;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    background:
+        radial-gradient(circle at 8% 18%, rgba(45, 212, 191, 0.18), transparent 28%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.95));
+}
+
+.unified-beneficiary-locked__card::before {
+    content: "";
+    position: absolute;
+    inset: 18px auto 18px 0;
+    width: 5px;
+    border-radius: 0 999px 999px 0;
+    background: linear-gradient(180deg, #2563eb, #14b8a6);
+}
+
+.unified-beneficiary-locked__hero {
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    justify-items: center;
+}
+
+.unified-beneficiary-locked__icon {
+    display: inline-grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    border-radius: 20px;
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 1.35rem;
+    box-shadow: 0 18px 40px rgba(37, 99, 235, 0.22);
+    background: linear-gradient(135deg, #2563eb, #14b8a6);
+}
+
+.unified-beneficiary-locked__status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: #1d4ed8;
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.unified-beneficiary-locked__content {
+    min-width: 0;
+}
+
+.unified-beneficiary-locked__card h2 {
+    margin: 8px 0;
+    color: var(--app-ink);
+    font-size: clamp(1.55rem, 3vw, 2.1rem);
+    letter-spacing: -0.03em;
+}
+
+.unified-beneficiary-locked__card p {
+    margin: 0;
+    color: var(--app-muted);
+    line-height: 1.65;
+    max-width: 680px;
+}
+
+.unified-beneficiary-locked__steps {
+    display: grid;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.unified-beneficiary-locked__steps span {
+    position: relative;
+    padding-left: 24px;
+    color: #24415f;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.unified-beneficiary-locked__steps span::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #14b8a6;
+    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.12);
+}
+
+.unified-beneficiary-locked__card .panel-actions {
+    justify-content: flex-start;
+    margin-top: 22px;
+}
+
+@media (max-width: 680px) {
+    .unified-beneficiary-locked {
+        align-items: stretch;
+        min-height: auto;
+    }
+
+    .unified-beneficiary-locked__card {
+        grid-template-columns: 1fr;
+        padding: 24px;
+    }
+
+    .unified-beneficiary-locked__hero {
+        justify-items: start;
+    }
+
+    .unified-beneficiary-locked__card .panel-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}
+
 .overview-grid {
     display: grid;
     gap: 9px;
@@ -4255,21 +4422,32 @@ textarea {
         right: 12px;
         bottom: 12px;
         z-index: 44;
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 6px;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        gap: 4px;
         padding: 8px;
         border-radius: 22px;
         background: rgba(15, 27, 61, 0.94);
         box-shadow: 0 18px 30px rgba(15, 23, 42, 0.22);
         backdrop-filter: blur(20px);
     }
+    .applicant-mobile-tabbar::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
 
     .applicant-tabbar__link {
-        display: grid;
-        justify-items: center;
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         gap: 4px;
-        padding: 8px 6px 7px;
+        min-width: 64px;
+        padding: 8px 10px 7px;
         border-radius: 16px;
         color: rgba(226, 232, 240, 0.78);
         text-decoration: none;
@@ -5052,3 +5230,374 @@ textarea {
 .training-attendance-panel .training-attendance-table-wrap .attendance-table td:nth-child(5) > * {
     margin-inline: auto;
 }
+
+
+/* ─── Applicant-Beneficiary Portal UI/UX Upgrade ────────────────────────── */
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIFIED APPLICANT/BENEFICIARY PORTAL — AUTHORITATIVE OVERRIDES v3
+   One block. Do NOT append more blocks below this.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. SCROLL ROOT ─────────────────────────────────────────────────────── */
+html,
+body {
+  overflow-x: hidden;
+  height: auto;
+}
+body.applicant-dashboard-page {
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100vh;
+}
+.dashboard-shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.dash-content {
+  flex: 1;
+  min-width: 0;
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.dash-main {
+  flex: 1;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  padding-bottom: 48px;
+}
+.dash-page {
+  width: 100%;
+}
+/* Portal loader must not block scroll when hidden */
+.portal-loader.is-hidden,
+.portal-loader[hidden] {
+  display: none !important;
+}
+
+/* ── 2. ROUTE VISIBILITY ────────────────────────────────────────────────── */
+.is-route-hidden,
+.is-hidden {
+  display: none !important;
+}
+/* Remove any legacy inline-stacking */
+.is-beneficiary-inline {
+  display: none !important;
+}
+
+/* ── 3. SIDEBAR — desktop fixed, mobile drawer ─────────────────────────── */
+@media (min-width: 961px) {
+  .dash-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 280px;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+    background: linear-gradient(175deg, #0c1a4a 0%, #132557 55%, #1a3575 100%);
+    box-shadow: 4px 0 24px rgba(10,20,60,0.18);
+  }
+  .dash-content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+  }
+}
+
+/* ── 4. SIDEBAR STYLING ─────────────────────────────────────────────────── */
+.sidebar-link {
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-size: 0.93rem;
+  color: rgba(220,230,255,0.82);
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+.sidebar-link:hover {
+  background: rgba(79,209,197,0.14);
+  color: #e0f8f4;
+  transform: translateX(3px);
+  text-decoration: none;
+}
+.sidebar-link.is-active {
+  background: linear-gradient(135deg, rgba(79,209,197,0.28), rgba(51,103,214,0.22));
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  font-weight: 700;
+}
+.sidebar-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.07);
+}
+.sidebar-link.is-active .sidebar-icon {
+  background: rgba(255,255,255,0.14);
+}
+
+/* ── 5. BENEFICIARY PORTAL — keep all nav links visible ────────────────── */
+/* Beneficiary mode shows ALL 5 sections: Overview, Application, Training,
+   Repayments, Support. Applicants retain access to their historical records
+   after becoming a beneficiary. Route visibility controls the active page. */
+body.is-beneficiary-portal .sidebar-link[data-applicant-nav],
+body.is-beneficiary-portal .applicant-tabbar__link[data-applicant-nav] {
+  display: flex !important;
+}
+
+/* Mobile tabbar: scrollable flex — works for both 4-tab applicant and 5-tab beneficiary */
+body.is-beneficiary-portal .applicant-mobile-tabbar {
+  /* No override needed — flex scroll handles any number of tabs automatically */
+}
+
+/* ── 6. BALANCE BANNER — full-width gradient ────────────────────────────── */
+.unified-beneficiary-balance-card,
+#beneficiary-page .beneficiary-balance-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #1b3b87 0%, #1dbf9f 100%) !important;
+  border-radius: 22px !important;
+  padding: 30px 34px 26px !important;
+  border: none !important;
+  box-shadow: 0 16px 44px rgba(27,59,135,0.26) !important;
+  color: #fff !important;
+  min-height: 160px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+}
+.unified-beneficiary-balance-card .label,
+#beneficiary-page .beneficiary-balance-card .label {
+  display: block;
+  color: rgba(255,255,255,0.72);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.unified-beneficiary-balance-card strong,
+#beneficiary-page .beneficiary-balance-card strong {
+  display: block;
+  color: #fff !important;
+  font-size: clamp(2rem,4vw,2.8rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.unified-beneficiary-balance-card p,
+#beneficiary-page .beneficiary-balance-card p {
+  color: rgba(255,255,255,0.78) !important;
+  margin: 6px 0 0 !important;
+  font-size: 0.9rem;
+}
+.unified-beneficiary-balance-card .btn-primary,
+#beneficiary-page .beneficiary-balance-card .btn-primary {
+  background: rgba(255,255,255,0.16) !important;
+  border: 1.5px solid rgba(255,255,255,0.38) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+  padding: 10px 20px !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.unified-beneficiary-balance-card .btn-primary:hover,
+#beneficiary-page .beneficiary-balance-card .btn-primary:hover {
+  background: rgba(255,255,255,0.28) !important;
+}
+
+/* ── 7. BENEFICIARY OVERVIEW CARDS — dark gradient ─────────────────────── */
+#beneficiary-page .beneficiary-repayment-hero,
+.unified-beneficiary-page .beneficiary-repayment-hero {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  background: rgba(255,255,255,0.9);
+  border-radius: 22px;
+  padding: clamp(18px,2.5vw,26px);
+  border: 1px solid rgba(15,23,42,0.07);
+  box-shadow: 0 8px 28px rgba(15,23,42,0.08);
+}
+/* Progress row also full width */
+#beneficiary-page .beneficiary-progress-row,
+.unified-beneficiary-page .beneficiary-progress-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+#beneficiary-page .beneficiary-repayment-hero .overview-card,
+#beneficiary-page .beneficiary-inline-metrics .overview-card,
+.unified-beneficiary-page .beneficiary-repayment-hero .overview-card,
+.unified-beneficiary-page .beneficiary-inline-metrics .overview-card {
+  position: relative !important;
+  overflow: hidden !important;
+  min-height: 110px !important;
+  padding: 18px 20px !important;
+  background:
+    radial-gradient(120% 180% at 100% 0%, rgba(79,209,197,0.22), transparent 38%),
+    linear-gradient(145deg, rgba(27,59,135,0.93), rgba(17,40,100,0.97)) !important;
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 28px rgba(10,20,60,0.22) !important;
+}
+#beneficiary-page .beneficiary-repayment-hero .overview-card:first-child,
+#beneficiary-page .beneficiary-inline-metrics .overview-card:first-child,
+.unified-beneficiary-page .beneficiary-repayment-hero .overview-card:first-child {
+  background:
+    radial-gradient(120% 180% at 100% 0%, rgba(79,209,197,0.3), transparent 38%),
+    linear-gradient(145deg, rgba(14,116,144,0.93), rgba(17,40,100,0.97)) !important;
+}
+#beneficiary-page .beneficiary-repayment-hero .overview-label,
+#beneficiary-page .beneficiary-inline-metrics .overview-label,
+.unified-beneficiary-page .beneficiary-repayment-hero .overview-label,
+.unified-beneficiary-page .beneficiary-inline-metrics .overview-label {
+  color: rgba(226,236,255,0.76) !important;
+  font-size: 0.73rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  position: relative;
+  z-index: 1;
+}
+#beneficiary-page .beneficiary-repayment-hero .overview-value,
+#beneficiary-page .beneficiary-inline-metrics .overview-value,
+.unified-beneficiary-page .beneficiary-repayment-hero .overview-value,
+.unified-beneficiary-page .beneficiary-inline-metrics .overview-value {
+  color: #fff !important;
+  font-size: 1.3rem !important;
+  font-weight: 900 !important;
+  text-shadow: 0 4px 12px rgba(7,18,42,0.18) !important;
+  position: relative;
+  z-index: 1;
+  line-height: 1.2;
+}
+
+/* ── 8. REPAYMENTS PAGE ─────────────────────────────────────────────────── */
+.unified-repayments-page {
+  display: grid;
+  gap: 18px;
+}
+.unified-repayments-page.is-route-hidden {
+  display: none !important;
+}
+.beneficiary-repayment-stack {
+  display: grid;
+  gap: 18px;
+}
+
+/* ── 9. LEGACY REPAYMENTS PANEL (inside repayments-page only) ──────────── */
+/* No more .is-repayments-hidden toggling needed — panel lives in its own page */
+.is-repayments-hidden {
+  display: none !important;
+}
+
+/* ── 10. BENEFICIARY PAGE LAYOUT ────────────────────────────────────────── */
+#beneficiary-page,
+.unified-beneficiary-page {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  gap: 20px;
+  padding: 0;
+}
+/* All panels inside beneficiary-page must fill full column width */
+#beneficiary-page > *,
+#beneficiary-page .panel,
+.unified-beneficiary-page > *,
+.unified-beneficiary-page .panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.unified-beneficiary-hero {
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── 11. PROGRESS ROW ───────────────────────────────────────────────────── */
+.beneficiary-progress-row {
+  background: rgba(255,255,255,0.9) !important;
+  border-radius: 18px !important;
+  padding: clamp(16px,2vw,22px) !important;
+  border: 1px solid rgba(15,23,42,0.07) !important;
+}
+
+/* ── 12. TOP BAR ─────────────────────────────────────────────────────────── */
+.applicant-contextbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 4px 20px rgba(15,23,42,0.07);
+}
+.applicant-contextbar .mobile-topbar__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0c1a4a;
+}
+
+/* ── 13. PANELS (general) ───────────────────────────────────────────────── */
+.dashboard-shell .panel {
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.10);
+  transition: box-shadow 0.2s ease;
+  border: 1px solid rgba(15,23,42,0.06);
+}
+.dashboard-shell .panel:hover {
+  box-shadow: 0 16px 40px rgba(15,23,42,0.14);
+}
+
+/* ── 14. MOBILE ─────────────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .dash-sidebar {
+    position: fixed !important;
+    left: -300px;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 200;
+    transition: left 0.28s cubic-bezier(0.4,0,0.2,1);
+  }
+  .dash-sidebar.is-open {
+    left: 0;
+  }
+  .dash-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .unified-beneficiary-balance-card,
+  #beneficiary-page .beneficiary-balance-card {
+    flex-direction: column;
+    align-items: flex-start !important;
+    padding: 22px 20px 20px !important;
+    min-height: auto !important;
+  }
+  #beneficiary-page .beneficiary-repayment-hero .overview-card,
+  #beneficiary-page .beneficiary-inline-metrics .overview-card,
+  .unified-beneficiary-page .beneficiary-repayment-hero .overview-card {
+    min-height: 90px !important;
+    padding: 14px 16px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   END AUTHORITATIVE OVERRIDES v3
+   ═══════════════════════════════════════════════════════════════════════════ */

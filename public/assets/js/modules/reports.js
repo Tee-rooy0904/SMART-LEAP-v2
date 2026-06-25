@@ -510,6 +510,25 @@
 
   const indicatorTextColor = () => '#ffffff';
 
+  const normalizeDistributionRows = (rows) => {
+    const source = Array.isArray(rows)
+      ? rows
+      : Array.isArray(rows?.segments)
+        ? rows.segments
+        : Array.isArray(rows?.stages)
+          ? rows.stages
+          : Array.isArray(rows?.rows)
+            ? rows.rows
+            : [];
+
+    return source
+      .map((row) => ({
+        label: String(row?.label || row?.name || row?.key || 'Not Set').trim() || 'Not Set',
+        count: Number(row?.count || row?.value || 0),
+      }))
+      .filter((row) => Number.isFinite(row.count) && row.count > 0);
+  };
+
   const polarToCartesian = (cx, cy, radius, angleInDegrees) => {
     const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
     return {
@@ -569,12 +588,13 @@
 
   const renderDistributionChart = (root, rows, options = {}) => {
     if (!root) return;
-    const total = rows.reduce((sum, row) => sum + Number(row.count || 0), 0);
-    if (!rows.length || total <= 0) {
+    const safeRows = normalizeDistributionRows(rows);
+    const total = safeRows.reduce((sum, row) => sum + Number(row.count || 0), 0);
+    if (!safeRows.length || total <= 0) {
       root.innerHTML = '<p class="reports-empty">No data available.</p>';
       return;
     }
-    const slices = rows.map((row, index) => {
+    const slices = safeRows.map((row, index) => {
       const count = Number(row.count || 0);
       const share = total > 0 ? (count / total) * 100 : 0;
       const color = chartPalette[index % chartPalette.length];
@@ -654,9 +674,17 @@
       ticks.push(value);
     }
 
+    const chartGranularity = (selectedPeriod, points) => {
+      const hasDailyDates = Array.isArray(points) && points.some((row) => /^\d{4}-\d{2}-\d{2}$/.test(String(row?.period || '')));
+      if (hasDailyDates) return 'daily';
+      return selectedPeriod;
+    };
+    const granularity = chartGranularity(period, rows);
     const xAxisTitle = period === 'daily'
       ? 'Days'
-      : period === 'weekly'
+      : granularity === 'daily'
+        ? 'Days'
+        : period === 'weekly'
         ? 'Weeks'
         : period === 'quarterly'
           ? 'Quarters'
@@ -755,6 +783,8 @@
     const period = reportData?.filters?.period || state.filters.reports.period || 'all';
     const isCustom = period === 'custom';
     const isAll = period === 'all';
+    const isPaymentDriven = metrics?.targetMode === 'payment_beneficiaries';
+    const periodUnit = period === 'weekly' ? 'week' : 'day';
     return [
       {
         label: isCustom ? 'Expected Due in Range' : (isAll ? 'Expected Due' : 'Expected Due'),
@@ -765,19 +795,23 @@
       {
         label: isCustom ? 'Collected in Range' : 'Actual Collected',
         value: formatCurrency(metrics.actualCollectedAmount || 0),
-        meta: `${metrics.scopedBeneficiaries || 0} beneficiaries with due obligations`,
+        meta: isPaymentDriven
+          ? `${metrics.paymentBeneficiaryCount || 0} beneficiaries paid in the selected ${periodUnit}`
+          : `${metrics.scopedBeneficiaries || 0} beneficiaries with due obligations`,
         color: '#16a34a',
       },
       {
         label: isCustom ? 'Uncollected in Range' : 'Gap',
         value: formatCurrency(metrics.gapAmount || 0),
-        meta: `${metrics.obligationCount || 0} due obligations`,
+        meta: isPaymentDriven
+          ? `${metrics.obligationCount || 0} paid beneficiaries counted for target`
+          : `${metrics.obligationCount || 0} due obligations`,
         color: '#dc2626',
       },
       {
         label: 'ROI',
         value: formatPercent(metrics.roiPercent || 0),
-        meta: 'Collected / expected due x 100',
+        meta: isPaymentDriven ? 'Collected / payment-based target x 100' : 'Collected / expected due x 100',
         color: '#7c3aed',
       },
     ];
@@ -801,20 +835,47 @@
           `).join('')}
         </div>
         <div class="chart-wrap reports-monthly-payment-chart-wrap" id="reports-performance-bars"></div>
+      </div>
+      <div class="chart-card chart-card--full reports-payment-participants-card">
+        <div class="reports-payment-participants-summary" aria-label="Payment participant summary">
+          <span id="reports-payment-participants-count">0 payments</span>
+          <span><strong id="reports-payment-participants-total">₱0</strong> collected in this table</span>
+          <span><strong id="reports-payment-participants-months">0</strong> coverage months</span>
+        </div>
+        <div class="table-wrapper reports-payment-participants-wrap">
+          <table class="data-table reports-payment-participants-table">
+            <thead>
+              <tr>
+                <th>Beneficiary</th>
+                <th>Business</th>
+                <th>Barangay</th>
+                <th>Assigned PDO</th>
+                <th>Coverage Month</th>
+                <th>Payment Date</th>
+                <th>Expected</th>
+                <th>Amount Paid</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="reports-payment-participants-body">
+              <tr><td colspan="9">No payments found for the selected period.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>` : ''}
-      ${['all', 'demographics'].includes(reportType) ? `<div class="chart-card">
+      ${['all', 'demographics'].includes(reportType) ? `<div class="chart-card chart-card--distribution">
         <div class="chart-card__header">
           <h4>Gender Segregation</h4>
         </div>
         <div class="chart-wrap" id="reports-gender-donut"></div>
       </div>
-      <div class="chart-card">
+      <div class="chart-card chart-card--distribution">
         <div class="chart-card__header">
           <h4>Service Type Distribution</h4>
         </div>
         <div class="chart-wrap" id="reports-service-donut"></div>
       </div>
-      <div class="chart-card">
+      <div class="chart-card chart-card--distribution">
         <div class="chart-card__header">
           <h4>Sector Distribution</h4>
         </div>
@@ -859,6 +920,133 @@
     if (text === 'notified') return 'Notified';
     if (text === 'scheduled') return 'Scheduled';
     return text ? text.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) : 'Pending';
+  };
+
+  const paymentStatusClass = (status) => {
+    const s = String(status || '').toLowerCase();
+    if (s === 'paid_on_time') return 'reports-payment-chip--paid';
+    if (s === 'partial_delayed') return 'reports-payment-chip--partial';
+    if (s === 'pending_verification') return 'reports-payment-chip--pending';
+    if (s === 'overdue_unpaid') return 'reports-payment-chip--overdue';
+    if (s === 'upcoming') return 'reports-payment-chip--upcoming';
+    return '';
+  };
+
+  const paymentStatusLabel = (status) => {
+    const map = {
+      paid_on_time: 'Paid on Time',
+      partial_delayed: 'Partial / Delayed',
+      pending_verification: 'Pending Verification',
+      overdue_unpaid: 'Overdue Unpaid',
+      upcoming: 'Upcoming',
+    };
+    return map[String(status || '').toLowerCase()] || String(status || '--').replace(/_/g, ' ');
+  };
+
+  const formatMonth = (value) => {
+    if (!value) return '--';
+    try {
+      return new Date(`${value}-01T00:00:00`).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+    } catch (_) { return value; }
+  };
+
+  /**
+   * Build payment participant rows from the filteredObligations.
+   * One row per verified payment — if a beneficiary paid 2 months in the
+   * selected period they appear twice (once per coverage month).
+   * For daily/weekly the verifiedPayments sub-array is used; for
+   * monthly/quarterly/yearly the obligation-level status is used.
+   */
+  const buildPaymentParticipantRows = (obligations, period) => {
+    const rows = [];
+    const usePaymentDate = ['daily', 'weekly', 'custom'].includes(String(period || ''));
+
+    (Array.isArray(obligations) ? obligations : []).forEach((ob) => {
+      if (usePaymentDate) {
+        // One row per verified payment in the date range
+        const payments = Array.isArray(ob.verifiedPayments) ? ob.verifiedPayments : [];
+        payments.forEach((payment) => {
+          rows.push({
+            beneficiaryName: ob.beneficiaryName || '--',
+            businessName: ob.businessName || '--',
+            barangay: ob.barangay || '--',
+            assignedPdo: ob.assignedPdo || '--',
+            dueMonth: ob.dueMonth || '--',
+            paymentDate: payment.paymentDate || ob.paymentDate || '--',
+            expectedAmount: ob.expectedAmount || 0,
+            amountPaid: payment.amount || 0,
+            status: ob.status,
+            statusLabel: ob.statusLabel || paymentStatusLabel(ob.status),
+          });
+        });
+      } else {
+        // One row per obligation that has activity (paid/partial/pending)
+        const hasActivity = ['paid_on_time', 'partial_delayed', 'pending_verification'].includes(String(ob.status || ''));
+        if (!hasActivity) return;
+        rows.push({
+          beneficiaryName: ob.beneficiaryName || '--',
+          businessName: ob.businessName || '--',
+          barangay: ob.barangay || '--',
+          assignedPdo: ob.assignedPdo || '--',
+          dueMonth: ob.dueMonth || '--',
+          paymentDate: ob.paymentDate || '--',
+          expectedAmount: ob.expectedAmount || 0,
+          amountPaid: ob.amountRepresented || 0,
+          status: ob.status,
+          statusLabel: ob.statusLabel || paymentStatusLabel(ob.status),
+        });
+      }
+    });
+
+    // Sort by coverage month asc, then by name
+    rows.sort((a, b) => {
+      const monthCmp = String(a.dueMonth).localeCompare(String(b.dueMonth));
+      if (monthCmp !== 0) return monthCmp;
+      return String(a.beneficiaryName).localeCompare(String(b.beneficiaryName));
+    });
+
+    return rows;
+  };
+
+  const renderPaymentParticipantsTable = (obligations, period) => {
+    const body = qs('#reports-payment-participants-body');
+    const countNode = qs('#reports-payment-participants-count');
+    const totalNode = qs('#reports-payment-participants-total');
+    const monthsNode = qs('#reports-payment-participants-months');
+    if (!body) return;
+
+    const rows = buildPaymentParticipantRows(obligations, period);
+    const totalPaid = rows.reduce((sum, row) => sum + Number(row.amountPaid || 0), 0);
+    const monthCount = new Set(rows.map((row) => String(row.dueMonth || '')).filter(Boolean)).size;
+
+    if (countNode) {
+      countNode.textContent = `${rows.length} ${rows.length === 1 ? 'payment' : 'payments'}`;
+    }
+    if (totalNode) totalNode.textContent = formatCurrency(totalPaid);
+    if (monthsNode) monthsNode.textContent = String(monthCount);
+
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="9">No verified payments found for the selected period.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = rows.map((row) => `
+      <tr>
+        <td>
+          <div class="reports-person-cell">
+            <strong>${escapeHtml(row.beneficiaryName)}</strong>
+          </div>
+        </td>
+        <td>${escapeHtml(row.businessName)}</td>
+        <td>${escapeHtml(row.barangay)}</td>
+        <td>${escapeHtml(row.assignedPdo)}</td>
+        <td>${escapeHtml(formatMonth(row.dueMonth))}</td>
+        <td>${escapeHtml(row.paymentDate && row.paymentDate !== '--' ? formatDate(row.paymentDate) : '--')}</td>
+        <td>${escapeHtml(formatCurrency(row.expectedAmount))}</td>
+        <td><strong>${escapeHtml(formatCurrency(row.amountPaid))}</strong></td>
+        <td><span class="reports-payment-chip ${paymentStatusClass(row.status)}">${escapeHtml(row.statusLabel)}</span></td>
+      </tr>
+    `).join('');
   };
 
   const renderTrainingAttendanceTable = (rows) => {
@@ -922,6 +1110,10 @@
     if (!performanceBody) return;
     performanceBody.innerHTML = buildPerformanceSection(metrics, activeReport);
     renderMonthlyPaymentChart(qs('#reports-performance-bars'), repaymentBreakdown, repaymentPeriod);
+    renderPaymentParticipantsTable(
+      reportData?.repaymentAnalytics?.obligations || [],
+      repaymentPeriod
+    );
     renderDistributionChart(qs('#reports-gender-donut'), summary.genderDistribution || [], {
       label: 'Gender distribution chart',
       centerLabel: 'Gender',
@@ -1051,6 +1243,11 @@
         fetchReportData();
         return;
       }
+      const tableExport = event.target.closest('[data-report-export]');
+      if (tableExport) {
+        exportReport(tableExport.getAttribute('data-report-export') || 'csv');
+        return;
+      }
       if (id === 'reports-export-csv') {
         exportReport('csv');
         return;
@@ -1079,4 +1276,3 @@
 
   window.App.modules.reports = { init, render: renderReports, refresh: fetchReportData };
 })();
-

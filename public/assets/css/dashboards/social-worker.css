@@ -1207,3 +1207,524 @@
     max-width: 100%;
   }
 }
+
+
+/* ─── Social Worker UI/UX Redesign ──────────────────────────────────────────── */
+
+/* Sidebar */
+.social-worker-shell .admin-sidebar {
+  background: linear-gradient(180deg, #0c3b6b 0%, #0f4d8a 46%, #1560a8 100%);
+}
+
+.social-worker-shell .sidebar-brand {
+  padding-bottom: 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.social-worker-shell .admin-sidebar-role {
+  background: rgba(20, 184, 166, 0.18);
+  color: #99f6e4;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.social-worker-shell .sidebar-nav .nav-link {
+  border-radius: 14px;
+  border: 1px solid transparent;
+  color: rgba(255,255,255,0.72);
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 0.16s, color 0.16s, border-color 0.16s;
+  gap: 11px;
+  padding: 12px 14px;
+}
+
+.social-worker-shell .sidebar-nav .nav-link:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.social-worker-shell .sidebar-nav .nav-link.active {
+  background: rgba(255,255,255,0.13);
+  border-color: rgba(255,255,255,0.1);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* Content area */
+.social-worker-shell .content-area {
+  background: linear-gradient(180deg, #eef4fb 0%, #f5f8fc 50%, #edf3fa 100%);
+}
+
+.social-worker-shell .content-header.admin-topbar {
+  background: linear-gradient(180deg, rgba(250,252,255,0.98), rgba(240,247,255,0.96));
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+  box-shadow: 0 2px 12px rgba(15,23,42,0.04);
+}
+
+.social-worker-shell .content-headline h1 {
+  color: #0c2d52;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Topbar buttons */
+.social-worker-shell .admin-refresh-button {
+  background: #fff;
+  border-color: rgba(15,23,42,0.14);
+  color: #1560a8;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+}
+
+.social-worker-shell .admin-refresh-button:hover {
+  background: #eff7ff;
+  border-color: rgba(21,96,168,0.3);
+}
+
+.social-worker-shell .app-btn-outline {
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.social-worker-shell .app-btn-primary {
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  background: linear-gradient(135deg, #1560a8, #0f4d8a);
+  box-shadow: 0 6px 16px rgba(21,96,168,0.28);
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+
+.social-worker-shell .app-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(21,96,168,0.34);
+}
+
+/* ── KPI Cards ── */
+.sw-dashboard-kpi {
+  border-radius: 20px;
+  border: 1px solid rgba(15,23,42,0.08);
+  padding: 18px 20px 16px;
+  background: linear-gradient(180deg, #fff 0%, #f7fbff 100%);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+  transition: box-shadow 0.2s, transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.sw-dashboard-kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 999px 0 0 999px;
+  background: var(--kpi-accent, #1560a8);
+}
+
+.sw-dashboard-kpi:hover {
+  box-shadow: 0 14px 32px rgba(15,23,42,0.1);
+  transform: translateY(-2px);
+}
+
+.sw-dashboard-kpi--applications { --kpi-accent: #2563eb; }
+.sw-dashboard-kpi--repayments   { --kpi-accent: #f97316; }
+.sw-dashboard-kpi--beneficiaries { --kpi-accent: #059669; }
+
+.sw-dashboard-kpi__eyebrow {
+  background: rgba(var(--kpi-rgb, 37,99,235), 0.10);
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 0.71rem;
+}
+
+.sw-dashboard-kpi--applications .sw-dashboard-kpi__eyebrow { background: rgba(37,99,235,0.10); color: #1d4ed8; }
+.sw-dashboard-kpi--repayments .sw-dashboard-kpi__eyebrow   { background: rgba(249,115,22,0.10); color: #c2410c; }
+.sw-dashboard-kpi--beneficiaries .sw-dashboard-kpi__eyebrow { background: rgba(5,150,105,0.10); color: #047857; }
+
+.metric-card__value {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* ── Section cards ── */
+.social-worker-shell .admin-layout-card {
+  border-radius: 20px;
+  border: 1px solid rgba(15,23,42,0.09);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+  background: linear-gradient(180deg, #fff 0%, #fafdff 100%);
+}
+
+.social-worker-shell .table-card {
+  border-radius: 20px;
+  border: 1px solid rgba(15,23,42,0.09);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+  background: #fff;
+  overflow: hidden;
+}
+
+/* ── Filters ── */
+.social-worker-shell .filters-row,
+.social-worker-shell .sw-admin-filters {
+  padding: 16px 20px;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.08);
+  box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+  gap: 12px;
+}
+
+.social-worker-shell .filter-label {
+  color: #3d5a78;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.social-worker-shell .filter-select,
+.social-worker-shell .filter-search input {
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(15,23,42,0.14);
+  background: #fff;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  color: #0c2d52;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+
+.social-worker-shell .filter-select:focus,
+.social-worker-shell .filter-search input:focus {
+  outline: none;
+  border-color: #1560a8;
+  box-shadow: 0 0 0 3px rgba(21,96,168,0.12);
+}
+
+.social-worker-shell .filter-search {
+  border-radius: 10px;
+  border: 1.5px solid rgba(15,23,42,0.14);
+  background: #fff;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+
+.social-worker-shell .filter-search:focus-within {
+  border-color: #1560a8;
+  box-shadow: 0 0 0 3px rgba(21,96,168,0.12);
+}
+
+.social-worker-shell .filter-search i {
+  color: #7a94b0;
+}
+
+.social-worker-shell .filter-search input {
+  border: 0;
+  box-shadow: none;
+  min-height: 42px;
+}
+
+.social-worker-shell .filter-search input:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+/* ── Tables ── */
+.sw-table-wrapper {
+  border-radius: 0 0 18px 18px;
+  border: 0;
+  border-top: 1px solid rgba(15,23,42,0.07);
+}
+
+.social-worker-shell .admin-data-table thead th {
+  padding: 13px 16px;
+  background: #f4f8fd;
+  border-bottom: 1px solid rgba(15,23,42,0.09);
+  color: #3d5a78;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.social-worker-shell .admin-data-table thead th:first-child { padding-left: 20px; }
+.social-worker-shell .admin-data-table thead th:last-child  { padding-right: 20px; }
+
+.social-worker-shell .admin-data-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(15,23,42,0.06);
+  color: #1e3a55;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.social-worker-shell .admin-data-table tbody td:first-child { padding-left: 20px; }
+.social-worker-shell .admin-data-table tbody td:last-child  { padding-right: 20px; }
+
+.social-worker-shell .admin-data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.social-worker-shell .admin-data-table tbody tr {
+  transition: background 0.12s;
+}
+
+.social-worker-shell .admin-data-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(21,96,168,0.03), rgba(21,96,168,0.02));
+}
+
+/* Applicant name+subtitle cells */
+.sw-applicant-cell strong {
+  color: #0c2d52;
+  font-size: 0.93rem;
+  font-weight: 700;
+}
+
+.sw-applicant-cell span {
+  color: #5b7a96;
+  font-size: 0.82rem;
+}
+
+/* ── Status chips ── */
+.sw-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+/* default — blue/info */
+.sw-status { background: rgba(37,99,235,0.09); color: #1d4ed8; border-color: rgba(37,99,235,0.18); }
+.sw-status.is-approved,
+.sw-status.is-resolved { background: rgba(5,150,105,0.09); color: #047857; border-color: rgba(5,150,105,0.2); }
+.sw-status.is-warning,
+.sw-status.is-waiting  { background: rgba(245,158,11,0.1); color: #92400e; border-color: rgba(245,158,11,0.22); }
+.sw-status.is-rejected,
+.sw-status.is-closed   { background: rgba(100,116,139,0.1); color: #475569; border-color: rgba(100,116,139,0.2); }
+.sw-status.is-referred { background: rgba(124,58,237,0.09); color: #6d28d9; border-color: rgba(124,58,237,0.2); }
+
+/* ── Action buttons in table rows ── */
+.social-worker-shell .admin-data-table td.actions {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.social-worker-shell .admin-data-table td .app-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(21,96,168,0.22);
+  background: linear-gradient(180deg, #f5faff 0%, #fff 100%);
+  color: #1560a8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(15,23,42,0.06);
+  transition: background 0.14s, border-color 0.14s, box-shadow 0.14s, transform 0.12s;
+}
+
+.social-worker-shell .admin-data-table td .app-btn-outline:hover {
+  background: linear-gradient(180deg, #e8f3ff 0%, #f0f8ff 100%);
+  border-color: rgba(21,96,168,0.4);
+  box-shadow: 0 4px 12px rgba(21,96,168,0.14);
+  transform: translateY(-1px);
+}
+
+.social-worker-shell .admin-data-table td .app-btn-outline i {
+  font-size: 0.8rem;
+}
+
+/* ── Validation tabs ── */
+.social-worker-shell .validation-tab {
+  border-radius: 10px 10px 0 0;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #5b7a96;
+  border: 1.5px solid transparent;
+  border-bottom: 0;
+  transition: background 0.14s, color 0.14s;
+}
+
+.social-worker-shell .validation-tab.is-active {
+  background: #fff;
+  color: #1560a8;
+  border-color: rgba(15,23,42,0.1);
+  border-bottom-color: #fff;
+}
+
+.social-worker-shell .validation-tab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 22px;
+  margin-left: 7px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(21,96,168,0.1);
+  color: #1560a8;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+/* ── Support section ── */
+.sw-ticket-card {
+  border-radius: 14px;
+  border: 1.5px solid rgba(15,23,42,0.09);
+  background: linear-gradient(180deg, #fafdff 0%, #fff 100%);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.sw-ticket-card:hover {
+  border-color: rgba(21,96,168,0.3);
+  background: linear-gradient(180deg, #eff7ff 0%, #f7fbff 100%);
+  box-shadow: 0 4px 14px rgba(21,96,168,0.1);
+}
+
+.sw-ticket-card.is-active {
+  border-color: #1560a8;
+  background: linear-gradient(180deg, #e8f3ff 0%, #eff7ff 100%);
+  box-shadow: 0 6px 18px rgba(21,96,168,0.14);
+}
+
+.sw-ticket-card h3 {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #0c2d52;
+}
+
+.sw-ticket-message {
+  border-radius: 12px;
+  border-color: rgba(15,23,42,0.09);
+  box-shadow: 0 2px 6px rgba(15,23,42,0.04);
+}
+
+.sw-ticket-message.is-staff {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdfb);
+  border-color: rgba(5,150,105,0.18);
+}
+
+/* Reply form */
+.social-worker-shell .sw-ticket-reply textarea,
+.social-worker-shell .sw-ticket-reply select {
+  border-radius: 12px;
+  border: 1.5px solid rgba(15,23,42,0.14);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.social-worker-shell .sw-ticket-reply textarea:focus,
+.social-worker-shell .sw-ticket-reply select:focus {
+  border-color: #1560a8;
+  box-shadow: 0 0 0 3px rgba(21,96,168,0.1);
+  outline: none;
+}
+
+/* ── Modals ── */
+.sw-modal__dialog {
+  border-radius: 26px;
+  box-shadow: 0 40px 80px rgba(8,18,34,0.28), 0 0 0 1px rgba(15,23,42,0.06);
+}
+
+.sw-modal__header {
+  background: linear-gradient(160deg, #0c3b6b 0%, #1560a8 60%, #1d76c8 100%);
+  border-radius: 26px 26px 0 0;
+  padding: 22px 26px;
+}
+
+.sw-modal__close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.12);
+  font-size: 1.1rem;
+  transition: background 0.14s;
+}
+
+.sw-modal__close:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+.sw-modal__footer {
+  border-top: 1px solid rgba(15,23,42,0.08);
+  background: linear-gradient(180deg, #f8fbff, #fff);
+  border-radius: 0 0 26px 26px;
+}
+
+/* ── Section header inside modals/cards ── */
+.section-header h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0c2d52;
+  margin: 0;
+}
+
+.section-subtitle {
+  color: #5b7a96;
+  font-size: 0.88rem;
+  margin: 4px 0 0;
+}
+
+/* ── Empty state ── */
+.sw-empty {
+  border-radius: 14px;
+  border-style: dashed;
+  border-color: rgba(21,96,168,0.18);
+  background: rgba(240,248,255,0.6);
+  color: #5b7a96;
+  font-size: 0.9rem;
+  padding: 22px 18px;
+}
+
+/* ── Correction card ── */
+.sw-correction-card {
+  border-color: rgba(21,96,168,0.22);
+  border-radius: 16px;
+}
+
+.sw-correction-form input:focus,
+.sw-correction-form textarea:focus,
+.sw-correction-form select:focus {
+  border-color: #1560a8;
+  box-shadow: 0 0 0 3px rgba(21,96,168,0.1);
+}
+
+/* ── Admin section eyebrow ── */
+.admin-section-eyebrow {
+  background: rgba(21,96,168,0.1);
+  color: #0f4d8a;
+}
+
+/* ── Nav badge update ── */
+.social-worker-shell .nav-badge {
+  background: #f97316;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.68rem;
+  min-width: 18px;
+  min-height: 18px;
+  border-radius: 999px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */

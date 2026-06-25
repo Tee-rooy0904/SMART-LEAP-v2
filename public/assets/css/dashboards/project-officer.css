@@ -3992,6 +3992,13 @@ body.po-summary-modal-open .project-officer-shell .admin-sidebar {
   font-weight: 800;
 }
 
+.po-summary-checklist__intro {
+  margin: -2px 0 0;
+  color: #61798d;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .po-summary-checklist {
   display: grid;
   gap: 14px;
@@ -4000,6 +4007,13 @@ body.po-summary-modal-open .project-officer-shell .admin-sidebar {
 .po-summary-group {
   display: grid;
   gap: 10px;
+}
+
+.po-summary-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .po-summary-group__header span {
@@ -4013,6 +4027,12 @@ body.po-summary-modal-open .project-officer-shell .admin-sidebar {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.po-summary-group__count {
+  color: #1b5f91;
+  font-size: 0.84rem;
+  font-weight: 800;
 }
 
 .po-summary-group__items {

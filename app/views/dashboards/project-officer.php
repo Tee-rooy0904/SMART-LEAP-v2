@@ -562,7 +562,7 @@ $initialReportBars = [
                 </div>
                 <div class="po-repayment-modal-shell__actions">
                   <span class="po-status-chip is-muted" id="poRepaymentModalStatus">No Upload Yet</span>
-                  <button type="button" class="po-repayment-modal-shell__close" id="poRepaymentModalClose" aria-label="Close repayment review modal">&times;</button>
+                  <button type="button" class="po-repayment-modal-shell__close" id="poRepaymentModalClose" data-repayment-modal-close aria-label="Close repayment review modal">&times;</button>
                 </div>
               </header>
 
@@ -940,7 +940,6 @@ $initialReportBars = [
             </div>
             <div class="po-decision-rail__actions">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-danger" id="po-app-modal-reject">Reject</button>
               <button type="button" class="btn btn-success" id="po-app-modal-approve">Approve</button>
             </div>
           </div>
@@ -997,19 +996,25 @@ $initialReportBars = [
               <strong id="po-summary-assistance-proof">--</strong>
               <small>PDO upload — proof assistance was released</small>
             </article>
+            <article class="po-summary-card po-summary-card--final">
+              <span>Assistance Confirmation</span>
+              <strong id="po-summary-assistance-confirmation">Pending</strong>
+              <small>Required before final beneficiary approval can be confirmed</small>
+            </article>
           </div>
           <div class="po-summary-layout">
             <section class="po-summary-section">
               <div class="po-summary-section__header">
                 <span class="po-panel-label">Checklist</span>
-                <h6>Requirement Checklist</h6>
+                <h6>Approval Checklist</h6>
               </div>
+              <p class="po-summary-checklist__intro" id="po-summary-checklist-intro">Review each requirement group before confirming beneficiary approval.</p>
               <div class="po-summary-checklist" id="po-summary-checklist"></div>
             </section>
             <aside class="po-summary-section po-summary-section--decision">
               <div class="po-summary-section__header">
                 <span class="po-panel-label">Approval Control</span>
-                <h6>Blocking Reasons</h6>
+                <h6>Approval Notes</h6>
               </div>
               <ul class="po-blocker-list" id="po-summary-blockers"></ul>
             </aside>

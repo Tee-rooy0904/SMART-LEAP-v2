@@ -74,7 +74,7 @@ class ApplicantDashboardController extends Controller
 
         $role = strtolower((string) ($user['role'] ?? ''));
         if (str_contains($role, 'beneficiary')) {
-            $this->redirectTo('beneficiary-dashboard');
+            $this->redirectTo('applicant-dashboard');
         }
 
         $this->redirectTo('applicant-dashboard#profile-page');
@@ -153,7 +153,7 @@ class ApplicantDashboardController extends Controller
     {
         $role = strtolower((string) (auth_user()['role'] ?? ''));
         if ($role === 'beneficiary') {
-            return 'beneficiary-dashboard#repayments';
+            return 'applicant-dashboard#repayments';
         }
 
         return 'applicant-dashboard#application-page';

@@ -5,7 +5,7 @@
  */
 (function (global) {
   const TRAINING_BATCH_GROUP_COUNT = 3;
-  const TRAINING_BATCH_GROUP_SIZE = 100;
+  const TRAINING_BATCH_GROUP_SIZE = 85;
   const TRAINING_YEARLY_BATCH_CAPACITY = TRAINING_BATCH_GROUP_COUNT * TRAINING_BATCH_GROUP_SIZE;
 
   const TrainingUI = {
@@ -227,15 +227,11 @@
       }));
     },
     deriveAssignment(participants, groupSize = TRAINING_BATCH_GROUP_SIZE, preferredAssignments = {}) {
-      const grouped = TrainingUI.pdoGroupMeta(participants, groupSize, preferredAssignments);
-      if (grouped.assignmentError) return [...participants];
-      return grouped.flatMap((group) => group.items.map((participant, index) => ({
-          ...participant,
-          group_number: group.groupNumber,
-          batchGroupNumber: group.groupNumber,
-          pdo_group_name: group.pdoLabel,
-          pdo_sequence: index + 1,
-        })));
+      const sorted = [...participants].sort((left, right) => String(left.name || left.applicant_full_name || left.fullName || '').localeCompare(String(right.name || right.applicant_full_name || right.fullName || '')));
+      return sorted.map((participant, index) => {
+        const groupNumber = Math.min(Math.floor(index / groupSize) + 1, TRAINING_BATCH_GROUP_COUNT);
+        return { ...participant, group_number: groupNumber, batchGroupNumber: groupNumber };
+      });
     },
     groupCounts(participants) {
       return participants.reduce((counts, participant) => {

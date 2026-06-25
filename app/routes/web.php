@@ -87,8 +87,4 @@ return [
     'GET /application-form-file' => ['handler' => [ApplicantDashboardController::class, 'showApplicationFormFile'], 'middleware' => ['auth', 'applicant']],
     'GET /post-approval-review' => ['handler' => [PostApprovalReviewController::class, 'show'], 'middleware' => ['auth']],
     'GET /beneficiary-dashboard' => ['handler' => [BeneficiaryDashboardController::class, 'show'], 'middleware' => ['auth', 'beneficiary']],
-    'GET /beneficiary-dashboard/state' => ['handler' => [BeneficiaryDashboardController::class, 'state'], 'middleware' => ['auth', 'beneficiary']],
-    'POST /beneficiary-dashboard/profile/save' => ['handler' => [BeneficiaryDashboardController::class, 'saveProfile'], 'middleware' => ['auth', 'beneficiary']],
-    'POST /beneficiary-dashboard/profile/photo' => ['handler' => [BeneficiaryDashboardController::class, 'saveProfilePhoto'], 'middleware' => ['auth', 'beneficiary']],
-    'POST /beneficiary-dashboard/feedback' => ['handler' => [BeneficiaryDashboardController::class, 'submitFeedback'], 'middleware' => ['auth', 'beneficiary']],
 ];

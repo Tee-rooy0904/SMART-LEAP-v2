@@ -7,11 +7,17 @@ TrainingUI.mountPage({
   async init(ui) {
     const sessionId = Number(ui.queryValue('sessionId', '0'));
     const highlightApplicantId = Number(ui.queryValue('highlightApplicantId', '0'));
-    const state = { activeSessionDetail: null, eligibleApplicantsList: [], assignedParticipantsList: [], capacity: ui.TRAINING_YEARLY_BATCH_CAPACITY || 255, groupSize: ui.TRAINING_BATCH_GROUP_SIZE || 100, pdoGroupAssignments: {}, ui: { dirty: false } };
+    const state = { activeSessionDetail: null, eligibleApplicantsList: [], assignedParticipantsList: [], capacity: ui.TRAINING_YEARLY_BATCH_CAPACITY || 255, groupSize: ui.TRAINING_BATCH_GROUP_SIZE || 85, pdoGroupAssignments: {}, ui: { dirty: false } };
     const selectedEligible = new Set();
     const selectedAssigned = new Set();
     const banner = document.getElementById('assignment-banner');
-    const groupMeta = () => ui.pdoGroupMeta(state.assignedParticipantsList, state.groupSize, state.pdoGroupAssignments);
+    const groupMeta = () => {
+      const result = ui.pdoGroupMeta(state.assignedParticipantsList, state.groupSize, state.pdoGroupAssignments);
+      if (!Array.isArray(result) || result.assignmentError) {
+        return Array.from({ length: TRAINING_BATCH_GROUP_COUNT }, (_, i) => ({ groupNumber: i + 1, pdoNames: [], items: [] }));
+      }
+      return result;
+    };
 
     function currentPdoBuckets() {
       const map = new Map();
@@ -46,9 +52,6 @@ TrainingUI.mountPage({
       if (state.assignedParticipantsList.some((row) => !String(row.assignedPdoName || row.assigned_pdo_name || '').trim())) {
         return 'All assigned participants must have an assigned PDO before training grouping.';
       }
-      const groups = groupMeta();
-      if (groups.assignmentError) return groups.assignmentError;
-      if (groups.some((group) => group.items.length > state.groupSize)) return `One or more training groups would exceed the maximum of ${state.groupSize} participants.`;
       return '';
     }
 

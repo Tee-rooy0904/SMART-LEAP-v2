@@ -162,7 +162,7 @@ class ApplicationController extends Controller
             }
 
             $service = new ApplicationService();
-            $result = $service->uploadFormRequirement($applicationId, $requirementKey, $file, $this->authorizeWorkflowReviewer());
+            $result = $service->uploadFormRequirement($applicationId, $requirementKey, $file, $this->authorizeWorkflowReviewer(), $_POST);
             if (!$result['ok']) {
                 response_json($result, 422);
             }

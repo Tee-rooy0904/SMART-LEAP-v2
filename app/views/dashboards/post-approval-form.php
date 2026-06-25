@@ -13,7 +13,7 @@ $dashboardPath = $reviewerMode
         ? $baseUrl . '/admin-dashboard#applications-section'
         : $baseUrl . '/project-officer#clients')
     : ($isBeneficiary
-        ? $baseUrl . '/beneficiary-dashboard#repayments'
+        ? $baseUrl . '/applicant-dashboard#repayments'
         : $baseUrl . '/applicant-dashboard#application-page');
 $dashboardLabel = $reviewerMode ? 'Reviewer' : ($isBeneficiary ? 'Beneficiary' : 'Applicant');
 $applicantCssVersion = @filemtime(base_path('public/assets/css/dashboards/applicant.css')) ?: time();
@@ -180,6 +180,20 @@ $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifica
                                 <article class="form-status-strip__item">
                                     <span class="overview-label">Review</span>
                                     <strong class="overview-value" id="formPageReview">Awaiting draft</strong>
+                                </article>
+                            </section>
+                            <section class="form-status-strip" id="formScheduleStrip" aria-label="Form schedule" hidden>
+                                <article class="form-status-strip__item">
+                                    <span class="overview-label">Opened</span>
+                                    <strong class="overview-value" id="formScheduleOpened">--</strong>
+                                </article>
+                                <article class="form-status-strip__item">
+                                    <span class="overview-label">Expires</span>
+                                    <strong class="overview-value" id="formScheduleCloses">--</strong>
+                                </article>
+                                <article class="form-status-strip__item">
+                                    <span class="overview-label">Time left</span>
+                                    <strong class="overview-value" id="formScheduleCountdown">--</strong>
                                 </article>
                             </section>
                             <nav class="form-section-nav" id="formSectionNav" aria-label="Form sections" hidden></nav>

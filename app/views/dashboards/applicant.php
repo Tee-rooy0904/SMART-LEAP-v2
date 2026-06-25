@@ -2,9 +2,11 @@
 <?php /** @var array|null $authUser */ ?>
 <?php
 $applicantCssVersion = @filemtime(base_path('public/assets/css/dashboards/applicant.css')) ?: time();
+$beneficiaryCssVersion = @filemtime(base_path('public/assets/css/dashboards/beneficiary.css')) ?: time();
 $postApprovalCssVersion = @filemtime(base_path('public/assets/css/dashboards/post-approval.css')) ?: time();
 $notificationsCssVersion = @filemtime(base_path('public/assets/css/components/notifications.css')) ?: time();
 $applicantJsVersion = @filemtime(base_path('public/assets/js/dashboards/applicant.js')) ?: time();
+$applicantBeneficiaryJsVersion = @filemtime(base_path('public/assets/js/dashboards/applicant-beneficiary.js')) ?: time();
 $applicantProfileJsVersion = @filemtime(base_path('public/assets/js/dashboards/applicant-profile.js')) ?: time();
 $languageToggleJsVersion = @filemtime(base_path('public/assets/js/dashboards/language-toggle.js')) ?: time();
 $supportHelpdeskJsVersion = @filemtime(base_path('public/assets/js/dashboards/support-helpdesk.js')) ?: time();
@@ -22,10 +24,11 @@ $butuanBarangays = array_map(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Browser tab title for the Stage 2 applicant workspace. -->
-    <title>SMART LEAP | Applicant Portal</title>
+    <title>SMART LEAP | Dashboard</title>
 
     <!-- Applicant and post-approval styles used across profile, application, training, and support pages. -->
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/applicant.css?v=<?= urlencode((string) $applicantCssVersion) ?>">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/beneficiary.css?v=<?= urlencode((string) $beneficiaryCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval.css?v=<?= urlencode((string) $postApprovalCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode((string) $notificationsCssVersion) ?>">
 </head>
@@ -53,9 +56,11 @@ $butuanBarangays = array_map(
                 <!-- Overview page showing current step, milestones, and important updates. -->
                 <a class="sidebar-link is-active" href="#dashboard-home"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M3 11.5L12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10.5V20h13V10.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-i18n-key="overview">Overview</span></a>
                 <!-- Application page for profile completion, requirements, and workflow review status. -->
-                <a class="sidebar-link" href="#application-page"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M8 7h8" stroke-linecap="round"/><path d="M8 12h8" stroke-linecap="round"/><path d="M8 17h5" stroke-linecap="round"/><rect x="5" y="3" width="14" height="18" rx="2" stroke-linejoin="round"/></svg></span><span data-i18n-key="application">Application</span></a>
+                <a class="sidebar-link" href="#application-page" data-applicant-nav><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M8 7h8" stroke-linecap="round"/><path d="M8 12h8" stroke-linecap="round"/><path d="M8 17h5" stroke-linecap="round"/><rect x="5" y="3" width="14" height="18" rx="2" stroke-linejoin="round"/></svg></span><span data-i18n-key="application">Application</span></a>
                 <!-- Training page for schedules, notices, attendance, and certificate readiness. -->
-                <a class="sidebar-link" href="#training-page"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M3 9l9-4 9 4-9 4-9-4z" stroke-linejoin="round"/><path d="M7 11v5c0 1.66 2.91 3 5 3s5-1.34 5-3v-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-i18n-key="training">Training</span></a>
+                <a class="sidebar-link" href="#training-page" data-applicant-nav><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M3 9l9-4 9 4-9 4-9-4z" stroke-linejoin="round"/><path d="M7 11v5c0 1.66 2.91 3 5 3s5-1.34 5-3v-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span data-i18n-key="training">Training</span></a>
+                <!-- Repayment page is visible to applicants but locked until beneficiary approval is confirmed. -->
+                <a class="sidebar-link" href="#repayments" data-beneficiary-nav><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><rect x="6" y="4" width="12" height="16" rx="2" stroke-linejoin="round"/><path d="M9 9h6" stroke-linecap="round"/><path d="M9 12h6" stroke-linecap="round"/><path d="M9 15h3" stroke-linecap="round"/></svg></span><span data-i18n-key="repayments">Repayments</span></a>
                 <!-- Support page for help-desk contact and conversation history. -->
                 <a class="sidebar-link" href="#support-page"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M7 7h10a3 3 0 013 3v4a3 3 0 01-3 3h-3l-3 4-3-4H7a3 3 0 01-3-3v-4a3 3 0 013-3z" stroke-linejoin="round"/></svg></span><span data-i18n-key="support">Support</span></a>
             </nav>
@@ -65,13 +70,12 @@ $butuanBarangays = array_map(
             <div class="portal-loader__orb" aria-hidden="true"></div>
             <img src="<?= $baseUrl ?>/assets/img/SMARTLEAP.png" alt="" class="portal-loader__logo">
             <strong class="portal-loader__title">SMART LEAP</strong>
-            <p class="portal-loader__copy" id="portalLoaderCopy">Loading your applicant portal...</p>
+            <p class="portal-loader__copy" id="portalLoaderCopy">Loading your portal...</p>
         </div>
         <div class="dash-content">
             <header class="mobile-topbar applicant-contextbar" aria-label="Applicant portal navigation">
                 <!-- Compact top bar shown on smaller screens for title, notifications, language, and account access. -->
                 <div class="applicant-contextbar__brand">
-                    <img src="<?= $baseUrl ?>/assets/img/SMARTLEAP.png" alt="SMART LEAP logo" class="applicant-contextbar__logo">
                     <strong class="mobile-topbar__title" id="mobileTopbarTitle" data-i18n-key="overview">Overview</strong>
                 </div>
                 <div class="applicant-contextbar__actions">
@@ -105,7 +109,167 @@ $butuanBarangays = array_map(
                 <button type="button" class="applicant-account-sheet__item" id="applicantAccountLogout" role="menuitem" data-i18n-key="signOut">Sign Out</button>
             </div>
             <main class="dash-main">
-                <section id="dashboard-home" class="dash-page dash-page--home">
+                <!-- ── BENEFICIARY OVERVIEW PAGE ──────────────────────────────────────── -->
+                <!-- Shows only when user is beneficiary AND hash is overview/dashboard-home -->
+                <section id="beneficiary-page" class="dash-page unified-beneficiary-page is-route-hidden" data-beneficiary-page>
+                    <section class="dash-section unified-beneficiary-hero" aria-labelledby="unifiedBeneficiaryHeading">
+                        <div class="panel beneficiary-balance-card unified-beneficiary-balance-card">
+                            <div class="beneficiary-balance-card__body">
+                                <span class="label">Current balance</span>
+                                <strong id="unifiedBeneficiaryBalance">&#8369;0.00</strong>
+                                <p id="unifiedBeneficiaryStanding">Loading beneficiary standing.</p>
+                            </div>
+                            <div class="beneficiary-balance-card__actions">
+                                <button type="button" class="btn-primary" id="unifiedBeneficiaryPrimaryAction">Upload receipt</button>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="panel dash-section panel--summary beneficiary-repayment-hero" aria-labelledby="unifiedBeneficiaryHeading">
+                        <div class="panel-header panel-header--compact">
+                            <h3 id="unifiedBeneficiaryHeading">Beneficiary overview</h3>
+                            <p class="panel-subtitle">Your SMART LEAP beneficiary record and repayment standing.</p>
+                        </div>
+                        <div class="beneficiary-inline-metrics beneficiary-inline-metrics--hero" role="list">
+                            <article class="overview-card overview-card--balance" role="listitem">
+                                <span class="overview-label">Next due</span>
+                                <strong class="overview-value" id="unifiedBeneficiaryNextDue">--</strong>
+                            </article>
+                            <article class="overview-card" role="listitem">
+                                <span class="overview-label">Pending verification</span>
+                                <strong class="overview-value" id="unifiedBeneficiaryPending">0 receipts</strong>
+                            </article>
+                            <article class="overview-card" role="listitem">
+                                <span class="overview-label">Repayment progress</span>
+                                <strong class="overview-value" id="unifiedBeneficiaryProgress">0/24 months</strong>
+                            </article>
+                            <article class="overview-card" role="listitem">
+                                <span class="overview-label">Assigned PDO</span>
+                                <strong class="overview-value" id="unifiedBeneficiaryPdo">--</strong>
+                            </article>
+                        </div>
+                    </section>
+                    <section class="panel dash-section beneficiary-progress-row" aria-labelledby="unifiedRepaymentProgressHeading">
+                        <div class="beneficiary-progress-row__main">
+                            <div class="beneficiary-progress-row__head">
+                                <div>
+                                    <span class="beneficiary-progress-row__label" id="unifiedRepaymentProgressHeading">Repayment completion</span>
+                                    <strong class="beneficiary-progress-row__value" id="unifiedBeneficiaryProgressText">0/24 months</strong>
+                                </div>
+                                <p class="beneficiary-progress-row__meta" id="unifiedBeneficiaryRate">0% complete</p>
+                            </div>
+                            <div class="beneficiary-progress-row__track" role="progressbar" aria-labelledby="unifiedRepaymentProgressHeading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                <div class="beneficiary-progress-row__fill" id="unifiedBeneficiaryProgressFill"></div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+                <!-- ── REPAYMENTS PAGE ─────────────────────────────────────────────────── -->
+                <!-- Separate top-level page — repayment schedule + history ONLY.           -->
+                <!-- Shown when hash is #repayments (beneficiary) or locked page otherwise. -->
+                <section id="repayments-page" class="dash-page unified-repayments-page is-route-hidden">
+                    <section id="repayments-panel" class="dash-section unified-repayments-panel" aria-labelledby="unifiedRepaymentsHeading">
+                        <div class="beneficiary-repayment-stack">
+                            <section class="panel dash-section panel--info application-workspace-panel repayment-block repayment-actions">
+                                <div class="panel-header panel-header--compact">
+                                    <h3 id="unifiedRepaymentsHeading">Repayment schedule</h3>
+                                    <p class="panel-subtitle">Choose a repayment month, upload the official receipt, then wait for PDO/Admin verification.</p>
+                                </div>
+                                <div class="repayment-actions__grid repayment-actions__grid--single">
+                                    <div class="repayment-action-card repayment-action-card--form">
+                                        <div class="repayment-flow-steps" aria-label="Repayment upload steps">
+                                            <span class="repayment-flow-step is-active">1. Pick repayment month</span>
+                                            <span class="repayment-flow-step">2. Upload receipt</span>
+                                            <span class="repayment-flow-step">3. Wait for verification</span>
+                                        </div>
+                                        <div class="repayment-due-list" id="unifiedRepaymentDueList" aria-live="polite"></div>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="panel dash-section panel--review repayment-block history repayment-history-block">
+                                <div class="history-header">
+                                    <div class="panel-header panel-header--compact">
+                                        <h3>Repayment history</h3>
+                                    </div>
+                                    <p class="history-summary-line" id="unifiedHistoryCounter">0 receipts</p>
+                                </div>
+                                <div class="history-filters">
+                                    <label>
+                                        <span>Status</span>
+                                        <select id="unifiedHistoryFilterStatus">
+                                            <option value="">All</option>
+                                            <option value="verified">Verified</option>
+                                            <option value="uploaded">Uploaded</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="needs_correction">Needs correction</option>
+                                            <option value="rejected">Rejected</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>Month</span>
+                                        <input type="month" id="unifiedHistoryFilterMonth">
+                                    </label>
+                                </div>
+                                <div class="history-metrics" role="list">
+                                    <article class="history-metric history-metric--verified" role="listitem">
+                                        <span class="history-metric__label">Verified receipts</span>
+                                        <strong class="history-metric__value" id="unifiedHistoryVerifiedCount">0 receipts</strong>
+                                    </article>
+                                    <article class="history-metric history-metric--pending" role="listitem">
+                                        <span class="history-metric__label">Pending verification</span>
+                                        <strong class="history-metric__value" id="unifiedHistoryPendingCount">0 receipts</strong>
+                                    </article>
+                                    <article class="history-metric history-metric--uploaded" role="listitem">
+                                        <span class="history-metric__label">Uploaded online</span>
+                                        <strong class="history-metric__value" id="unifiedHistoryUploadedCount">0 receipts</strong>
+                                    </article>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table history-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Month</th>
+                                                <th>Paid on</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                                <th>OR / Proof</th>
+                                                <th>Remarks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="unifiedHistoryTableBody">
+                                            <tr class="empty"><td colspan="6">No receipts submitted yet.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="repayment-history-cards" id="unifiedHistoryCardList">
+                                    <article class="history-card history-card--empty">No receipts submitted yet.</article>
+                                </div>
+                            </section>
+                        </div>
+                    </section>
+                </section>
+                <section id="beneficiary-locked-page" class="dash-page unified-beneficiary-locked is-route-hidden" data-beneficiary-locked-page>
+                    <section class="panel dash-section panel--summary unified-beneficiary-locked__card">
+                        <div class="unified-beneficiary-locked__hero">
+                            <span class="unified-beneficiary-locked__icon" aria-hidden="true">B</span>
+                            <span class="unified-beneficiary-locked__status">Beneficiary tools locked</span>
+                        </div>
+                        <div class="unified-beneficiary-locked__content">
+                            <span class="support-card__eyebrow">Beneficiary Access</span>
+                            <h2>You're not a beneficiary yet</h2>
+                            <p>Repayments and beneficiary records will open once your PDO/Admin confirms your SMART LEAP beneficiary approval. Until then, your applicant workspace remains the right place to track requirements, training, and updates.</p>
+                            <div class="unified-beneficiary-locked__steps" aria-label="What you can do now">
+                                <span>Monitor your current application step</span>
+                                <span>Complete pending requirements or training</span>
+                                <span>Contact support if something looks incorrect</span>
+                            </div>
+                            <div class="panel-actions">
+                                <a class="btn-primary" href="#dashboard-home">Back to overview</a>
+                                <a class="btn-outline" href="#support-page">Contact support</a>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+                <section id="dashboard-home" class="dash-page dash-page--home is-route-hidden">
                     <section class="panel dash-section panel--hero applicant-current-step" aria-labelledby="nextStepHeading">
                         <!-- Current-step card points the applicant to the single most important next action. -->
                         <div class="applicant-current-step__main">
@@ -178,7 +342,7 @@ $butuanBarangays = array_map(
                         </section>
                     </section>
                 </section>
-                <section id="profile-page" class="dash-page">
+                <section id="profile-page" class="dash-page is-route-hidden">
                     <section class="dash-section profile-editor-workspace" aria-labelledby="profileWorkspaceHeading">
                         <!-- This status bar mirrors the applicant's latest application workflow state and remarks. -->
                         <div class="status-bar" aria-live="polite">
@@ -315,7 +479,7 @@ $butuanBarangays = array_map(
                         </div>
                     </section>
                 </section>
-                <section id="application-page" class="dash-page">
+                <section id="application-page" class="dash-page is-route-hidden">
                     <section class="panel dash-section panel--summary application-status-hero" aria-labelledby="applicationSummaryHeading">
                         <div class="application-status-hero__main">
                             <div class="panel-header panel-header--compact">
@@ -357,7 +521,7 @@ $butuanBarangays = array_map(
                         </div>
                     </section>
                 </section>
-                <section id="training-page" class="dash-page">
+                <section id="training-page" class="dash-page is-route-hidden">
                     <section class="panel dash-section training-subsection training-subsection--schedule panel--info" aria-labelledby="trainingScheduleHeading">
                         <div class="panel-header"><h3 id="trainingScheduleHeading">Schedule list</h3><p class="panel-subtitle">Dates, venues, and preparation notes for each assigned session.</p></div>
                         <div class="training-schedule-grid" id="trainingScheduleGrid"><article class="training-schedule-empty">No training schedule yet. Wait for notice updates from CSWDD.</article></div>
@@ -380,7 +544,7 @@ $butuanBarangays = array_map(
                         </div>
                     </section>
                 </section>
-                <section id="support-page" class="dash-page helpdesk-page" data-helpdesk-root>
+                <section id="support-page" class="dash-page helpdesk-page is-route-hidden" data-helpdesk-root>
                     <header class="helpdesk-header panel">
                         <div>
                             <span class="support-card__eyebrow">SMART LEAP Help Desk</span>
@@ -460,13 +624,17 @@ $butuanBarangays = array_map(
                     <span class="applicant-tabbar__icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M3 11.5L12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10.5V20h13V10.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                     <span class="applicant-tabbar__label" data-i18n-key="overview">Overview</span>
                 </a>
-                <a class="applicant-tabbar__link" href="#application-page">
+                <a class="applicant-tabbar__link" href="#application-page" data-applicant-nav>
                     <span class="applicant-tabbar__icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M8 7h8" stroke-linecap="round"/><path d="M8 12h8" stroke-linecap="round"/><path d="M8 17h5" stroke-linecap="round"/><rect x="5" y="3" width="14" height="18" rx="2" stroke-linejoin="round"/></svg></span>
                     <span class="applicant-tabbar__label" data-i18n-key="application">Application</span>
                 </a>
-                <a class="applicant-tabbar__link" href="#training-page">
+                <a class="applicant-tabbar__link" href="#training-page" data-applicant-nav>
                     <span class="applicant-tabbar__icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M3 9l9-4 9 4-9 4-9-4z" stroke-linejoin="round"/><path d="M7 11v5c0 1.66 2.91 3 5 3s5-1.34 5-3v-5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                     <span class="applicant-tabbar__label" data-i18n-key="training">Training</span>
+                </a>
+                <a class="applicant-tabbar__link" href="#repayments" data-beneficiary-nav>
+                    <span class="applicant-tabbar__icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><rect x="6" y="4" width="12" height="16" rx="2" stroke-linejoin="round"/><path d="M9 9h6" stroke-linecap="round"/><path d="M9 12h6" stroke-linecap="round"/><path d="M9 15h3" stroke-linecap="round"/></svg></span>
+                    <span class="applicant-tabbar__label" data-i18n-key="repayments">Repayments</span>
                 </a>
                 <a class="applicant-tabbar__link" href="#support-page">
                     <span class="applicant-tabbar__icon" aria-hidden="true"><svg viewBox="0 0 24 24" role="presentation"><path d="M7 7h10a3 3 0 013 3v4a3 3 0 01-3 3h-3l-3 4-3-4H7a3 3 0 01-3-3v-4a3 3 0 013-3z" stroke-linejoin="round"/></svg></span>
@@ -490,6 +658,51 @@ $butuanBarangays = array_map(
                     </div>
                 </div>
             </div>
+            <div class="beneficiary-repayment-modal" id="unifiedRepaymentUploadModal" hidden>
+                <button type="button" class="beneficiary-repayment-modal__backdrop" data-unified-repayment-modal-close aria-label="Close repayment upload"></button>
+                <section class="beneficiary-repayment-modal__panel" role="dialog" aria-modal="true" aria-labelledby="unifiedRepaymentUploadModalTitle">
+                    <header class="beneficiary-repayment-modal__header">
+                        <div>
+                            <span class="support-card__eyebrow">Submit Official Receipt</span>
+                            <h3 id="unifiedRepaymentUploadModalTitle">Repayment receipt</h3>
+                            <p id="unifiedRepaymentUploadModalCopy">Upload the OR for the selected repayment month.</p>
+                        </div>
+                        <button type="button" class="beneficiary-repayment-modal__close" data-unified-repayment-modal-close aria-label="Close">&times;</button>
+                    </header>
+                    <form id="unifiedRepaymentUploadForm" class="form-grid repayment-upload-form beneficiary-repayment-modal__form">
+                        <label class="form-field">
+                            <span>OR month *</span>
+                            <input type="month" id="unifiedUploadMonth" name="month" required readonly>
+                        </label>
+                        <label class="form-field">
+                            <span>Amount paid *</span>
+                            <input type="number" id="unifiedUploadAmount" name="amount" min="0" step="0.01" placeholder="&#8369;625.00" required>
+                        </label>
+                        <label class="form-field">
+                            <span>Payment date *</span>
+                            <input type="date" id="unifiedUploadDate" name="paymentDate" required>
+                        </label>
+                        <label class="form-field">
+                            <span>OR number *</span>
+                            <input type="text" id="unifiedUploadOr" name="or" placeholder="BC 2670412" required>
+                            <small class="field-helper">Use the official receipt number printed beside "NO." on the receipt.</small>
+                        </label>
+                        <label class="form-field full repayment-upload-form__file">
+                            <span>Upload OR file *</span>
+                            <input type="file" id="unifiedUploadFile" name="file" accept=".jpg,.jpeg,.png,.pdf" required>
+                            <small class="field-helper">Accepted file types: JPG, PNG, or PDF.</small>
+                        </label>
+                        <label class="form-field full repayment-upload-form__notes">
+                            <span>Notes for verifier</span>
+                            <textarea id="unifiedUploadNotes" name="notes" rows="3" placeholder="Optional message"></textarea>
+                        </label>
+                        <div class="form-actions full beneficiary-repayment-modal__actions">
+                            <button type="button" class="btn-outline" data-unified-repayment-modal-close>Cancel</button>
+                            <button type="submit" class="btn-primary repayment-upload-form__submit">Submit receipt</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
             <footer class="dash-footer"></footer>
         </div>
     </div>
@@ -497,6 +710,7 @@ $butuanBarangays = array_map(
     <script src="<?= $baseUrl ?>/assets/js/shared/notifications.js?v=<?= urlencode((string) $notificationsJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/language-toggle.js?v=<?= urlencode((string) $languageToggleJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/applicant.js?v=<?= urlencode((string) $applicantJsVersion) ?>" defer></script>
+    <script src="<?= $baseUrl ?>/assets/js/dashboards/applicant-beneficiary.js?v=<?= urlencode((string) $applicantBeneficiaryJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/applicant-profile.js?v=<?= urlencode((string) $applicantProfileJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/support-helpdesk.js?v=<?= urlencode((string) $supportHelpdeskJsVersion) ?>" defer></script>
 </body>

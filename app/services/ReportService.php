@@ -60,6 +60,7 @@ class ReportService
         $scopeStaffProfileId = isset($scope['scopeStaffProfileId']) ? (int) $scope['scopeStaffProfileId'] : null;
         $trainingAnalytics = $this->buildTrainingAnalytics(
             $this->beneficiaryIdsFromRecords($filteredRecords),
+            $this->applicantProfileIdsFromRecords($filteredRecords),
             $normalizedFilters,
             $scopeStaffProfileId
         );
@@ -621,21 +622,25 @@ class ReportService
 
     private function buildSummary(array $records, ?array $repaymentRate = null): array
     {
-        $populationRecords = $this->currentPopulationRecords($records);
-        $beneficiaryCount = count(array_filter($populationRecords, static fn(array $record): bool => (bool) ($record['isBeneficiary'] ?? false)));
-        $pipelineOnlyCount = count(array_filter($populationRecords, static fn(array $record): bool => !((bool) ($record['isBeneficiary'] ?? false))));
+        // Use ALL fetched records for distribution summaries — fetchRecords() already
+        // applies the correct scope (barangay JOIN for PDO, no filter for admin/SW).
+        // Using currentPopulationRecords() here would silently exclude deceased beneficiaries
+        // and terminal-status applicants, making report totals diverge from dashboard KPIs.
+        $allRecords = array_values(array_filter($records, static fn (array $r): bool => (bool) ($r['isBeneficiary'] ?? false) || (bool) ($r['isCurrentPopulation'] ?? false)));
+        $beneficiaryCount = count(array_filter($allRecords, static fn(array $record): bool => (bool) ($record['isBeneficiary'] ?? false)));
+        $pipelineOnlyCount = count(array_filter($allRecords, static fn(array $record): bool => !((bool) ($record['isBeneficiary'] ?? false))));
 
         return [
-            'totalPeople' => count($populationRecords),
+            'totalPeople' => count($allRecords),
             'totalBeneficiaries' => $beneficiaryCount,
             'beneficiaryCount' => $beneficiaryCount,
             'pipelineOnlyCount' => $pipelineOnlyCount,
-            'serviceTypeDistribution' => $this->distribution($populationRecords, 'serviceType'),
-            'sectorDistribution' => $this->distribution($populationRecords, 'sector'),
-            'genderDistribution' => $this->distribution($populationRecords, 'gender'),
-            'ageGroupDistribution' => $this->distribution($populationRecords, 'ageGroup'),
-            'barangayDistribution' => $this->distribution($populationRecords, 'barangay'),
-            'programStatusDistribution' => $this->distribution($populationRecords, 'programStatus'),
+            'serviceTypeDistribution' => $this->distribution($allRecords, 'serviceType'),
+            'sectorDistribution' => $this->distribution($allRecords, 'sector'),
+            'genderDistribution' => $this->distribution($allRecords, 'gender'),
+            'ageGroupDistribution' => $this->distribution($allRecords, 'ageGroup'),
+            'barangayDistribution' => $this->distribution($allRecords, 'barangay'),
+            'programStatusDistribution' => $this->distribution($allRecords, 'programStatus'),
             'repaymentPerformance' => $repaymentRate ?? $this->repaymentRateStats($records),
             'repaymentRate' => $repaymentRate ?? $this->repaymentRateStats($records),
         ];
@@ -667,13 +672,19 @@ class ReportService
         ];
     }
 
-    private function buildTrainingAnalytics(?array $beneficiaryIds, array $filters, ?int $scopeStaffProfileId = null): array
+    private function buildTrainingAnalytics(?array $beneficiaryIds, ?array $applicantProfileIds, array $filters, ?int $scopeStaffProfileId = null): array
     {
-        if (is_array($beneficiaryIds) && $beneficiaryIds === [] && $scopeStaffProfileId === null) {
+        $beneficiaryIds = is_array($beneficiaryIds) ? array_values(array_unique(array_map('intval', $beneficiaryIds))) : null;
+        $applicantProfileIds = is_array($applicantProfileIds) ? array_values(array_unique(array_map('intval', $applicantProfileIds))) : null;
+
+        if ($scopeStaffProfileId === null
+            && ($beneficiaryIds === null || $beneficiaryIds === [])
+            && ($applicantProfileIds === null || $applicantProfileIds === [])
+        ) {
             return $this->emptyTrainingAnalytics($filters);
         }
 
-        $rows = $this->fetchTrainingAttendanceRows($beneficiaryIds, $filters, $scopeStaffProfileId);
+        $rows = $this->fetchTrainingAttendanceRows($beneficiaryIds, $applicantProfileIds, $filters, $scopeStaffProfileId);
         $completionMap = $this->deriveTrainingCompletionMap($rows);
         $sessionFilter = (int) ($filters['trainingSession'] ?? 0);
         $breakdown = [
@@ -753,7 +764,7 @@ class ReportService
         ];
     }
 
-    private function fetchTrainingAttendanceRows(?array $beneficiaryIds, array $filters, ?int $scopeStaffProfileId = null): array
+    private function fetchTrainingAttendanceRows(?array $beneficiaryIds, ?array $applicantProfileIds, array $filters, ?int $scopeStaffProfileId = null): array
     {
         try {
             $conditions = [
@@ -774,17 +785,22 @@ class ReportService
                       AND training_scope.barangay_id = applicant_profiles.barangay_id
                 )';
                 $params[] = $scopeStaffProfileId;
-            } elseif (is_array($beneficiaryIds) && $beneficiaryIds !== []) {
-                // Non-PDO scoped call (e.g. admin filtered by beneficiary list).
-                $placeholders = implode(',', array_fill(0, count($beneficiaryIds), '?'));
-                $applicantPlaceholders = implode(',', array_fill(0, count($beneficiaryIds), '?'));
-                $conditions[] = '(training_invitees.beneficiary_profile_id IN (' . $placeholders . ')
-                    OR training_invitees.applicant_profile_id IN (
-                        SELECT beneficiary_profiles.applicant_profile_id
-                        FROM beneficiary_profiles
-                        WHERE beneficiary_profiles.id IN (' . $applicantPlaceholders . ')
-                    ))';
-                $params = array_merge($params, $beneficiaryIds, $beneficiaryIds);
+            } elseif ((is_array($beneficiaryIds) && $beneficiaryIds !== []) || (is_array($applicantProfileIds) && $applicantProfileIds !== [])) {
+                // Non-PDO scoped call (e.g. admin/SW). Match both beneficiary-backed rows
+                // and applicant-profile rows so training attendees are not dropped before
+                // they become full beneficiaries.
+                $scopeConditions = [];
+                if (is_array($beneficiaryIds) && $beneficiaryIds !== []) {
+                    $beneficiaryPlaceholders = implode(',', array_fill(0, count($beneficiaryIds), '?'));
+                    $scopeConditions[] = 'training_invitees.beneficiary_profile_id IN (' . $beneficiaryPlaceholders . ')';
+                    $params = array_merge($params, $beneficiaryIds);
+                }
+                if (is_array($applicantProfileIds) && $applicantProfileIds !== []) {
+                    $applicantPlaceholders = implode(',', array_fill(0, count($applicantProfileIds), '?'));
+                    $scopeConditions[] = 'training_invitees.applicant_profile_id IN (' . $applicantPlaceholders . ')';
+                    $params = array_merge($params, $applicantProfileIds);
+                }
+                $conditions[] = '(' . implode(' OR ', $scopeConditions) . ')';
             }
 
             $group = (int) ($filters['trainingGroup'] ?? 0);
@@ -1093,6 +1109,8 @@ class ReportService
                 $status = $this->resolveRepaymentObligationStatus($entries, $dueDate);
                 $obligations[] = [
                     'beneficiaryId' => $beneficiaryId,
+                    'beneficiaryName' => (string) ($record['name'] ?? ''),
+                    'businessName' => (string) ($record['businessName'] ?? ''),
                     'dueMonth' => $dueMonth,
                     'dueYear' => substr($dueMonth, 0, 4),
                     'dueDate' => $dueDate,
@@ -1141,8 +1159,14 @@ class ReportService
 
     private function summarizeRepaymentObligations(array $obligations, array $filters = [], bool $useFixedRepaymentTarget = true): array
     {
+        if ($this->repaymentTargetUsesPaymentBeneficiaries($filters)) {
+            return $this->summarizeRepaymentPaymentsByBeneficiary($obligations, $filters);
+        }
+
         $actualCollectedAmount = 0.0;
         $targetObligationCount = 0;
+        $targetAmount = 0.0;
+        $useObligationTargetAmounts = $this->repaymentTargetUsesObligationAmounts($filters, $useFixedRepaymentTarget);
         $statusCounts = [
             'paid_on_time' => 0,
             'partial_delayed' => 0,
@@ -1161,21 +1185,17 @@ class ReportService
             if ($this->repaymentTargetInReportRange($obligation, $filters)) {
                 $targetObligationCount++;
                 $statusCounts[$status]++;
+                if ($useObligationTargetAmounts) {
+                    $targetAmount += (float) ($obligation['expectedAmount'] ?? self::MONTHLY_REPAYMENT_AMOUNT);
+                }
             }
             foreach ($this->verifiedPaymentsForReport($obligation, $filters) as $payment) {
                 $actualCollectedAmount += (float) ($payment['amount'] ?? 0.0);
             }
         }
 
-        $targetAmount = $useFixedRepaymentTarget
-            ? $this->fixedRepaymentTargetAmountFromObligations($obligations, $filters)
-            : 0.0;
-        if (!$useFixedRepaymentTarget) {
-            foreach ($obligations as $obligation) {
-                if ($this->repaymentTargetInReportRange($obligation, $filters)) {
-                    $targetAmount += (float) ($obligation['expectedAmount'] ?? self::MONTHLY_REPAYMENT_AMOUNT);
-                }
-            }
+        if (!$useObligationTargetAmounts) {
+            $targetAmount = $this->fixedRepaymentTargetAmountFromObligations($obligations, $filters);
         }
         $gapAmount = $targetAmount - $actualCollectedAmount;
         $roiPercent = $targetAmount > 0 ? round(($actualCollectedAmount / $targetAmount) * 100, 2) : 0.0;
@@ -1199,9 +1219,14 @@ class ReportService
     private function buildRepaymentBreakdown(array $obligations, array $filters, bool $useFixedRepaymentTarget = true): array
     {
         $period = (string) ($filters['period'] ?? 'monthly');
+        if ($this->repaymentTargetUsesPaymentBeneficiaries($filters)) {
+            return $this->buildRepaymentPaymentDateBreakdown($obligations, $filters);
+        }
+
         $breakdownPeriod = $period === 'all'
             ? 'monthly'
             : ($period === 'custom' ? $this->customBreakdownPeriod($filters) : $period);
+        $useObligationTargetAmounts = $this->repaymentTargetUsesObligationAmounts($filters, $useFixedRepaymentTarget);
         $periods = in_array($period, ['all', 'custom'], true)
             ? []
             : $this->seedRepaymentBreakdownPeriods($filters + ['period' => $breakdownPeriod]);
@@ -1224,7 +1249,7 @@ class ReportService
                         ];
                     }
 
-                    if ($useFixedRepaymentTarget) {
+                    if (!$useObligationTargetAmounts) {
                         $dueMonth = (string) ($obligation['dueMonth'] ?? '');
                         if (preg_match('/^\d{4}-\d{2}$/', $dueMonth)) {
                             $fixedTargetMonthsByPeriod[$periodKey][$dueMonth] = true;
@@ -1258,7 +1283,7 @@ class ReportService
 
         ksort($periods, SORT_STRING);
 
-        if ($useFixedRepaymentTarget) {
+        if (!$useObligationTargetAmounts) {
             $monthlyTarget = $this->fixedRepaymentMonthlyTarget();
             foreach ($periods as $key => &$periodRow) {
                 $periodRow['targetAmount'] = $monthlyTarget * count($fixedTargetMonthsByPeriod[(string) $key] ?? []);
@@ -1376,38 +1401,11 @@ class ReportService
 
     private function repaymentTargetInReportRange(array $obligation, array $filters): bool
     {
-        // For daily and weekly periods, actuals use the exact date range but the target
-        // must cover the entire month containing that date/week — because repayment
-        // obligations are always due on the 1st of a month, never on a specific day.
-        $period = (string) ($filters['period'] ?? 'monthly');
-        [$targetFrom, $targetTo] = $this->repaymentTargetMonthRange($period, $filters);
-
         return $this->inDateRange(
             (string) ($obligation['dueDate'] ?? ''),
-            $targetFrom,
-            $targetTo
+            (string) ($filters['effectiveFrom'] ?? ''),
+            (string) ($filters['effectiveTo'] ?? '')
         );
-    }
-
-    /**
-     * For daily and weekly periods the obligation due-date is always the 1st of a month.
-     * Expand the filter range to the full calendar month(s) that contain effectiveFrom/effectiveTo
-     * so target calculation is not zero when no obligation falls exactly on the selected day.
-     */
-    private function repaymentTargetMonthRange(string $period, array $filters): array
-    {
-        $from = (string) ($filters['effectiveFrom'] ?? '');
-        $to   = (string) ($filters['effectiveTo']   ?? '');
-
-        if (!in_array($period, ['daily', 'weekly'], true)) {
-            return [$from, $to];
-        }
-
-        // Expand from → start of its month, to → end of its month
-        $expandedFrom = $this->isValidDate($from) ? substr($from, 0, 7) . '-01' : $from;
-        $expandedTo   = $this->isValidDate($to)   ? $this->monthEndDate(substr($to, 0, 7)) : $to;
-
-        return [$expandedFrom, $expandedTo];
     }
 
     private function verifiedPaymentsForReport(array $obligation, array $filters): array
@@ -1441,6 +1439,133 @@ class ReportService
     private function repaymentActualUsesPaymentDate(array $filters): bool
     {
         return in_array((string) ($filters['period'] ?? ''), ['daily', 'weekly', 'custom'], true);
+    }
+
+    private function repaymentTargetUsesPaymentBeneficiaries(array $filters): bool
+    {
+        return in_array((string) ($filters['period'] ?? ''), ['daily', 'weekly'], true);
+    }
+
+    private function repaymentTargetUsesObligationAmounts(array $filters, bool $useFixedRepaymentTarget): bool
+    {
+        if (!$useFixedRepaymentTarget) {
+            return true;
+        }
+
+        return in_array((string) ($filters['period'] ?? ''), ['daily', 'weekly'], true);
+    }
+
+    private function summarizeRepaymentPaymentsByBeneficiary(array $obligations, array $filters): array
+    {
+        $actualCollectedAmount = 0.0;
+        $scopedBeneficiaryIds = [];
+        $paidBeneficiaryIds = [];
+
+        foreach ($obligations as $obligation) {
+            $beneficiaryId = (int) ($obligation['beneficiaryId'] ?? 0);
+            if ($beneficiaryId > 0) {
+                $scopedBeneficiaryIds[$beneficiaryId] = true;
+            }
+
+            foreach ($this->verifiedPaymentsInPaymentDateRange($obligation, $filters) as $payment) {
+                $actualCollectedAmount += (float) ($payment['amount'] ?? 0.0);
+                if ($beneficiaryId > 0) {
+                    $paidBeneficiaryIds[$beneficiaryId] = true;
+                }
+            }
+        }
+
+        $paymentBeneficiaryCount = count($paidBeneficiaryIds);
+        $targetAmount = self::MONTHLY_REPAYMENT_AMOUNT * $paymentBeneficiaryCount;
+        $gapAmount = $targetAmount - $actualCollectedAmount;
+
+        return [
+            'period' => (string) ($filters['period'] ?? 'monthly'),
+            'label' => (string) ($filters['periodLabel'] ?? 'Selected period'),
+            'from' => (string) ($filters['effectiveFrom'] ?? ''),
+            'to' => (string) ($filters['effectiveTo'] ?? ''),
+            'targetAmount' => round($targetAmount, 2),
+            'actualCollectedAmount' => round($actualCollectedAmount, 2),
+            'gapAmount' => round($gapAmount, 2),
+            'varianceAmount' => round($gapAmount, 2),
+            'roiPercent' => $targetAmount > 0 ? round(($actualCollectedAmount / $targetAmount) * 100, 2) : 0.0,
+            'obligationCount' => $paymentBeneficiaryCount,
+            'scopedBeneficiaries' => count($scopedBeneficiaryIds),
+            'paymentBeneficiaryCount' => $paymentBeneficiaryCount,
+            'targetMode' => 'payment_beneficiaries',
+            'statusCounts' => [
+                'paid_on_time' => 0,
+                'partial_delayed' => 0,
+                'pending_verification' => 0,
+                'overdue_unpaid' => 0,
+                'upcoming' => 0,
+            ],
+        ];
+    }
+
+    private function buildRepaymentPaymentDateBreakdown(array $obligations, array $filters): array
+    {
+        $periods = [];
+        foreach ($this->repaymentPaymentDateSeries($filters) as $date) {
+            $periods[$date] = [
+                'period' => $date,
+                'label' => $this->formatRepaymentPeriodLabel($date, 'daily'),
+                'targetAmount' => 0.0,
+                'actualCollectedAmount' => 0.0,
+                'gapAmount' => 0.0,
+                'roiPercent' => 0.0,
+            ];
+        }
+
+        $paidBeneficiariesByDate = [];
+        foreach ($obligations as $obligation) {
+            $beneficiaryId = (int) ($obligation['beneficiaryId'] ?? 0);
+            foreach ($this->verifiedPaymentsInPaymentDateRange($obligation, $filters) as $payment) {
+                $paymentDate = (string) ($payment['paymentDate'] ?? '');
+                if (!isset($periods[$paymentDate])) {
+                    continue;
+                }
+
+                $periods[$paymentDate]['actualCollectedAmount'] += (float) ($payment['amount'] ?? 0.0);
+                if ($beneficiaryId > 0) {
+                    $paidBeneficiariesByDate[$paymentDate][$beneficiaryId] = true;
+                }
+            }
+        }
+
+        foreach ($periods as $date => &$row) {
+            $beneficiaryCount = count($paidBeneficiariesByDate[$date] ?? []);
+            $row['targetAmount'] = round(self::MONTHLY_REPAYMENT_AMOUNT * $beneficiaryCount, 2);
+            $row['actualCollectedAmount'] = round((float) ($row['actualCollectedAmount'] ?? 0.0), 2);
+            $row['gapAmount'] = round($row['targetAmount'] - $row['actualCollectedAmount'], 2);
+            $row['roiPercent'] = $row['targetAmount'] > 0
+                ? round(($row['actualCollectedAmount'] / $row['targetAmount']) * 100, 2)
+                : 0.0;
+        }
+        unset($row);
+
+        return array_values($periods);
+    }
+
+    private function repaymentPaymentDateSeries(array $filters): array
+    {
+        $from = (string) ($filters['effectiveFrom'] ?? '');
+        $to = (string) ($filters['effectiveTo'] ?? '');
+
+        if (!$this->isValidDate($from) || !$this->isValidDate($to)) {
+            return [];
+        }
+
+        $dates = [];
+        $cursor = new \DateTimeImmutable($from);
+        $end = new \DateTimeImmutable($to);
+
+        while ($cursor <= $end) {
+            $dates[] = $cursor->format('Y-m-d');
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $dates;
     }
 
     private function repaymentBreakdownKeyForDate(string $date, string $period, array $filters): string
@@ -1675,7 +1800,7 @@ class ReportService
         }
 
         if ($period === 'yearly') {
-            return '';
+            return 'repayment-year-' . (string) ($obligation['repaymentYearNumber'] ?? 1);
         }
 
         return $dueMonth;
@@ -2554,7 +2679,6 @@ class ReportService
         }
 
         return !in_array($normalized, [
-            'draft',
             'completed',
             'rejected',
             'denied',
@@ -2608,6 +2732,19 @@ class ReportService
             $beneficiaryId = (int) ($record['beneficiaryId'] ?? 0);
             if ($beneficiaryId > 0) {
                 $ids[$beneficiaryId] = true;
+            }
+        }
+
+        return array_keys($ids);
+    }
+
+    private function applicantProfileIdsFromRecords(array $records): array
+    {
+        $ids = [];
+        foreach ($records as $record) {
+            $applicantProfileId = (int) ($record['applicantProfileId'] ?? 0);
+            if ($applicantProfileId > 0) {
+                $ids[$applicantProfileId] = true;
             }
         }
 

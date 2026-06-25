@@ -18,14 +18,8 @@
 
   // Header copy applied when the admin switches between major workspaces.
   const SECTION_META = {
-    dashboard: {
-      eyebrow: 'Admin Workspace',
-      title: 'Dashboard',
-    },
-    validation: {
-      eyebrow: 'Admin Workspace',
-      title: 'Application for Validation',
-    },
+    dashboard: { eyebrow: 'Admin Workspace', title: 'Dashboard' },
+    validation: { eyebrow: 'Admin Workspace', title: 'Application for Validation' },
     applications: { eyebrow: 'Admin Workspace', title: 'Applications' },
     training: { eyebrow: 'Admin Workspace', title: 'Training' },
     team: { eyebrow: 'Admin Workspace', title: 'Team' },
@@ -35,12 +29,10 @@
     reports: { eyebrow: 'Admin Workspace', title: 'Reports' },
   };
 
-  // Build same-origin admin endpoints used by the shell and mounted modules.
   function routeUrl(path) {
     return `${baseUrl}/${String(path || '').replace(/^\/+/, '')}`;
   }
 
-  // Normalize API responses so shell-level fetch helpers return a consistent shape.
   async function parseJson(response) {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
@@ -52,7 +44,6 @@
     return response.json();
   }
 
-  // Generic GET helper for admin shell and module bootstrap requests.
   async function apiGet(path, params = {}) {
     const query = new URLSearchParams(params);
     const url = query.toString() ? `${routeUrl(path)}?${query}` : routeUrl(path);
@@ -67,7 +58,6 @@
     }
   }
 
-  // Generic POST helper for admin profile, password, and other shell-owned mutations.
   async function apiPost(path, payload) {
     const body = new URLSearchParams();
     Object.entries(payload || {}).forEach(([key, value]) => body.append(key, value ?? ''));
@@ -87,7 +77,6 @@
     }
   }
 
-  // Small DOM helpers reused throughout the Admin shell logic.
   function qs(selector, root) {
     return (root || document).querySelector(selector);
   }
@@ -99,9 +88,9 @@
   function escapeHtml(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"')
       .replace(/'/g, '&#039;');
   }
 
@@ -141,15 +130,10 @@
       .join('') || fallback;
   }
 
-  function sectionElement(section) {
-    return document.getElementById(`${section}-section`);
-  }
-
   function updateHeader(section) {
     const eyebrow = document.getElementById('adminSectionEyebrow');
     const title = document.getElementById('adminSectionTitle');
     const meta = SECTION_META[section] || SECTION_META.dashboard;
-
     if (eyebrow) eyebrow.textContent = meta.eyebrow || 'Admin Workspace';
     if (title) title.textContent = meta.title || 'Dashboard';
   }
@@ -212,7 +196,6 @@
     qsa('[data-quick-action]').forEach((trigger) => {
       trigger.addEventListener('click', () => triggerCommand(trigger.dataset.quickAction || ''));
     });
-
   }
 
   function renderNavBadges(data) {
@@ -230,7 +213,7 @@
       team: 0,
       beneficiaries: 0,
       'co-makers': safeNumber(data.coMakerRegistrationSummary?.pendingReview),
-      };
+    };
 
     Object.entries(counts).forEach(([key, value]) => {
       const badge = document.querySelector(`[data-section-badge="${key}"]`);
@@ -256,7 +239,6 @@
     };
 
     const closeAccountMenu = () => setExpanded(false);
-
     window.App.adminShell.closeAccountMenu = closeAccountMenu;
 
     trigger.addEventListener('click', (event) => {
@@ -295,6 +277,7 @@
     const nameParts = splitNameParts(staff?.name || authUser?.name || '');
     const fullName = staff?.name || authUser?.name || 'Administrator';
     const email = staff?.email || authUser?.email || '';
+
     return `
       <div class="modal-overlay" data-admin-profile-overlay>
         <div class="modal-card admin-profile-modal" role="dialog" aria-modal="true" aria-labelledby="adminProfileModalTitle">
@@ -385,9 +368,7 @@
     };
 
     const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        closeModal();
-      }
+      if (event.key === 'Escape') closeModal();
     };
 
     const renderModal = () => {
@@ -403,88 +384,7 @@
       });
 
       modalRoot.querySelector('[data-admin-profile-overlay]')?.addEventListener('click', (event) => {
-        if (event.target.hasAttribute('data-admin-profile-overlay')) {
-          closeModal();
-        }
-      });
-
-      modalRoot.querySelector('#adminProfilePhotoInput')?.addEventListener('change', async (event) => {
-        const input = event.currentTarget;
-        const file = input?.files?.[0];
-        if (!file || photoBusy) return;
-        if (file.size > 5 * 1024 * 1024) {
-          currentError = 'Profile photo must be 5 MB or less.';
-          return renderModal();
-        }
-        photoBusy = true;
-        currentError = '';
-        renderModal();
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const response = await fetch(routeUrl('account/profile-photo'), {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json;charset=UTF-8',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({ photoDataUrl: String(reader.result || '') }),
-          }).then(parseJson).catch(() => ({ ok: false, message: 'Unable to reach the server right now.' }));
-
-          photoBusy = false;
-          if (!response.ok) {
-            currentError = response.message || 'Unable to save the profile photo.';
-            return renderModal();
-          }
-
-          currentStaff = await resolveAdminStaffRecord();
-          if (authUser && response.data?.user) {
-            authUser.photo = response.data.user.photo || authUser.photo || null;
-          }
-          showLiveStatus(response.message || 'Profile photo updated.', false);
-          renderModal();
-        };
-        reader.readAsDataURL(file);
-      });
-
-      modalRoot.querySelector('#adminProfileForm')?.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (!currentStaff || isSaving || photoBusy) return;
-        const form = event.target;
-        if (!(form instanceof HTMLFormElement)) return;
-        const formData = new FormData(form);
-        const payload = {
-          firstName: formData.get('firstName') || '',
-          middleName: formData.get('middleName') || '',
-          lastName: formData.get('lastName') || '',
-          email: formData.get('email') || '',
-          contactNumber: formData.get('contactNumber') || '',
-        };
-        isSaving = true;
-        currentError = '';
-        renderModal();
-        const response = await apiPost('api/team/update', {
-          staffId: currentStaff.id,
-          name: composeFullName(payload),
-          email: payload.email || '',
-          role: currentStaff.role || 'admin',
-          status: currentStaff.status || 'active',
-          contactNumber: payload.contactNumber || '',
-          positionTitle: currentStaff.positionTitle || '',
-        });
-        isSaving = false;
-        if (!response.ok) {
-          currentError = firstError(response.errors) || response.message || 'Unable to save your profile.';
-          return renderModal();
-        }
-        currentStaff = await resolveAdminStaffRecord();
-        if (currentStaff) {
-          authUser.name = currentStaff.name || composeFullName(payload) || authUser.name;
-          authUser.email = currentStaff.email || payload.email || authUser.email;
-        }
-        showLiveStatus('Profile updated.', false);
-        currentError = '';
-        renderModal();
+        if (event.target.hasAttribute('data-admin-profile-overlay')) closeModal();
       });
     };
 
@@ -496,17 +396,20 @@
       status: 'active',
       positionTitle: 'Administrator',
     };
+
     renderModal();
 
-    resolveAdminStaffRecord().then((staff) => {
-      if (staff) {
-        currentStaff = staff;
+    resolveAdminStaffRecord()
+      .then((staff) => {
+        if (staff) {
+          currentStaff = staff;
+          renderModal();
+        }
+      })
+      .catch(() => {
+        currentError = 'Unable to load your account details right now.';
         renderModal();
-      }
-    }).catch(() => {
-      currentError = 'Unable to load your account details right now.';
-      renderModal();
-    });
+      });
 
     document.addEventListener('keydown', handleEscape);
   }
@@ -514,235 +417,10 @@
   function initProfileModal() {
     const button = document.getElementById('adminAccountProfile');
     if (!button) return;
-
     button.addEventListener('click', () => {
       window.App.adminShell?.closeAccountMenu?.();
       openAdminProfileModal();
     });
-  }
-
-  function openAdminPasswordModal() {
-    const existing = document.querySelector('[data-admin-password-modal]');
-    existing?.remove();
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.dataset.adminPasswordModal = 'true';
-    modal.innerHTML = `
-      <div class="modal-card admin-profile-modal" role="dialog" aria-modal="true" aria-labelledby="adminPasswordModalTitle">
-        <div class="modal-header">
-          <div class="po-modal-title-block">
-            <h2 class="modal-title" id="adminPasswordModalTitle">Change Password</h2>
-          </div>
-          <button type="button" class="modal-close" data-admin-password-close aria-label="Close password modal">&times;</button>
-        </div>
-        <form id="adminPasswordForm" class="modal-body admin-profile-modal__form">
-          <section class="admin-record-sheet admin-record-sheet--account">
-            <section class="admin-record-sheet__section admin-record-sheet__section--amber">
-              <div class="admin-record-sheet__section-head">
-                <span>Administrator</span>
-              </div>
-              <div class="admin-record-sheet__grid">
-                <label class="admin-record-sheet__field admin-record-sheet__field--wide">
-                  <span class="admin-profile-modal__label">Current Password</span>
-                  <input class="admin-profile-modal__input" type="password" name="currentPassword" required>
-                </label>
-                <label class="admin-record-sheet__field admin-record-sheet__field--wide">
-                  <span class="admin-profile-modal__label">New Password</span>
-                  <input class="admin-profile-modal__input" type="password" name="newPassword" required minlength="8">
-                </label>
-                <label class="admin-record-sheet__field admin-record-sheet__field--wide">
-                  <span class="admin-profile-modal__label">Confirm New Password</span>
-                  <input class="admin-profile-modal__input" type="password" name="confirmPassword" required minlength="8">
-                </label>
-                <div class="notice danger admin-profile-modal__notice" id="adminPasswordError" hidden></div>
-              </div>
-            </section>
-          </section>
-        </form>
-        <div class="modal-footer">
-          <button type="button" class="app-btn-outline" data-admin-password-close>Back</button>
-          <button type="submit" form="adminPasswordForm" class="app-btn-primary">Save Password</button>
-        </div>
-      </div>
-    `;
-    modal.addEventListener('click', (event) => {
-      if (event.target === modal || event.target.closest('[data-admin-password-close]')) {
-        modal.remove();
-      }
-    });
-    modal.querySelector('#adminPasswordForm')?.addEventListener('submit', submitAdminPasswordChange);
-    document.body.appendChild(modal);
-  }
-
-  async function submitAdminPasswordChange(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const errorNode = document.getElementById('adminPasswordError');
-    const submitButton = document.querySelector('[form="adminPasswordForm"]');
-    submitButton.disabled = true;
-    if (errorNode) {
-      errorNode.hidden = true;
-      errorNode.textContent = '';
-    }
-    const body = new URLSearchParams();
-    body.set('currentPassword', String(form.currentPassword?.value || ''));
-    body.set('newPassword', String(form.newPassword?.value || ''));
-    body.set('confirmPassword', String(form.confirmPassword?.value || ''));
-    try {
-      const response = await fetch(routeUrl('account/change-password'), {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
-        credentials: 'same-origin',
-        body: body.toString(),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message || 'Unable to change password.');
-      }
-      showLiveStatus(payload.message || 'Password updated.', false);
-      document.querySelector('[data-admin-password-modal]')?.remove();
-    } catch (error) {
-      if (errorNode) {
-        errorNode.hidden = false;
-        errorNode.textContent = error.message || 'Unable to change password.';
-      }
-    } finally {
-      submitButton.disabled = false;
-    }
-  }
-
-  function initChangePasswordModal() {
-    const button = document.getElementById('adminAccountPassword');
-    if (!button) return;
-    button.addEventListener('click', () => {
-      window.App.adminShell?.closeAccountMenu?.();
-      openAdminPasswordModal();
-    });
-  }
-
-  function initLogout() {
-    const button = document.getElementById('system-logout');
-    if (!button) return;
-
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      try {
-        await fetch(routeUrl('auth/logout'), {
-          method: 'POST',
-          headers: { Accept: 'application/json' },
-          credentials: 'same-origin',
-        });
-      } catch (error) {
-        console.warn('Admin logout failed', error);
-      } finally {
-        window.location.href = routeUrl('login');
-      }
-    });
-  }
-
-  // Boot each admin workspace module after the shell is ready so section-specific logic stays isolated.
-  function initModules() {
-    const modules = window.App?.modules || {};
-    modules.dashboard?.init?.();
-    modules.validation?.init?.();
-    modules.applications?.init?.();
-    modules.training?.init?.();
-    modules.team?.init?.();
-    modules.beneficiaries?.init?.();
-    modules.coMakerRegistrations?.init?.();
-  }
-
-  // Wire the shared repayment review modal into the Admin repayment roster and decision buttons.
-  function initRepaymentWorkspace() {
-    if (!window.SMARTLEAP_REPAYMENT_REVIEW?.createWorkspace || repaymentWorkspace) {
-      return;
-    }
-    repaymentWorkspace = window.SMARTLEAP_REPAYMENT_REVIEW.createWorkspace({
-      actorName: authUser?.name || 'Administrator',
-      actorRole: 'Admin',
-      notify: (message, tone) => showLiveStatus(message, tone === 'warning'),
-      beneficiaryRecordsProvider: () => {
-        const overview = window.SMARTLEAP_ADMIN_OVERVIEW || {};
-        const roster = Array.isArray(overview.beneficiaryRoster) ? overview.beneficiaryRoster : [];
-        return roster.filter((beneficiary) => {
-          const repaymentAnchor = String(beneficiary?.firstRepaymentDueDate || beneficiary?.approvedAt || beneficiary?.approvalDate || '').trim();
-          return repaymentAnchor !== '';
-        });
-      },
-      ids: {
-        search: 'adminRepaymentSearch',
-        barangayFilter: 'adminRepaymentBarangayFilter',
-        pdoFilter: 'adminRepaymentPdoFilter',
-        stateFilter: 'adminRepaymentStateFilter',
-        fromDateFilter: 'adminRepaymentFromDate',
-        toDateFilter: 'adminRepaymentToDate',
-        resetFilters: 'adminRepaymentResetFilters',
-        approvedCount: 'adminRepaymentApprovedCount',
-        pendingCount: 'adminRepaymentPendingBeneficiaryCount',
-        partialCount: 'adminRepaymentPartialCount',
-        fullCount: 'adminRepaymentFullCount',
-        rosterBody: 'adminRepaymentRosterBody',
-        rosterCount: 'adminRepaymentRosterCount',
-        modalRoot: 'adminRepaymentModal',
-        modalClose: 'adminRepaymentModalClose',
-        modalStatus: 'adminRepaymentModalStatus',
-        modalTitle: 'adminRepaymentModalTitle',
-        modalSubtitle: 'adminRepaymentModalSubtitle',
-        beneficiaryName: 'adminRepaymentBeneficiaryName',
-        business: 'adminRepaymentBusiness',
-        barangay: 'adminRepaymentBarangay',
-        assignedPdo: 'adminRepaymentAssignedPdo',
-        submittedAt: 'adminRepaymentSubmittedAt',
-        summaryOutstanding: 'adminRepaymentSummaryOutstanding',
-        summaryVerified: 'adminRepaymentSummaryVerified',
-        summaryProgress: 'adminRepaymentSummaryProgress',
-        summaryStanding: 'adminRepaymentSummaryStanding',
-        paymentDate: 'adminRepaymentPaymentDate',
-        orNumber: 'adminRepaymentOrNumber',
-        amount: 'adminRepaymentAmount',
-        submissionType: 'adminRepaymentSubmissionType',
-        coverage: 'adminRepaymentCoverage',
-        submittedBy: 'adminRepaymentSubmittedBy',
-        uploadStatus: 'adminRepaymentUploadStatus',
-        hardCopyStatus: 'adminRepaymentHardCopyStatus',
-        hardCopyInput: 'adminRepaymentHardCopyInput',
-        duplicateWarning: 'adminRepaymentDuplicateWarning',
-        proofName: 'adminRepaymentProofName',
-        proofType: 'adminRepaymentProofType',
-        proofDate: 'adminRepaymentProofDate',
-        proofPreview: 'adminRepaymentProofPreview',
-        openProof: 'adminRepaymentOpenProof',
-        downloadProof: 'adminRepaymentDownloadProof',
-        fullscreenProof: 'adminRepaymentFullscreenProof',
-        historyBody: 'adminRepaymentHistoryBody',
-        remarks: 'adminRepaymentRemarks',
-        verifyPartial: 'adminRepaymentVerifyPartial',
-        verifyFull: 'adminRepaymentVerifyFull',
-        needsCorrection: 'adminRepaymentNeedsCorrection',
-        reject: 'adminRepaymentReject',
-        close: 'adminRepaymentClose',
-        decisionNote: 'adminRepaymentDecisionNote',
-      },
-      barangayAllLabel: 'All barangays',
-      pdoAllLabel: 'All PDOs',
-      emptyColspan: 12,
-      emptyRosterMessage: 'No approved beneficiaries with repayment records available yet.',
-      bodyModalClass: 'admin-repayment-modal-open',
-      detailAnchorId: 'adminRepaymentReviewDetail',
-      recordModalId: 'adminRepaymentRecordModal',
-      recordCloseId: 'adminRepaymentRecordClose',
-    });
-  }
-
-  function setDashboardLoading(isLoading) {
-    document.getElementById('dashboard-section')?.classList.toggle('is-loading', isLoading);
-    const refreshButton = document.getElementById('adminRefreshButton');
-    if (refreshButton) {
-      refreshButton.disabled = isLoading;
-    }
   }
 
   function showLiveStatus(message, isError) {
@@ -751,36 +429,25 @@
     node.textContent = message;
     node.hidden = false;
     node.dataset.state = isError ? 'error' : 'info';
-    if (state.statusTimer) {
-      window.clearTimeout(state.statusTimer);
-    }
+    if (state.statusTimer) window.clearTimeout(state.statusTimer);
     state.statusTimer = window.setTimeout(() => {
       node.hidden = true;
     }, 5000);
   }
 
-  // Repaint the Admin KPI strip and top-level dashboard charts from the latest overview payload.
-  function renderDashboard(data) {
-    state.overview = data || {};
-    window.SMARTLEAP_ADMIN_OVERVIEW = state.overview;
-    window.App?.modules?.dashboard?.render?.(state.overview);
-    window.App?.modules?.beneficiaries?.render?.();
-    window.App?.modules?.coMakerRegistrations?.render?.();
-    renderNavBadges(state.overview);
+  function setDashboardLoading(isLoading) {
+    document.getElementById('dashboard-section')?.classList.toggle('is-loading', isLoading);
+    const refreshButton = document.getElementById('adminRefreshButton');
+    if (refreshButton) refreshButton.disabled = isLoading;
   }
 
   async function fetchDashboardData(reason) {
-    if (document.hidden) {
-      return state.overview;
-    }
-    if (reason !== 'manual' && document.body.dataset.adminSection === 'reports') {
-      return state.overview;
-    }
-    if (state.fetchPromise) {
-      return state.fetchPromise;
-    }
+    if (document.hidden) return state.overview;
+    if (reason !== 'manual' && document.body.dataset.adminSection === 'reports') return state.overview;
+    if (state.fetchPromise) return state.fetchPromise;
 
     setDashboardLoading(reason === 'manual');
+
     state.fetchPromise = fetch(routeUrl('admin/state'), {
       method: 'GET',
       headers: { Accept: 'application/json' },
@@ -796,9 +463,8 @@
       })
       .catch((error) => {
         console.warn('Admin dashboard live update failed', error);
-        if (reason === 'manual') {
-          showLiveStatus('Unable to refresh dashboard right now.', true);
-        } else {
+        if (reason === 'manual') showLiveStatus('Unable to refresh dashboard right now.', true);
+        else {
           const node = document.getElementById('adminLiveStatusMessage');
           if (node) {
             node.hidden = true;
@@ -815,7 +481,334 @@
     return state.fetchPromise;
   }
 
-  // Keep the dashboard fresh in the background while still allowing an explicit manual refresh.
+  function renderDashboard(data) {
+    state.overview = data || {};
+    window.SMARTLEAP_ADMIN_OVERVIEW = state.overview;
+
+    window.App?.modules?.dashboard?.render?.(state.overview);
+    window.App?.modules?.beneficiaries?.render?.();
+    window.App?.modules?.coMakerRegistrations?.render?.();
+    repaymentWorkspace?.syncBeneficiaries?.();
+
+    renderNavBadges(state.overview);
+  }
+
+  function initLogout() {
+    const button = document.getElementById('system-logout');
+    if (!button) return;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        await fetch(routeUrl('auth/logout'), {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          credentials: 'same-origin',
+        });
+      } catch (error) {
+        console.warn('Admin logout failed', error);
+      } finally {
+        window.location.href = routeUrl('login');
+      }
+    });
+  }
+
+  // Dashboard chart renderer module (only uses data already attached to overview).
+  const WORKFLOW_COLORS = {
+    submitted: '#f2994a',
+    under_review: '#31d0c6',
+    checked_by_pdo: '#3e78ff',
+    approved: '#8c61ff',
+    training_scheduled: '#e07a4f',
+    training_completed: '#2dbeb5',
+    post_approval_compliance: '#7c8aa5',
+    beneficiary_active: '#5a67d8',
+  };
+
+  const BENEFICIARY_STATUS_COLORS = {
+    active: '#16a34a',
+    inactive: '#f59e0b',
+    deceased: '#dc2626',
+  };
+
+  const REPAYMENT_COLORS = {
+    no_upload_yet: '#cfdcf0',
+    under_review: '#3e78ff',
+    needs_correction: '#f2994a',
+    partial_paid: '#31d0c6',
+    fully_paid: '#8c61ff',
+  };
+
+  const TRAINING_ATTENDANCE_COLORS = {
+    attended: '#16a34a',
+    absent: '#dc2626',
+    excused: '#f97316',
+    pending: '#1d4ed8',
+  };
+
+  const ANALYTIC_COLORS = ['#1d4ed8', '#16a34a', '#f97316', '#7c3aed', '#dc2626', '#0891b2', '#be185d', '#4d7c0f'];
+
+  function buildScale(max) {
+    const safeMax = Math.max(0, Math.ceil(safeNumber(max)));
+    if (safeMax <= 4) {
+      const maxValue = Math.max(safeMax, 1);
+      const ticks = Array.from({ length: maxValue + 1 }, (_, index) => maxValue - index);
+      return { maxValue, ticks };
+    }
+
+    const targetSegments = 4;
+    const roughStep = safeMax / targetSegments;
+    const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+    const normalizedStep = roughStep / magnitude;
+    const stepUnit = normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10;
+    const step = Math.max(1, Math.ceil(stepUnit * magnitude));
+    const maxValue = Math.max(step * targetSegments, Math.ceil(safeMax / step) * step, 1);
+    const ticks = [];
+    for (let tick = maxValue; tick >= 0; tick -= step) ticks.push(tick);
+    if (ticks[ticks.length - 1] !== 0) ticks.push(0);
+    return { maxValue, ticks };
+  }
+
+  function resolveColor(colors, key, index) {
+    if (Array.isArray(colors)) return colors[index % colors.length] || '#94a3b8';
+    return colors?.[key] || ANALYTIC_COLORS[index % ANALYTIC_COLORS.length] || '#94a3b8';
+  }
+
+  function renderColumnChart(chart, items, colors, ariaLabel, emptyText) {
+    if (!chart) return;
+    if (!items.length) {
+      chart.innerHTML = `<div class="admin-v1-empty-chart">${escapeHtml(emptyText)}</div>`;
+      return;
+    }
+
+    const counts = items.map((item) => safeNumber(item.count));
+    const maxCount = Math.max(...counts, 1);
+    const scale = buildScale(maxCount);
+    const denseClass = items.length > 12 ? ' is-dense' : '';
+
+    chart.innerHTML = `
+      <div class="admin-v1-column-chart${denseClass}" style="--bar-count:${items.length};" role="img" aria-label="${escapeHtml(ariaLabel)}">
+        <div class="admin-v1-column-chart__surface">
+          <div class="admin-v1-column-chart__grid">
+            ${scale.ticks.map((tickValue, index) => {
+              const denominator = Math.max(scale.ticks.length - 1, 1);
+              const position = (index / denominator) * 100;
+              return `
+                <span class="admin-v1-column-chart__guide" style="top:${position}%">
+                  <span class="admin-v1-column-chart__tick">${tickValue}</span>
+                </span>
+              `;
+            }).join('')}
+          </div>
+          <div class="admin-v1-column-chart__bars">
+            ${items.map((item, index) => {
+              const count = safeNumber(item.count);
+              const height = Math.max((count / scale.maxValue) * 100, count > 0 ? 12 : 0);
+              const color = resolveColor(colors, item.key, index);
+              return `
+                <article class="admin-v1-column-chart__group">
+                  <div class="admin-v1-column-chart__bar-wrap">
+                    <div class="admin-v1-column-chart__bar" style="height:${height}%; --bar-color:${color};" title="${escapeHtml(item.label)}: ${count}"></div>
+                  </div>
+                  <span class="admin-v1-column-chart__label">${escapeHtml(item.label)}</span>
+                </article>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKpis(data) {
+    const applicationSummary = data.applicationSummary || {};
+    const staffSummary = data.staffSummary || {};
+    const beneficiarySummary = data.beneficiarySummary || {};
+    const repaymentSummary = data.repaymentSummary || {};
+
+    function setText(id, value) {
+      const node = document.getElementById(id);
+      if (node) node.textContent = String(value);
+    }
+
+    setText('adminKpiTotalApplications', safeNumber(applicationSummary.total));
+    const totalRepaymentAccounts = safeNumber(repaymentSummary.fullyPaid) + safeNumber(repaymentSummary.partialPaid)
+      + safeNumber(repaymentSummary.underReview) + safeNumber(repaymentSummary.needsCorrection);
+
+    setText('adminKpiActiveBeneficiaries', safeNumber(beneficiarySummary.total ?? beneficiarySummary.active));
+    setText('adminKpiPendingRepayments', totalRepaymentAccounts);
+
+    const visibleStaffBreakdown = {
+      socialWorker: safeNumber(staffSummary.socialWorker ?? staffSummary.socialWorkers),
+      pdo: safeNumber(staffSummary.pdo ?? staffSummary.projectOfficer ?? staffSummary.project_officer),
+    };
+
+    setText('adminKpiActiveStaff', visibleStaffBreakdown.socialWorker + visibleStaffBreakdown.pdo);
+    const meta = document.getElementById('adminKpiActiveStaffMeta');
+    if (meta) meta.textContent = `SW ${visibleStaffBreakdown.socialWorker} | PDO ${visibleStaffBreakdown.pdo}`;
+  }
+
+  function renderWorkflowDistribution(data) {
+    const chart = document.getElementById('adminWorkflowDistributionChart');
+    const legend = document.getElementById('adminWorkflowLegend');
+    const footer = document.getElementById('adminWorkflowFooter');
+    if (!chart || !legend || !footer) return;
+
+    const distribution = data.workflowDistribution || { stages: [], total: 0 };
+    const stages = Array.isArray(distribution.stages) ? distribution.stages : [];
+    const total = safeNumber(distribution.total);
+
+    if (!stages.length || total <= 0) {
+      chart.innerHTML = '<div class="admin-v1-empty-chart">No workflow records yet.</div>';
+      legend.innerHTML = '';
+      footer.textContent = 'No workflow records yet.';
+      return;
+    }
+
+    renderColumnChart(chart, stages, WORKFLOW_COLORS, 'Column chart of workflow status distribution', 'No workflow records yet.');
+
+    const activeStages = stages.filter((stage) => safeNumber(stage.count) > 0);
+    const largest = stages.slice().sort((left, right) => safeNumber(right.count) - safeNumber(left.count))[0];
+
+    legend.innerHTML = activeStages.map((stage) => `
+      <span class="admin-v1-legend__item">
+        <span class="admin-v1-legend__dot admin-v1-legend__dot--${escapeHtml(stage.key)}" style="background:${WORKFLOW_COLORS[stage.key] || '#94a3b8'};"></span>
+        <span>${escapeHtml(stage.label)}</span>
+        <strong>${safeNumber(stage.count)}</strong>
+        <small>${total > 0 ? Math.round((safeNumber(stage.count) / total) * 100) : 0}%</small>
+      </span>
+    `).join('');
+
+    footer.textContent = largest ? `${largest.label}: ${safeNumber(largest.count)} of ${total}.` : 'No workflow records yet.';
+  }
+
+  function renderBeneficiaryStatusDistribution(data) {
+    const chart = document.getElementById('adminBeneficiaryStatusChart');
+    const legend = document.getElementById('adminBeneficiaryStatusLegend');
+    const footer = document.getElementById('adminBeneficiaryStatusFooter');
+    if (!chart || !legend || !footer) return;
+
+    const distribution = data.beneficiaryStatusDistribution || { segments: [], total: 0 };
+    const segments = Array.isArray(distribution.segments) ? distribution.segments : [];
+    const total = safeNumber(distribution.total);
+
+    if (!segments.length || total <= 0) {
+      chart.innerHTML = '<div class="admin-v1-empty-chart">No beneficiary records yet.</div>';
+      legend.innerHTML = '';
+      footer.textContent = 'No beneficiary records yet.';
+      return;
+    }
+
+    renderColumnChart(chart, segments, BENEFICIARY_STATUS_COLORS, 'Column chart of beneficiary status distribution', 'No beneficiary records yet.');
+
+    legend.innerHTML = segments.map((segment) => `
+      <span class="admin-v1-legend__item">
+        <span class="admin-v1-legend__dot" style="background:${BENEFICIARY_STATUS_COLORS[segment.key] || '#94a3b8'};"></span>
+        <span>${escapeHtml(segment.label)}</span>
+        <strong>${safeNumber(segment.count)}</strong>
+        <small>${total > 0 ? Math.round((safeNumber(segment.count) / total) * 100) : 0}%</small>
+      </span>
+    `).join('');
+
+    footer.textContent = `${safeNumber(data.beneficiarySummary?.total ?? data.beneficiarySummary?.active ?? 0)} beneficiaries tracked.`;
+  }
+
+  function renderRepaymentDistribution(data) {
+    const chart = document.getElementById('adminRepaymentDistributionChart');
+    const legend = document.getElementById('adminRepaymentLegend');
+    const footer = document.getElementById('adminRepaymentFooter');
+    if (!chart || !legend || !footer) return;
+
+    const distribution = data.repaymentDistribution || { segments: [], total: 0 };
+    const segments = Array.isArray(distribution.segments) ? distribution.segments : [];
+    const total = safeNumber(distribution.total);
+
+    if (!segments.length || total <= 0) {
+      chart.innerHTML = '<div class="admin-v1-empty-chart">No repayment records yet.</div>';
+      legend.innerHTML = '';
+      footer.textContent = 'No repayment records yet.';
+      return;
+    }
+
+    renderColumnChart(chart, segments, REPAYMENT_COLORS, 'Column chart of repayment status distribution', 'No repayment records yet.');
+
+    const largest = segments.slice().sort((left, right) => safeNumber(right.count) - safeNumber(left.count))[0];
+    const percentage = largest && total > 0 ? Math.round((safeNumber(largest.count) / total) * 100) : 0;
+
+    legend.innerHTML = segments.map((segment) => `
+      <span class="admin-v1-legend__item">
+        <span class="admin-v1-legend__dot" style="background:${REPAYMENT_COLORS[segment.key] || '#94a3b8'};"></span>
+        <span>${escapeHtml(segment.label)}</span>
+        <strong>${safeNumber(segment.count)}</strong>
+        <small>${total > 0 ? Math.round((safeNumber(segment.count) / total) * 100) : 0}%</small>
+      </span>
+    `).join('');
+
+    footer.textContent = largest ? `${largest.label}: ${safeNumber(largest.count)} records, ${percentage}%.` : 'No repayment records yet.';
+  }
+
+  function renderTrainingAttendanceDistribution(data) {
+    const chart = document.getElementById('adminTrainingAttendanceChart');
+    const legend = document.getElementById('adminTrainingAttendanceLegend');
+    const footer = document.getElementById('adminTrainingAttendanceFooter');
+    if (!chart || !legend || !footer) return;
+
+    let distribution = data.trainingAttendanceSummary || { segments: [], total: 0 };
+
+    // Fallback: if the live payload doesn't include the computed summary yet,
+    // read the JSON embedded in the server-rendered data attribute.
+    if ((!data || !data.trainingAttendanceSummary || safeNumber(data.trainingAttendanceSummary.total) <= 0)) {
+      const raw = chart.dataset.trainingAttendance;
+      if (raw) {
+        try {
+          distribution = JSON.parse(raw);
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+      }
+    }
+    const segments = Array.isArray(distribution.segments) ? distribution.segments : [];
+    const total = safeNumber(distribution.total);
+
+    if (!segments.length || total <= 0) {
+      chart.innerHTML = '<div class="admin-v1-empty-chart">No attendance records yet.</div>';
+      legend.innerHTML = '';
+      footer.textContent = 'No attendance records yet.';
+      return;
+    }
+
+    renderColumnChart(chart, segments, TRAINING_ATTENDANCE_COLORS, 'Column chart of training attendance', 'No attendance records yet.');
+
+    legend.innerHTML = segments.map((segment) => `
+      <span class="admin-v1-legend__item">
+        <span class="admin-v1-legend__dot" style="background:${TRAINING_ATTENDANCE_COLORS[segment.key] || '#94a3b8'};"></span>
+        <span>${escapeHtml(segment.label)}</span>
+        <strong>${safeNumber(segment.count)}</strong>
+        <small>${total > 0 ? Math.round((safeNumber(segment.count) / total) * 100) : 0}%</small>
+      </span>
+    `).join('');
+
+    const largest = segments.slice().sort((a, b) => safeNumber(b.count) - safeNumber(a.count))[0];
+
+    // DEBUG: help confirm renderer execution + final computed total
+    // (safe to remove later)
+    footer.textContent = `DEBUG attendance total: ${total}`;
+    if (largest && total > 0) {
+      footer.textContent = `${largest.label}: ${safeNumber(largest.count)} of ${total}.`; 
+    }
+  } 
+
+  function render(data = window.SMARTLEAP_ADMIN_OVERVIEW || {}) {
+    renderKpis(data);
+    renderBeneficiaryStatusDistribution(data);
+    renderWorkflowDistribution(data);
+    renderRepaymentDistribution(data);
+    renderTrainingAttendanceDistribution(data);
+  } 
+
+  function init() {}
+
+  window.App.modules.dashboard = { init, render };
+
   function initLiveRefresh() {
     document.getElementById('adminRefreshButton')?.addEventListener('click', () => {
       fetchDashboardData('manual');
@@ -826,19 +819,96 @@
     state.refreshTimers.push(window.setInterval(() => { fetchDashboardData('chart'); }, 60000));
   }
 
+  function initModules() {
+    const modules = window.App?.modules || {};
+    modules.dashboard?.init?.();
+    modules.validation?.init?.();
+    modules.applications?.init?.();
+    modules.training?.init?.();
+    modules.team?.init?.();
+    modules.beneficiaries?.init?.();
+    modules.coMakerRegistrations?.init?.();
+    initRepaymentWorkspace();
+  }
+
+  function initRepaymentWorkspace() {
+    if (!window.SMARTLEAP_REPAYMENT_REVIEW?.createWorkspace || repaymentWorkspace) return;
+    repaymentWorkspace = window.SMARTLEAP_REPAYMENT_REVIEW.createWorkspace({
+      actorName: authUser?.name || 'Administrator',
+      actorRole: 'Administrator',
+      notify: (message, type) => showLiveStatus(message, type === 'warning' || type === 'error'),
+      initialPayments: [],
+      recordModalId: 'adminRepaymentRecordModal',
+      recordCloseId: 'adminRepaymentRecordClose',
+      emptyColspan: 12,
+      beneficiaryRecordsProvider: () => {
+        const roster = state.overview?.beneficiaryRoster;
+        return Array.isArray(roster) ? roster : [];
+      },
+      ids: {
+        modalRoot: 'adminRepaymentModal',
+        rosterBody: 'adminRepaymentRosterBody',
+        rosterCount: 'adminRepaymentRosterCount',
+        search: 'adminRepaymentSearch',
+        barangayFilter: 'adminRepaymentBarangayFilter',
+        pdoFilter: 'adminRepaymentPdoFilter',
+        stateFilter: 'adminRepaymentStateFilter',
+        fromDateFilter: 'adminRepaymentFromDate',
+        toDateFilter: 'adminRepaymentToDate',
+        modalTitle: 'adminRepaymentModalTitle',
+        modalSubtitle: 'adminRepaymentModalSubtitle',
+        modalStatus: 'adminRepaymentModalStatus',
+        modalClose: 'adminRepaymentModalClose',
+        close: 'adminRepaymentClose',
+        summaryOutstanding: 'adminRepaymentSummaryOutstanding',
+        summaryVerified: 'adminRepaymentSummaryVerified',
+        summaryProgress: 'adminRepaymentSummaryProgress',
+        summaryStanding: 'adminRepaymentSummaryStanding',
+        historyBody: 'adminRepaymentHistoryBody',
+        beneficiaryName: 'adminRepaymentBeneficiaryName',
+        proofName: 'adminRepaymentProofName',
+        proofType: 'adminRepaymentProofType',
+        proofDate: 'adminRepaymentProofDate',
+        proofPreview: 'adminRepaymentProofPreview',
+        openProof: 'adminRepaymentOpenProof',
+        downloadProof: 'adminRepaymentDownloadProof',
+        fullscreenProof: 'adminRepaymentFullscreenProof',
+        business: 'adminRepaymentBusiness',
+        barangay: 'adminRepaymentBarangay',
+        assignedPdo: 'adminRepaymentAssignedPdo',
+        submittedAt: 'adminRepaymentSubmittedAt',
+        orNumber: 'adminRepaymentOrNumber',
+        paymentDate: 'adminRepaymentPaymentDate',
+        submittedBy: 'adminRepaymentSubmittedBy',
+        submissionType: 'adminRepaymentSubmissionType',
+        coverage: 'adminRepaymentCoverage',
+        amount: 'adminRepaymentAmount',
+        uploadStatus: 'adminRepaymentUploadStatus',
+        hardCopyStatus: 'adminRepaymentHardCopyStatus',
+        hardCopyInput: 'adminRepaymentHardCopyInput',
+        duplicateWarning: 'adminRepaymentDuplicateWarning',
+        remarks: 'adminRepaymentRemarks',
+        decisionNote: 'adminRepaymentDecisionNote',
+        verifyPartial: 'adminRepaymentVerifyPartial',
+        verifyFull: 'adminRepaymentVerifyFull',
+        needsCorrection: 'adminRepaymentNeedsCorrection',
+        reject: 'adminRepaymentReject',
+      },
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     renderDashboard(state.overview);
     initModules();
-    initRepaymentWorkspace();
-    initNavigation();
+      initNavigation();
     initSidebar();
     initAccountMenu();
     initProfileModal();
-    initChangePasswordModal();
     initLogout();
     initLiveRefresh();
 
     const initialSection = (window.location.hash || '').replace(/^#/, '');
     setSection(initialSection || 'dashboard');
   });
+
 })();

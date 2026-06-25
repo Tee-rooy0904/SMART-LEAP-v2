@@ -41,20 +41,20 @@
         <!-- Tabs split Stage 1 registrants into pending review, accepted for the active batch, and deferred for the next batch. -->
         <div class="validation-tabs" role="tablist" aria-label="Validation queues">
             <button type="button" class="validation-tab is-active" id="validationTabPending" data-validation-tab="pending" role="tab" aria-selected="true">Pending <span id="validationTabPendingCount">0</span></button>
+            <button type="button" class="validation-tab" id="validationTabDup" data-validation-tab="possibleDuplicates" role="tab" aria-selected="false">Possible Duplicates <span id="validationTabDupCount">0</span></button>
+            <button type="button" class="validation-tab" id="validationTabMarked" data-validation-tab="markedDuplicates" role="tab" aria-selected="false">Marked Duplicates <span id="validationTabMarkedCount">0</span></button>
             <button type="button" class="validation-tab" id="validationTabSelected" data-validation-tab="selected" role="tab" aria-selected="false">Selected <span id="validationTabSelectedCount">0</span></button>
             <button type="button" class="validation-tab" id="validationTabSaved" data-validation-tab="saved" role="tab" aria-selected="false">Saved <span id="validationTabSavedCount">0</span></button>
         </div>
 
         <div class="validation-grid">
-            <!-- Pending rows lead into the actual per-registrant validation decision workflow. -->
+            <!-- Pending rows — excludes marked duplicates -->
             <section class="table-card validation-table-card" data-validation-panel="pending">
                 <div class="validation-table-card__head">
-                    <!-- This badge mirrors the filtered count for the currently visible pending queue. -->
                     <h3>Pending</h3>
                     <span class="admin-inline-pill" id="validationPendingBadge">0 pending</span>
                 </div>
                 <div class="table-wrapper">
-                    <!-- Each pending row exposes the Open Validation action rendered by the validation module. -->
                     <table class="data-table validation-table">
                         <thead>
                             <tr>
@@ -73,9 +73,58 @@
                 </div>
             </section>
 
+            <!-- Possible duplicates panel -->
+            <section class="table-card validation-table-card" data-validation-panel="possibleDuplicates" hidden>
+                <div class="validation-table-card__head">
+                    <h3>Possible Duplicates</h3>
+                    <span class="admin-inline-pill admin-inline-pill--warning" id="validationDupBadge">0 possible duplicates</span>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table validation-table">
+                        <thead>
+                            <tr>
+                                <th>Registrant</th>
+                                <th>Complete Address</th>
+                                <th>Contact</th>
+                                <th>Email</th>
+                                <th>Submitted</th>
+                                <th class="actions">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="validationDupTableBody">
+                            <tr><td colspan="6">No possible duplicates detected.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Marked duplicates panel -->
+            <section class="table-card validation-table-card" data-validation-panel="markedDuplicates" hidden>
+                <div class="validation-table-card__head">
+                    <h3>Marked Duplicates</h3>
+                    <span class="admin-inline-pill" id="validationMarkedBadge">0 marked</span>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table validation-table">
+                        <thead>
+                            <tr>
+                                <th>Registrant</th>
+                                <th>Complete Address</th>
+                                <th>Contact</th>
+                                <th>Email</th>
+                                <th>Submitted</th>
+                                <th class="actions">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="validationMarkedTableBody">
+                            <tr><td colspan="6">No marked duplicates yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <section class="table-card validation-table-card" data-validation-panel="selected" hidden>
                 <div class="validation-table-card__head">
-                    <!-- Selected rows represent registrants accepted into the active yearly batch. -->
                     <h3>Selected</h3>
                     <div class="validation-table-card__badges">
                         <span class="admin-inline-pill" id="validationSelectedBadge">0 selected</span>
@@ -104,7 +153,6 @@
 
             <section class="table-card validation-table-card" data-validation-panel="saved" hidden>
                 <div class="validation-table-card__head">
-                    <!-- Saved rows are deferred registrants kept for the next batch instead of the current one. -->
                     <h3>Saved for Next Batch</h3>
                     <span class="admin-inline-pill" id="validationDeferredBadge">0 saved</span>
                 </div>

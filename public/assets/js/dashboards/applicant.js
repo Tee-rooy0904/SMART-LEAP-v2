@@ -109,6 +109,9 @@
 
             state.dashboard = payload.state || null;
             renderDashboard();
+            document.dispatchEvent(new CustomEvent('smartleap:applicant-dashboard-state', {
+                detail: { state: state.dashboard },
+            }));
             applyRouteVisibility();
             markPortalReady();
         } catch (error) {
@@ -1092,48 +1095,81 @@
         return payload;
     }
 
+    // Tracks the last visible page id to avoid redundant scroll resets
+    let lastVisibleRouteId = null;
+
     function applyRouteVisibility() {
-        const pages = Array.from(document.querySelectorAll('.dash-page'));
-        const routeMap = {
-            overview: 'dashboard-home',
-            'dashboard-home': 'dashboard-home',
-            'profile-page': 'profile-page',
-            'requirements-progress': 'application-page',
-            'application-status': 'application-page',
-            'application-page': 'application-page',
-            'training-progress': 'training-page',
-            'training-page': 'training-page',
-            'support-panel': 'support-page',
-            'support-chat': 'support-page',
-            'support-page': 'support-page',
-        };
+        const isBeneficiaryPortal = Boolean(state.dashboard?.beneficiaryPortal?.isBeneficiary);
+        document.body.classList.toggle('is-beneficiary-portal', isBeneficiaryPortal);
+
+        // Remove any stale modal scroll lock when switching routes
+        document.body.classList.remove('repayment-modal-open');
+
         const rawHash = (window.location.hash || '#dashboard-home').replace('#', '');
-        const targetId = routeMap[rawHash] || 'dashboard-home';
-        const target = document.getElementById(targetId) || document.getElementById('dashboard-home');
 
+        // Route map: hash → page id to show
+        // Application and Training remain accessible for beneficiaries (historical records)
+        const routeMap = {
+            'dashboard-home':        isBeneficiaryPortal ? 'beneficiary-page' : 'dashboard-home',
+            'overview':              isBeneficiaryPortal ? 'beneficiary-page' : 'dashboard-home',
+            'profile-page':          'profile-page',
+            'application-page':      'application-page',
+            'requirements-progress': 'application-page',
+            'application-status':    'application-page',
+            'training-page':         'training-page',
+            'training-progress':     'training-page',
+            'repayments':            isBeneficiaryPortal ? 'repayments-page' : 'beneficiary-locked-page',
+            'beneficiary-page':      isBeneficiaryPortal ? 'beneficiary-page' : 'beneficiary-locked-page',
+            'repayments-page':       isBeneficiaryPortal ? 'repayments-page' : 'beneficiary-locked-page',
+            'support-panel':         'support-page',
+            'support-chat':          'support-page',
+            'support-page':          'support-page',
+        };
+
+        const activeRoute = rawHash || 'dashboard-home';
+        const targetId = routeMap[activeRoute] || (isBeneficiaryPortal ? 'beneficiary-page' : 'dashboard-home');
+        const target = document.getElementById(targetId);
+
+        // Show exactly ONE top-level dash-page, hide all others
+        const pages = Array.from(document.querySelectorAll('.dash-main > .dash-page'));
         pages.forEach((page) => {
-            page.classList.toggle('is-route-hidden', page !== target);
+            page.classList.toggle('is-route-hidden', page.id !== targetId);
+            page.classList.remove('is-beneficiary-inline');
         });
 
-        document.querySelectorAll('.sidebar-link').forEach((link) => {
+        // Sync sidebar and tabbar active state
+        document.querySelectorAll('.sidebar-link, .applicant-tabbar__link').forEach((link) => {
             const href = (link.getAttribute('href') || '').replace('#', '');
-            link.classList.toggle('is-active', href === target?.id);
-        });
-        document.querySelectorAll('.applicant-tabbar__link').forEach((link) => {
-            const href = (link.getAttribute('href') || '').replace('#', '');
-            link.classList.toggle('is-active', href === target?.id);
+            link.classList.toggle('is-active', isActiveNavHref(href, activeRoute));
         });
 
         const activeLink = Array.from(document.querySelectorAll('.sidebar-link')).find((link) => link.classList.contains('is-active')) || null;
         updateMobileTopbarTitle(activeLink, target?.id || 'dashboard-home');
+
+        // Only scroll to top when the visible page actually changes
+        const routeChanged = lastVisibleRouteId !== targetId;
+        lastVisibleRouteId = targetId;
+        if (routeChanged) {
+            window.requestAnimationFrame(() => {
+                window.scrollTo({ top: 0, behavior: 'auto' });
+            });
+        }
+
         syncSidebarMenuState();
+    }
+
+    function isActiveNavHref(href, activeRoute) {
+        if (href === activeRoute) {
+            return true;
+        }
+        return ['overview', 'dashboard-home'].includes(activeRoute) && ['overview', 'dashboard-home'].includes(href);
     }
 
     function openSection(id) {
         const targetId = id || 'dashboard-home';
         const nextHash = `#${targetId}`;
         if (window.location.hash === nextHash) {
-            applyRouteVisibility();
+            // Already on this page — do nothing, don't reset scroll
             return;
         }
         window.location.hash = nextHash;
@@ -1347,6 +1383,9 @@
         }
         const keyMap = {
             'dashboard-home': 'overview',
+            'beneficiary-page': 'overview',
+            'beneficiary-locked-page': 'repayments',
+            repayments: 'repayments',
             'profile-page': 'profile',
             'application-page': 'application',
             'training-page': 'training',
@@ -1358,6 +1397,9 @@
         const linkLabel = activeLink?.querySelector('span:last-child')?.textContent?.trim();
         const fallbackMap = {
             'dashboard-home': 'Overview',
+            'beneficiary-page': 'Overview',
+            'beneficiary-locked-page': 'Repayments',
+            repayments: 'Repayments',
             'profile-page': 'Profile',
             'application-page': 'Application',
             'training-page': 'Training',

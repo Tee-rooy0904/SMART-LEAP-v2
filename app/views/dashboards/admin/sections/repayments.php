@@ -99,7 +99,7 @@
                 </div>
                 <div class="admin-repayment-modal__header-actions">
                     <span class="admin-inline-pill admin-inline-pill--slate" id="adminRepaymentModalStatus">No Upload Yet</span>
-                    <button type="button" class="admin-repayment-modal__close" id="adminRepaymentModalClose" aria-label="Close repayment review modal">&times;</button>
+                    <button type="button" class="admin-repayment-modal__close" id="adminRepaymentModalClose" data-repayment-modal-close aria-label="Close repayment review modal">&times;</button>
                 </div>
             </header>
 
@@ -177,7 +177,7 @@
                                 <span class="admin-section-label">Repayment Review</span>
                                 <h4 id="adminRepaymentBeneficiaryName">Beneficiary</h4>
                             </div>
-                            <button type="button" class="admin-repayment-modal__close" id="adminRepaymentRecordClose" aria-label="Close repayment record review">&times;</button>
+                            <button type="button" class="admin-repayment-modal__close" id="adminRepaymentRecordClose" data-repayment-record-close aria-label="Close repayment record review">&times;</button>
                         </header>
                         <div class="admin-repayment-record-modal__body">
                             <section class="admin-repayment-modal__top" id="adminRepaymentReviewDetail">

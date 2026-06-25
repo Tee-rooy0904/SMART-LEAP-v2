@@ -7,11 +7,16 @@
       summary: {
         batchCapacity: 300,
         pending: 0,
+        pendingClean: 0,
+        possibleDuplicates: 0,
+        markedDuplicates: 0,
         selected: 0,
         saved: 0,
         remaining: 300,
       },
       pending: [],
+      possibleDuplicates: [],
+      markedDuplicates: [],
       selected: [],
       saved: [],
     },
@@ -197,9 +202,10 @@
             <label class="validation-hardcopy-field"><span>Barangay</span><input name="barangay" type="text" required></label>
             <label class="validation-hardcopy-field"><span>4Ps membership</span><select name="is4ps" required><option value="">Select</option><option>Yes</option><option>No</option></select></label>
             <label class="validation-hardcopy-field"><span>Educational attainment</span><select name="educationalAttainment" required><option value="">Select attainment</option><option>Kindergarten</option><option>Elementary</option><option>JHS</option><option>SHS Grad</option><option>Tertiary</option></select></label>
-            <label class="validation-hardcopy-field"><span>Sector</span><select name="sector" required><option value="">Select sector</option><option>Indigenous People</option><option>Senior Citizen</option><option>Solo Parent</option><option>PWD</option><option>None</option><option>Other</option></select></label>
-            <label class="validation-hardcopy-field"><span>Other sector</span><input name="sectorOtherSpecify" type="text"></label>
-            <label class="validation-hardcopy-field"><span>Specific business type</span><input name="livelihood" type="text" required></label>
+            <label class="validation-hardcopy-field"><span>Sector</span><select name="sector" data-hardcopy-sector required><option value="">Select sector</option><option>Indigenous People</option><option>Senior Citizen</option><option>Solo Parent</option><option>PWD</option><option>None</option><option>Other</option></select></label>
+            <label class="validation-hardcopy-field" data-hardcopy-sector-other-wrap hidden><span>Other sector</span><input name="sectorOtherSpecify" type="text" data-hardcopy-sector-other disabled></label>
+            <label class="validation-hardcopy-field"><span>Specific business type</span><select name="livelihood" data-hardcopy-livelihood required><option value="">Select business type</option><option>Sari-sari store</option><option>Fruit stand</option><option>Ukay-ukay</option><option>Food cart</option><option>General merchandise</option><option>Other</option></select></label>
+            <label class="validation-hardcopy-field" data-hardcopy-livelihood-other-wrap hidden><span>Other business type</span><input name="livelihoodOtherSpecify" type="text" data-hardcopy-livelihood-other disabled></label>
             <label class="validation-hardcopy-field"><span>Microbusiness name</span><input name="businessName" type="text" required></label>
             <label class="validation-hardcopy-field validation-hardcopy-field--wide"><span>Complete address</span><textarea name="completeAddress" rows="2" required></textarea></label>
           </section>
@@ -235,9 +241,11 @@
       ['validationPendingBadge', `${summary.pending || 0} pending`],
       ['validationSelectedBadge', `${summary.selected || 0} selected`],
       ['validationDeferredBadge', `${summary.saved || 0} saved`],
-      ['validationTabPendingCount', summary.pending || 0],
+      ['validationTabPendingCount', summary.pendingClean || summary.pending || 0],
       ['validationTabSelectedCount', summary.selected || 0],
       ['validationTabSavedCount', summary.saved || 0],
+      ['validationTabDupCount', summary.possibleDuplicates || 0],
+      ['validationTabMarkedCount', summary.markedDuplicates || 0],
     ];
     badgePairs.forEach(([id, value]) => {
       const node = document.getElementById(id);
@@ -287,6 +295,8 @@
 
   const renderTables = () => {
     const pendingBody = qs('#validationPendingTableBody');
+    const dupBody = qs('#validationDupTableBody');
+    const markedBody = qs('#validationMarkedTableBody');
     const selectedBody = qs('#validationApprovedTableBody');
     const savedBody = qs('#validationDeferredTableBody');
     if (!pendingBody || !selectedBody || !savedBody) return;
@@ -297,6 +307,24 @@
         ? state.data.pending.map((record) => tableRowMarkup(record, formatDate(record.submittedAt), 'Open Validation', 'pending')).join('')
         : '<tr><td colspan="6">No pending registrations yet.</td></tr>'
     );
+
+    if (dupBody) {
+      setHTML(
+        dupBody,
+        state.data.possibleDuplicates.length
+          ? state.data.possibleDuplicates.map((record) => tableRowMarkup(record, formatDate(record.submittedAt), 'Review Duplicate', 'dup')).join('')
+          : '<tr><td colspan="6">No possible duplicates detected.</td></tr>'
+      );
+    }
+
+    if (markedBody) {
+      setHTML(
+        markedBody,
+        state.data.markedDuplicates.length
+          ? state.data.markedDuplicates.map((record) => tableRowMarkup(record, formatDate(record.submittedAt), 'View Details', 'marked')).join('')
+          : '<tr><td colspan="6">No marked duplicates yet.</td></tr>'
+      );
+    }
 
     setHTML(
       selectedBody,
@@ -314,7 +342,7 @@
   };
 
   const setActiveTab = (tabKey) => {
-    const nextTab = ['pending', 'selected', 'saved'].includes(tabKey) ? tabKey : 'pending';
+    const nextTab = ['pending', 'possibleDuplicates', 'markedDuplicates', 'selected', 'saved'].includes(tabKey) ? tabKey : 'pending';
     state.activeTab = nextTab;
 
     document.querySelectorAll('[data-validation-tab]').forEach((button) => {
@@ -351,101 +379,156 @@
     node.className = `notice ${tone} validation-notice`;
   };
 
-  const buildModalMarkup = (record) => `
-    <div class="modal-overlay validation-review-modal" data-validation-modal>
-      <div class="modal-card validation-review-modal__card" role="dialog" aria-modal="true" aria-labelledby="validationModalTitle">
-        <div class="modal-header">
-          <div class="validation-review-modal__title">
-            <span class="admin-inline-pill">${record.statusKey === 'pending' ? 'Validation Review' : 'Registration Details'}</span>
-            <h3 class="modal-title" id="validationModalTitle">${escapeHtml(record.fullName)}</h3>
-            <small>Submitted ${formatDate(record.submittedAt)}</small>
-          </div>
-          <div class="validation-review-modal__status">
-            <span class="status-badge ${statusClass(record.statusKey)}">${escapeHtml(record.statusLabel)}</span>
-            <button class="modal-close" type="button" data-close-validation-modal aria-label="Close">&times;</button>
-          </div>
+  const duplicateWarningMarkup = (matchedRecord, matchedFields) => {
+    if (!matchedRecord) return '';
+    const fields = Array.isArray(matchedFields) && matchedFields.length
+      ? `<ul class="validation-dup-fields">${matchedFields.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>`
+      : '';
+    return `
+      <div class="validation-dup-warning">
+        <div class="validation-dup-warning__head">
+          <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z"/></svg>
+          <strong>Possible Duplicate Applicant Found</strong>
         </div>
-        <div class="modal-body validation-review-modal__body">
-          <section class="validation-record-grid">
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Registrant Name</span>
-              <strong>${escapeHtml(record.fullName)}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Email</span>
-              <strong>${escapeHtml(record.email)}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Contact</span>
-              <strong>${escapeHtml(record.contactNumber)}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Birthdate</span>
-              <strong>${escapeHtml(record.birthdate || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Age</span>
-              <strong>${escapeHtml(record.age ?? '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Gender</span>
-              <strong>${escapeHtml(record.gender || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Barangay</span>
-              <strong>${escapeHtml(record.barangay || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">4Ps Membership</span>
-              <strong>${escapeHtml(record.is4ps || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Educational Attainment</span>
-              <strong>${escapeHtml(record.educationalAttainment || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Sector</span>
-              <strong>${escapeHtml(record.sector === 'Other' && record.sectorOtherSpecify ? `Other - ${record.sectorOtherSpecify}` : (record.sector || '--'))}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Specific Business Type</span>
-              <strong>${escapeHtml(record.livelihood || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Microbusiness Name</span>
-              <strong>${escapeHtml(record.businessName || '--')}</strong>
-            </article>
-            <article class="validation-record-card">
-              <span class="validation-record-card__label">Submission Channel</span>
-              <strong>${escapeHtml(record.submissionChannelLabel || 'Online applicant form')}</strong>
-            </article>
-            ${record.statusKey === 'selected' ? `
-            <article class="validation-record-card validation-email-card">
-              <span class="validation-record-card__label">Approval Email</span>
-              ${emailStatusMarkup(record)}
-            </article>` : ''}
-            <article class="validation-record-card validation-record-card--wide">
-              <span class="validation-record-card__label">Complete Address</span>
-              <strong>${escapeHtml(record.completeAddress)}</strong>
-            </article>
-          </section>
-
-          <section class="validation-upload-grid">
-            ${fileCardMarkup('Profile Photo', record.profilePhoto)}
-            ${fileCardMarkup('Existing Business Photo', record.businessPhoto)}
-            ${fileCardMarkup('Valid ID', record.validIdPhoto)}
-            ${record.submissionChannel === 'staff_hardcopy' ? fileCardMarkup('Scanned Hardcopy Form', record.hardcopyForm) : ''}
-          </section>
-        </div>
-        <div class="modal-footer validation-review-modal__footer">
-          <button type="button" class="btn btn-outline-secondary" data-close-validation-modal>Close</button>
-          ${record.statusKey === 'pending'
-            ? `<button type="button" class="btn btn-success" data-validation-action="approve" data-registration-id="${record.id}">Approve for Current Batch</button>`
-            : ''}
+        <p>This applicant has similar information with an existing record. Please review before approving.</p>
+        ${fields}
+        <div class="validation-dup-matched">
+          <span class="validation-record-card__label">Matched Applicant</span>
+          <div class="validation-dup-matched__grid">
+            <span><strong>Name:</strong> ${escapeHtml(matchedRecord.fullName || '--')}</span>
+            <span><strong>Email:</strong> ${escapeHtml(matchedRecord.email || '--')}</span>
+            <span><strong>Contact:</strong> ${escapeHtml(matchedRecord.contactNumber || '--')}</span>
+            <span><strong>Birthdate:</strong> ${escapeHtml(matchedRecord.birthdate || '--')}</span>
+            <span><strong>Address:</strong> ${escapeHtml(matchedRecord.completeAddress || '--')}</span>
+            <span><strong>Status:</strong> ${escapeHtml(matchedRecord.statusLabel || '--')}</span>
+            <span><strong>Submitted:</strong> ${escapeHtml(formatDate(matchedRecord.submittedAt))}</span>
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  };
+
+  const buildModalMarkup = (record, matchedRecord = null, matchedFields = []) => {
+    const isPossibleDup = record.isPossibleDuplicate && !record.isMarkedDuplicate;
+    const isMarkedDup   = record.isMarkedDuplicate;
+    const isPending     = record.statusKey === 'pending';
+
+    const footerButtons = (() => {
+      if (!isPending) {
+        return `<button type="button" class="btn btn-outline-secondary" data-close-validation-modal>Close</button>`;
+      }
+      if (isPossibleDup) {
+        return `
+          <button type="button" class="btn btn-outline-secondary" data-close-validation-modal>Close</button>
+          <button type="button" class="btn btn-warning" data-dup-action="mark_duplicate" data-registration-id="${record.id}" data-duplicate-of="${record.duplicateOf || 0}">Mark as Duplicate</button>
+          <button type="button" class="btn btn-success" data-dup-action="approve_anyway" data-registration-id="${record.id}">Approve Anyway</button>
+        `;
+      }
+      if (isMarkedDup) {
+        return `<button type="button" class="btn btn-outline-secondary" data-close-validation-modal>Close</button>`;
+      }
+      return `
+        <button type="button" class="btn btn-outline-secondary" data-close-validation-modal>Close</button>
+        <button type="button" class="btn btn-success" data-validation-action="approve" data-registration-id="${record.id}">Approve for Current Batch</button>
+      `;
+    })();
+
+    return `
+      <div class="modal-overlay validation-review-modal" data-validation-modal>
+        <div class="modal-card validation-review-modal__card" role="dialog" aria-modal="true" aria-labelledby="validationModalTitle">
+          <div class="modal-header">
+            <div class="validation-review-modal__title">
+              <span class="admin-inline-pill">${isPossibleDup ? 'Duplicate Check' : isMarkedDup ? 'Marked Duplicate' : (isPending ? 'Validation Review' : 'Registration Details')}</span>
+              <h3 class="modal-title" id="validationModalTitle">${escapeHtml(record.fullName)}</h3>
+              <small>Submitted ${formatDate(record.submittedAt)}</small>
+            </div>
+            <div class="validation-review-modal__status">
+              ${isPossibleDup ? '<span class="status-badge is-warning">Possible Duplicate</span>' : ''}
+              ${isMarkedDup ? '<span class="status-badge is-muted">Marked Duplicate</span>' : ''}
+              <span class="status-badge ${statusClass(record.statusKey)}">${escapeHtml(record.statusLabel)}</span>
+              <button class="modal-close" type="button" data-close-validation-modal aria-label="Close">&times;</button>
+            </div>
+          </div>
+          <div class="modal-body validation-review-modal__body">
+            ${isPossibleDup ? duplicateWarningMarkup(matchedRecord, matchedFields) : ''}
+            ${isMarkedDup && record.duplicateNote ? `<div class="validation-dup-marked-note"><strong>Note:</strong> ${escapeHtml(record.duplicateNote)}</div>` : ''}
+            <section class="validation-record-grid">
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Registrant Name</span>
+                <strong>${escapeHtml(record.fullName)}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Email</span>
+                <strong>${escapeHtml(record.email)}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Contact</span>
+                <strong>${escapeHtml(record.contactNumber)}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Birthdate</span>
+                <strong>${escapeHtml(record.birthdate || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Age</span>
+                <strong>${escapeHtml(record.age ?? '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Gender</span>
+                <strong>${escapeHtml(record.gender || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Barangay</span>
+                <strong>${escapeHtml(record.barangay || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">4Ps Membership</span>
+                <strong>${escapeHtml(record.is4ps || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Educational Attainment</span>
+                <strong>${escapeHtml(record.educationalAttainment || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Sector</span>
+                <strong>${escapeHtml(record.sector === 'Other' && record.sectorOtherSpecify ? `Other - ${record.sectorOtherSpecify}` : (record.sector || '--'))}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Specific Business Type</span>
+                <strong>${escapeHtml(record.livelihood || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Microbusiness Name</span>
+                <strong>${escapeHtml(record.businessName || '--')}</strong>
+              </article>
+              <article class="validation-record-card">
+                <span class="validation-record-card__label">Submission Channel</span>
+                <strong>${escapeHtml(record.submissionChannelLabel || 'Online applicant form')}</strong>
+              </article>
+              ${record.statusKey === 'selected' ? `
+              <article class="validation-record-card validation-email-card">
+                <span class="validation-record-card__label">Approval Email</span>
+                ${emailStatusMarkup(record)}
+              </article>` : ''}
+              <article class="validation-record-card validation-record-card--wide">
+                <span class="validation-record-card__label">Complete Address</span>
+                <strong>${escapeHtml(record.completeAddress)}</strong>
+              </article>
+            </section>
+            <section class="validation-upload-grid">
+              ${fileCardMarkup('Profile Photo', record.profilePhoto)}
+              ${fileCardMarkup('Existing Business Photo', record.businessPhoto)}
+              ${fileCardMarkup('Valid ID', record.validIdPhoto)}
+              ${record.submissionChannel === 'staff_hardcopy' ? fileCardMarkup('Scanned Hardcopy Form', record.hardcopyForm) : ''}
+            </section>
+          </div>
+          <div class="modal-footer validation-review-modal__footer">
+            ${footerButtons}
+          </div>
+        </div>
+      </div>
+    `;
+  };
 
   const closeModal = () => {
     const root = qs('#modal-root');
@@ -455,10 +538,32 @@
     state.activeId = 0;
   };
 
+  const syncHardcopyConditionalFields = () => {
+    const form = document.getElementById('validationHardcopyForm');
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const syncOther = (selectName, wrapSelector, inputSelector) => {
+      const select = form.querySelector(`[data-hardcopy-${selectName}]`);
+      const wrap = form.querySelector(wrapSelector);
+      const input = form.querySelector(inputSelector);
+      if (!(select instanceof HTMLSelectElement) || !(wrap instanceof HTMLElement) || !(input instanceof HTMLInputElement)) return;
+
+      const isOther = select.value === 'Other';
+      wrap.hidden = !isOther;
+      input.disabled = !isOther;
+      input.required = isOther;
+      if (!isOther) input.value = '';
+    };
+
+    syncOther('sector', '[data-hardcopy-sector-other-wrap]', '[data-hardcopy-sector-other]');
+    syncOther('livelihood', '[data-hardcopy-livelihood-other-wrap]', '[data-hardcopy-livelihood-other]');
+  };
+
   const openHardcopyModal = () => {
     const root = qs('#modal-root');
     if (!root) return;
     setHTML(root, hardcopyFieldMarkup());
+    syncHardcopyConditionalFields();
   };
 
   const closeHardcopyModal = () => {
@@ -511,7 +616,30 @@
     }
 
     state.activeId = registrationId;
-    setHTML(root, buildModalMarkup(response.registration));
+    setHTML(root, buildModalMarkup(response.registration, response.matchedRecord || null, response.matchedFields || []));
+  };
+
+  const handleDuplicateReview = async (button) => {
+    const registrationId = Number(button.dataset.registrationId || 0);
+    const action = button.dataset.dupAction || '';
+    const duplicateOf = Number(button.dataset.duplicateOf || 0);
+    if (!registrationId || !action) return;
+
+    button.disabled = true;
+    const response = await apiPost('api/validation/review-duplicate', { registrationId, action, duplicateOf });
+    button.disabled = false;
+
+    if (!response.ok) {
+      renderNotice(response.message || 'Unable to process duplicate action.', 'danger');
+      return;
+    }
+
+    state.data = response.state || state.data;
+    renderSummary();
+    renderTables();
+    setActiveTab(state.activeTab);
+    renderNotice(response.message || 'Duplicate action saved.', 'info');
+    closeModal();
   };
 
   const refresh = async (noticeMessage = '', noticeTone = 'info') => {
@@ -521,7 +649,15 @@
       return;
     }
 
-    state.data = response.data || state.data;
+    const d = response.data || {};
+    state.data = {
+      summary: d.summary || state.data.summary,
+      pending: Array.isArray(d.pending) ? d.pending : [],
+      possibleDuplicates: Array.isArray(d.possibleDuplicates) ? d.possibleDuplicates : [],
+      markedDuplicates: Array.isArray(d.markedDuplicates) ? d.markedDuplicates : [],
+      selected: Array.isArray(d.selected) ? d.selected : [],
+      saved: Array.isArray(d.saved) ? d.saved : [],
+    };
     renderSummary();
     renderTables();
     setActiveTab(state.activeTab);
@@ -582,6 +718,11 @@
       if (actionButton instanceof HTMLElement) {
         handleReview(actionButton);
       }
+
+      const dupButton = targetNode.closest('[data-dup-action]');
+      if (dupButton instanceof HTMLElement) {
+        handleDuplicateReview(dupButton);
+      }
     });
 
     document.addEventListener('submit', (event) => {
@@ -589,6 +730,13 @@
       if (form instanceof HTMLFormElement && form.id === 'validationHardcopyForm') {
         event.preventDefault();
         handleHardcopySubmit(form);
+      }
+    });
+
+    document.addEventListener('change', (event) => {
+      const targetNode = event.target;
+      if (targetNode instanceof HTMLElement && targetNode.closest('#validationHardcopyForm')) {
+        syncHardcopyConditionalFields();
       }
     });
 

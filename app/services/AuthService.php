@@ -239,6 +239,10 @@ class AuthService
             ];
         }
 
+        // Compute everything that requires DB queries BEFORE forcing the reconnect.
+        $applicationService->prepareInitialApplicantProfileStorage();
+        $hasStructuredNames = $this->hasStructuredUserNameColumns();
+
         $passwordService = new PasswordService();
         $passwordHash = $passwordService->hash($password);
         $nameParts = $this->normalizeNameParts(
@@ -247,13 +251,17 @@ class AuthService
             (string) ($stageOneRegistration['last_name'] ?? '')
         );
         $fullName = trim((string) ($stageOneRegistration['full_name'] ?? ''));
+
+        // Force a fresh DB connection before starting the transaction — prevents
+        // "MySQL server has gone away" (error 2006) if the connection idled during
+        // the stage-one data validation queries above.
+        $GLOBALS['smartleap_pdo'] = null;
         $pdo = db();
         $userId = 0;
 
         try {
-            $applicationService->prepareInitialApplicantProfileStorage();
             $pdo->beginTransaction();
-            if ($this->hasStructuredUserNameColumns()) {
+            if ($hasStructuredNames) {
                 $statement = $pdo->prepare(
                     'INSERT INTO users (role_id, full_name, first_name, middle_name, last_name, email, password_hash, verification_status, is_active, is_disabled)
                      VALUES (:role_id, :full_name, :first_name, :middle_name, :last_name, :email, :password_hash, :verification_status, 1, 0)'
@@ -285,10 +293,24 @@ class AuthService
             $applicationService->createInitialApplicantProfile($userId, $stageOneApplicantInput);
             $pdo->commit();
         } catch (\Throwable $exception) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
+            // Guard rollBack() against a dead connection — if MySQL dropped the connection
+            // during the transaction, rollBack() itself would throw and escape this catch block.
+            try {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+            } catch (\Throwable $rollbackException) {
+                // Connection is already dead; the transaction was never committed — safe to ignore.
+                $GLOBALS['smartleap_pdo'] = null;
             }
             log_database_query_failure('auth.register_applicant', $exception, ['email' => $email, 'user_id' => $userId]);
+            $message = trim((string) $exception->getMessage());
+            if ($message !== '' && str_contains(strtolower($message), 'profile photo is too large to save')) {
+                return [
+                    'ok' => false,
+                    'errors' => ['general' => $message],
+                ];
+            }
             return [
                 'ok' => false,
                 'errors' => ['general' => 'We could not finish creating your account. Please try again, or sign in if this email was already saved.'],
@@ -331,7 +353,7 @@ class AuthService
             return 'social-worker';
         }
         if (str_contains($role, 'beneficiary')) {
-            return 'beneficiary-dashboard';
+            return 'applicant-dashboard';
         }
         if (str_contains($role, 'applicant')) {
             if ($this->needsProfileCompletion($userId)) {
@@ -697,6 +719,7 @@ class AuthService
 
         return $this->issueVerificationChallenge((int) $user['id'], (string) $user['email'], (string) $user['full_name'], $mode);
     }
+
 
     private function requiresAccountActivation(array $user): bool
     {

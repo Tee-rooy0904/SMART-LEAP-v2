@@ -260,10 +260,6 @@ class TrainingService
         $targetYear = $this->batchYearFromDate($input['data']['date']);
         $existingProgram = $programId !== null && $programId > 0 ? $this->findProgram($programId, $actor) : null;
         $previousYear = $existingProgram !== null ? $this->batchYearForProgram($existingProgram) : null;
-        if ($existingProgram !== null && ($existingProgram['isLocked'] ?? false)) {
-            return ['ok' => false, 'errors' => ['general' => 'This training group slot is already locked after notice sending and can no longer be edited.']];
-        }
-
         $slotValidation = $this->validateRoundGroupSlot(
             $targetYear,
             (int) ($input['data']['roundNumber'] ?? 0),
@@ -360,10 +356,8 @@ class TrainingService
         }
 
         $batchYear = $this->batchYearForProgram($program);
-        if ($this->countInvitees($programId) === 0) {
-            $this->syncProgramInviteesToEligibleRoster($programId, $batchYear, (int) ($actor['id'] ?? 0));
-            $program = $this->findProgram($programId, $actor) ?? $program;
-        }
+        $this->syncProgramInviteesToEligibleRoster($programId, $batchYear, (int) ($actor['id'] ?? 0));
+        $program = $this->findProgram($programId, $actor) ?? $program;
 
         $invitees = $this->programInvitees($programId, $actor);
         $program = $this->applyLiveInviteeCounts($program, $invitees);
@@ -536,10 +530,6 @@ class TrainingService
         if ($program === null) {
             return ['ok' => false, 'errors' => ['program' => 'Training program not found.']];
         }
-        if (($program['isLocked'] ?? false) === true) {
-            return ['ok' => false, 'errors' => ['program' => 'This training group slot is already locked after notice sending.']];
-        }
-
         $invitees = $this->programInvitees($programId, $actor);
         $ids = array_values(array_unique(array_filter(array_map('intval', $inviteeIds))));
         $selected = $ids === []
@@ -1542,44 +1532,6 @@ class TrainingService
                     'updated_by_user_id' => $actorUserId,
                     'batch_group_number' => $targetGroupNumber,
                 ]);
-            }
-
-            if ($existingMap !== []) {
-                if ($targetIds !== []) {
-                    $placeholders = implode(',', array_fill(0, count($targetIds), '?'));
-
-                    $deleteAttendance = $pdo->prepare(
-                        "DELETE attendance_records FROM attendance_records
-                         INNER JOIN training_invitees ON training_invitees.id = attendance_records.training_invitee_id
-                         WHERE training_invitees.training_program_id = ?
-                           AND training_invitees.applicant_profile_id NOT IN ($placeholders)"
-                    );
-                    $deleteAttendance->bindValue(1, $programId, PDO::PARAM_INT);
-                    foreach ($targetIds as $index => $id) {
-                        $deleteAttendance->bindValue($index + 2, $id, PDO::PARAM_INT);
-                    }
-                    $deleteAttendance->execute();
-
-                    $deleteInvitees = $pdo->prepare(
-                        "DELETE FROM training_invitees
-                         WHERE training_program_id = ?
-                           AND applicant_profile_id NOT IN ($placeholders)"
-                    );
-                    $deleteInvitees->bindValue(1, $programId, PDO::PARAM_INT);
-                    foreach ($targetIds as $index => $id) {
-                        $deleteInvitees->bindValue($index + 2, $id, PDO::PARAM_INT);
-                    }
-                    $deleteInvitees->execute();
-                } else {
-                    $pdo->prepare(
-                        'DELETE attendance_records FROM attendance_records
-                         INNER JOIN training_invitees ON training_invitees.id = attendance_records.training_invitee_id
-                         WHERE training_invitees.training_program_id = :training_program_id'
-                    )->execute(['training_program_id' => $programId]);
-
-                    $pdo->prepare('DELETE FROM training_invitees WHERE training_program_id = :training_program_id')
-                        ->execute(['training_program_id' => $programId]);
-                }
             }
 
             $pdo->commit();

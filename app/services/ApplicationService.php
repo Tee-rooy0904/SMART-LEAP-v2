@@ -28,6 +28,7 @@ class ApplicationService
         POST_APPROVAL_TASK_MUNGKAHING_PROYEKTO => 'Mungkahing Proyekto',
         POST_APPROVAL_TASK_BUSINESS_PLAN => 'Business Plan',
         POST_APPROVAL_TASK_BUHAT_SA_PAGPANUMPA => 'Buhat sa Pagpanumpa',
+        POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE => 'Proof of Assistance Received',
     ];
 
     private ?array $initialRequirementFileColumns = null;
@@ -276,7 +277,14 @@ class ApplicationService
         $barangayId = $this->resolveBarangayId(trim((string) ($input['barangay'] ?? '')));
         $profileId = $this->upsertApplicantProfile($userId, $barangayId, $input, false);
         $this->upsertApplication($profileId, $barangayId, false, null, []);
-        $this->upsertUserProfilePhotoDataUrl($userId, trim((string) ($input['photoDataUrl'] ?? '')));
+        try {
+            $this->upsertUserProfilePhotoDataUrl($userId, trim((string) ($input['photoDataUrl'] ?? '')));
+        } catch (\RuntimeException $exception) {
+            $message = strtolower(trim((string) $exception->getMessage()));
+            if (!str_contains($message, 'profile photo is too large to save')) {
+                throw $exception;
+            }
+        }
     }
 
     public function prepareInitialApplicantProfileStorage(): void
@@ -679,7 +687,7 @@ class ApplicationService
         ];
     }
 
-    public function uploadFormRequirement(int $applicationId, string $requirementKey, array $file, array $actor): array
+    public function uploadFormRequirement(int $applicationId, string $requirementKey, array $file, array $actor, array $options = []): array
     {
         $application = $this->findApplicationRow($applicationId, $actor);
         if ($application === null) {
@@ -711,6 +719,16 @@ class ApplicationService
             return ['ok' => false, 'errors' => ['general' => 'Form requirement task not found.']];
         }
 
+        $isAssistanceProof = $requirementKey === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE;
+        $assistanceConfirmed = in_array(strtolower(trim((string) ($options['assistanceConfirmed'] ?? ''))), ['1', 'true', 'yes', 'on'], true);
+        $taskStatus = strtolower(trim((string) ($task['status'] ?? POST_APPROVAL_STATUS_UNLOCKED)));
+        if ($taskStatus === strtolower(POST_APPROVAL_STATUS_LOCKED) && !($isAssistanceProof && $assistanceConfirmed)) {
+            return ['ok' => false, 'errors' => ['general' => 'Confirm "Already received assistance" first before uploading the proof of assistance received.']];
+        }
+        if ($isAssistanceProof && !$assistanceConfirmed) {
+            return ['ok' => false, 'errors' => ['general' => 'Confirm "Already received assistance" first before uploading the proof of assistance received.']];
+        }
+
         try {
             $metadata = (new UploadService())->storePostApprovalAsset('supporting-upload', $file);
         } catch (\Throwable $exception) {
@@ -723,9 +741,17 @@ class ApplicationService
         }
 
         $payload = $this->decodeFormRequirementPayload($task['form_payload'] ?? null);
-        $payload['staffReview'] = array_replace_recursive($payload['staffReview'] ?? [], [
-            'reviewAttachment' => $metadata,
-        ]);
+        if ($isAssistanceProof) {
+            $existingReleaseDate = trim((string) ($payload['fundReleaseEvidence']['releaseDate'] ?? ''));
+            $payload['fundReleaseEvidence'] = array_replace_recursive($payload['fundReleaseEvidence'] ?? [], [
+                'releaseDate' => $existingReleaseDate !== '' ? $existingReleaseDate : date('Y-m-d'),
+                'releaseAttachment' => $metadata,
+            ]);
+        } else {
+            $payload['staffReview'] = array_replace_recursive($payload['staffReview'] ?? [], [
+                'reviewAttachment' => $metadata,
+            ]);
+        }
 
         try {
             db()->prepare(
@@ -2146,7 +2172,48 @@ class ApplicationService
         $statement->execute(['user_id' => $userId]);
         $value = $statement->fetchColumn();
 
-        return is_string($value) && trim($value) !== '' ? $value : null;
+        if (is_string($value) && trim($value) !== '') {
+            return $this->normalizeStoredProfilePhotoValue($value);
+        }
+
+        $fallback = $this->fetchStageOneProfilePhotoReference($userId);
+        return $fallback !== '' ? $fallback : null;
+    }
+
+    private function normalizeStoredProfilePhotoValue(string $value): ?string
+    {
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (str_starts_with($trimmed, 'data:') || preg_match('#^https?://#i', $trimmed)) {
+            return $trimmed;
+        }
+
+        return app_url(ltrim(str_replace('\\', '/', $trimmed), '/'));
+    }
+
+    private function fetchStageOneProfilePhotoReference(int $userId): string
+    {
+        $statement = db()->prepare(
+            'SELECT stage_one_registrations.profile_photo_path, stage_one_registrations.business_photo_path
+             FROM users
+             INNER JOIN stage_one_registrations
+                ON LOWER(stage_one_registrations.email) COLLATE utf8mb4_unicode_ci
+                 = LOWER(users.email) COLLATE utf8mb4_unicode_ci
+             WHERE users.id = :user_id
+             ORDER BY stage_one_registrations.id DESC
+             LIMIT 1'
+        );
+        $statement->execute(['user_id' => $userId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($row)) {
+            return '';
+        }
+
+        $path = trim((string) (($row['profile_photo_path'] ?? '') ?: ($row['business_photo_path'] ?? '')));
+        return $path !== '' ? app_url(ltrim(str_replace('\\', '/', $path), '/')) : '';
     }
 
     private function fetchRequirementFiles(int $applicationId): array
@@ -2672,9 +2739,10 @@ class ApplicationService
                 'key' => $code,
                 'label' => $isFundReleaseEvidence ? 'Proof of Assistance Received' : (string) $row['label'],
                 'type' => $isFundReleaseEvidence ? 'final_assistance_proof' : 'form',
-                'typeLabel' => $isFundReleaseEvidence ? 'Final Assistance Proof' : 'Fill-up Form Requirement',
+                'typeLabel' => $isFundReleaseEvidence ? 'Final Assistance Requirement' : 'Fill-up Form Requirement',
                 'isRequired' => true,
                 'gatesApproval' => true,
+                'requiresAssistanceConfirmation' => $isFundReleaseEvidence,
                 'status' => $status,
                 'reviewerRemarks' => $row['reviewer_remarks'] ?? null,
                 'submittedAt' => $row['applicant_submitted_at'] ?? null,
@@ -2910,18 +2978,59 @@ class ApplicationService
         $missingForms = [];
         $pendingForms = [];
         $rejectedForms = [];
+        $missingProofs = [];
+        $pendingProofs = [];
+        $rejectedProofs = [];
+        $lockedProofs = [];
         $approvedForms = 0;
         $gatedFormTotal = 0;
+        $assistanceProof = [
+            'approved' => 0,
+            'total' => 0,
+            'status' => POST_APPROVAL_STATUS_LOCKED,
+            'locked' => true,
+            'hasSubmission' => false,
+            'label' => 'Proof of Assistance Received',
+        ];
         foreach ($formRequirements as $requirement) {
             if (!($requirement['gatesApproval'] ?? true)) {
                 continue;
             }
-            $gatedFormTotal++;
             $status = strtolower((string) ($requirement['status'] ?? POST_APPROVAL_STATUS_UNLOCKED));
             $label = (string) ($requirement['label'] ?? 'Form requirement');
             $hasSubmission = !empty($requirement['submittedAt'])
                 || !empty($requirement['file']['path'])
                 || in_array($status, ['submitted', 'verified', 'approved', 'needs correction', 'needs_correction', 'rejected'], true);
+            if ((string) ($requirement['key'] ?? '') === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+                $assistanceProof = [
+                    'approved' => 0,
+                    'total' => 1,
+                    'status' => (string) ($requirement['status'] ?? POST_APPROVAL_STATUS_LOCKED),
+                    'locked' => $status === strtolower(POST_APPROVAL_STATUS_LOCKED),
+                    'hasSubmission' => $hasSubmission,
+                    'label' => $label,
+                ];
+                if (in_array($status, ['rejected', 'needs correction', 'needs_correction', 'flagged'], true)) {
+                    $rejectedProofs[] = $label;
+                    continue;
+                }
+                if (in_array($status, ['verified', 'approved'], true)) {
+                    $assistanceProof['approved'] = 1;
+                    continue;
+                }
+                if ($status === strtolower(POST_APPROVAL_STATUS_LOCKED)) {
+                    $lockedProofs[] = $label;
+                    continue;
+                }
+                if ($hasSubmission) {
+                    $pendingProofs[] = $label;
+                    continue;
+                }
+                $missingProofs[] = $label;
+                continue;
+            }
+
+            $gatedFormTotal++;
             if (in_array($status, ['rejected', 'needs correction', 'needs_correction', 'flagged'], true)) {
                 $rejectedForms[] = $label;
                 continue;
@@ -2956,14 +3065,26 @@ class ApplicationService
         foreach ($rejectedForms as $label) {
             $blockers[] = 'Rejected: ' . $label;
         }
+        foreach ($lockedProofs as $label) {
+            $blockers[] = 'Locked until "Already received assistance" is checked: ' . $label;
+        }
+        foreach ($missingProofs as $label) {
+            $blockers[] = 'Missing: ' . $label;
+        }
+        foreach ($pendingProofs as $label) {
+            $blockers[] = 'Pending review: ' . $label;
+        }
+        foreach ($rejectedProofs as $label) {
+            $blockers[] = 'Rejected: ' . $label;
+        }
         if (!($trainingReadiness['completed'] ?? false)) {
             $blockers[] = 'Training seminars incomplete: ' . ($trainingReadiness['displayStatus'] ?? '0 out of 3 attended');
         }
 
         $overallStatus = 'Under Review';
-        if ($missingUploads !== [] || $missingForms !== []) {
+        if ($missingUploads !== [] || $missingForms !== [] || $missingProofs !== [] || $lockedProofs !== []) {
             $overallStatus = 'Needs Documents';
-        } elseif ($rejectedUploads !== [] || $rejectedForms !== []) {
+        } elseif ($rejectedUploads !== [] || $rejectedForms !== [] || $rejectedProofs !== []) {
             $overallStatus = 'Needs Correction';
         } elseif ($blockers === []) {
             $overallStatus = 'Approved';
@@ -2978,6 +3099,7 @@ class ApplicationService
                 'approved' => $approvedForms,
                 'total' => $gatedFormTotal,
             ],
+            'assistanceProof' => $assistanceProof,
             'trainingStatus' => $trainingReadiness,
             'blockers' => $blockers,
             'canApprove' => $blockers === [],
@@ -3301,8 +3423,78 @@ class ApplicationService
         return null;
     }
 
+    private function optimizeProfilePhotoDataUrl(string $photo, int $maxBinaryBytes = 524288, int $maxDimension = 1280): string
+    {
+        if (!preg_match('#^data:(image/(?:jpeg|png));base64,([A-Za-z0-9+/=]+)$#', $photo, $matches)) {
+            throw new \RuntimeException('Profile photo data is invalid.');
+        }
+
+        $binary = base64_decode($matches[2], true);
+        if ($binary === false) {
+            throw new \RuntimeException('Profile photo data is invalid.');
+        }
+
+        if (strlen($binary) <= $maxBinaryBytes) {
+            return $photo;
+        }
+
+        if (!function_exists('imagecreatefromstring') || !function_exists('imagecreatetruecolor')) {
+            throw new \RuntimeException('Profile photo is too large to save. Please use a smaller JPG or PNG image.');
+        }
+
+        $source = @imagecreatefromstring($binary);
+        if (!$source) {
+            throw new \RuntimeException('Profile photo is too large to save. Please use a smaller JPG or PNG image.');
+        }
+
+        $sourceWidth = imagesx($source);
+        $sourceHeight = imagesy($source);
+        if ($sourceWidth < 1 || $sourceHeight < 1) {
+            imagedestroy($source);
+            throw new \RuntimeException('Profile photo data is invalid.');
+        }
+
+        $scale = min(1, $maxDimension / max($sourceWidth, $sourceHeight));
+        $targetWidth = max(1, (int) round($sourceWidth * $scale));
+        $targetHeight = max(1, (int) round($sourceHeight * $scale));
+
+        $canvas = imagecreatetruecolor($targetWidth, $targetHeight);
+        if (!$canvas) {
+            imagedestroy($source);
+            throw new \RuntimeException('Profile photo is too large to save. Please use a smaller JPG or PNG image.');
+        }
+
+        $background = imagecolorallocate($canvas, 255, 255, 255);
+        imagefill($canvas, 0, 0, $background);
+        imagecopyresampled($canvas, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
+
+        $optimizedBinary = '';
+        foreach ([82, 72, 62, 52, 42] as $quality) {
+            ob_start();
+            imagejpeg($canvas, null, $quality);
+            $candidate = (string) ob_get_clean();
+            if ($candidate === '') {
+                continue;
+            }
+            $optimizedBinary = $candidate;
+            if (strlen($candidate) <= $maxBinaryBytes) {
+                break;
+            }
+        }
+
+        imagedestroy($canvas);
+        imagedestroy($source);
+
+        if ($optimizedBinary === '' || strlen($optimizedBinary) > $maxBinaryBytes) {
+            throw new \RuntimeException('Profile photo is too large to save. Please use a smaller JPG or PNG image.');
+        }
+
+        return 'data:image/jpeg;base64,' . base64_encode($optimizedBinary);
+    }
+
     private function upsertUserProfilePhotoDataUrl(int $userId, string $photo): void
     {
+        $photo = $this->optimizeProfilePhotoDataUrl($photo);
         if (!preg_match('#^data:(image/(?:jpeg|png));base64,([A-Za-z0-9+/=]+)$#', $photo, $matches)) {
             throw new \RuntimeException('Profile photo data is invalid.');
         }

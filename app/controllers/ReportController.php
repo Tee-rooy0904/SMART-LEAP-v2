@@ -130,7 +130,65 @@ class ReportController extends Controller
             ]);
         }
 
+        $summary = is_array($report['summary'] ?? null) ? $report['summary'] : [];
+        $this->writeCsvDistributionSection($stream, 'Donut Chart Data - Gender Segregation', $summary['genderDistribution'] ?? []);
+        $this->writeCsvDistributionSection($stream, 'Donut Chart Data - Service Type Distribution', $summary['serviceTypeDistribution'] ?? []);
+        $this->writeCsvDistributionSection($stream, 'Donut Chart Data - Sector Distribution', $summary['sectorDistribution'] ?? []);
+
         $trainingRows = $report['trainingAnalytics']['rows'] ?? [];
+        fputcsv($stream, []);
+        fputcsv($stream, ['Payment Participants']);
+        fputcsv($stream, [
+            'Beneficiary',
+            'Business',
+            'Barangay',
+            'Assigned PDO',
+            'Coverage Month',
+            'Payment Date',
+            'Expected Amount (PHP)',
+            'Amount Paid (PHP)',
+            'Status',
+        ]);
+        $obligations   = is_array($report['repaymentAnalytics']['obligations'] ?? null) ? $report['repaymentAnalytics']['obligations'] : [];
+        $csvPeriod     = (string) ($report['filters']['period'] ?? 'monthly');
+        $usePayDate    = in_array($csvPeriod, ['daily', 'weekly', 'custom'], true);
+        $paymentCsvRows = [];
+        foreach ($obligations as $ob) {
+            $hasActivity = in_array((string) ($ob['status'] ?? ''), ['paid_on_time', 'partial_delayed', 'pending_verification'], true);
+            if ($usePayDate) {
+                foreach ((array) ($ob['verifiedPayments'] ?? []) as $payment) {
+                    $paymentCsvRows[] = [
+                        (string) ($ob['beneficiaryName'] ?? ''),
+                        (string) ($ob['businessName'] ?? ''),
+                        (string) ($ob['barangay'] ?? ''),
+                        (string) ($ob['assignedPdo'] ?? ''),
+                        (string) ($ob['dueMonth'] ?? ''),
+                        $this->csvExcelText($payment['paymentDate'] ?? ''),
+                        (float)  ($ob['expectedAmount'] ?? 0),
+                        (float)  ($payment['amount'] ?? 0),
+                        (string) ($ob['statusLabel'] ?? $ob['status'] ?? ''),
+                    ];
+                }
+            } elseif ($hasActivity) {
+                $paymentCsvRows[] = [
+                    (string) ($ob['beneficiaryName'] ?? ''),
+                    (string) ($ob['businessName'] ?? ''),
+                    (string) ($ob['barangay'] ?? ''),
+                    (string) ($ob['assignedPdo'] ?? ''),
+                    (string) ($ob['dueMonth'] ?? ''),
+                    $this->csvExcelText($ob['paymentDate'] ?? ''),
+                    (float)  ($ob['expectedAmount'] ?? 0),
+                    (float)  ($ob['amountRepresented'] ?? 0),
+                    (string) ($ob['statusLabel'] ?? $ob['status'] ?? ''),
+                ];
+            }
+        }
+        usort($paymentCsvRows, static fn (array $a, array $b): int => strcmp((string) ($a[4] ?? ''), (string) ($b[4] ?? '')) ?: strcmp((string) ($a[0] ?? ''), (string) ($b[0] ?? '')));
+        foreach ($paymentCsvRows as $row) {
+            $row[4] = $this->formatCoverageMonth($row[4] ?? '');
+            fputcsv($stream, $row);
+        }
+
         fputcsv($stream, []);
         fputcsv($stream, ['Training Attendance']);
         fputcsv($stream, [
@@ -172,6 +230,45 @@ class ReportController extends Controller
     {
         $text = trim((string) $value);
         return $text === '' ? '' : "\t" . $text;
+    }
+
+    private function formatCoverageMonth(mixed $value): string
+    {
+        $month = trim((string) $value);
+        if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
+            return $month;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $month . '-01');
+        return $date instanceof \DateTimeImmutable ? $date->format('F Y') : $month;
+    }
+
+    private function writeCsvDistributionSection(mixed $stream, string $title, mixed $rows): void
+    {
+        $list = is_array($rows) ? $rows : [];
+        $total = array_reduce($list, static function (float $sum, mixed $row): float {
+            $data = (array) $row;
+            return $sum + (float) ($data['count'] ?? 0);
+        }, 0.0);
+
+        fputcsv($stream, []);
+        fputcsv($stream, [$title]);
+        fputcsv($stream, ['Label', 'Count', 'Percentage']);
+
+        if ($list === [] || $total <= 0) {
+            fputcsv($stream, ['No data available', 0, 0]);
+            return;
+        }
+
+        foreach ($list as $row) {
+            $data = (array) $row;
+            $count = (float) ($data['count'] ?? 0);
+            fputcsv($stream, [
+                (string) ($data['label'] ?? 'Not Set'),
+                $count,
+                round(($count / $total) * 100, 2),
+            ]);
+        }
     }
 
     private function csvPeriodMetricsByBeneficiary(array $obligations): array
@@ -341,6 +438,50 @@ class ReportController extends Controller
             . '<th>Population Stage</th><th>Name</th><th>Email</th><th>Barangay</th><th>Assigned PDO</th><th>Service Type</th><th>Gender</th><th>Age</th><th>Age Group</th><th>Program Status</th><th>Repayment Status</th><th>Verified Amount</th><th>Months Passed</th><th>Months Paid</th><th>Repayment Rate (%)</th><th>Expected To Date</th><th>Gap To Date</th>'
             . '</tr></thead><tbody>'
             . implode('', $rows)
+            . '</tbody></table>'
+            . '<h3>Payment Participants</h3>'
+            . '<table><thead><tr>'
+            . '<th>Beneficiary</th><th>Business</th><th>Barangay</th><th>Assigned PDO</th><th>Coverage Month</th><th>Payment Date</th><th>Expected (PHP)</th><th>Amount Paid (PHP)</th><th>Status</th>'
+            . '</tr></thead><tbody>'
+            . (static function () use ($report): string {
+                $obligations = is_array($report['repaymentAnalytics']['obligations'] ?? null) ? $report['repaymentAnalytics']['obligations'] : [];
+                $xlPeriod    = (string) ($report['filters']['period'] ?? 'monthly');
+                $usePayDate  = in_array($xlPeriod, ['daily', 'weekly', 'custom'], true);
+                $xlRows      = [];
+                foreach ($obligations as $ob) {
+                    $hasActivity = in_array((string) ($ob['status'] ?? ''), ['paid_on_time', 'partial_delayed', 'pending_verification'], true);
+                    if ($usePayDate) {
+                        foreach ((array) ($ob['verifiedPayments'] ?? []) as $payment) {
+                            $xlRows[] = '<tr>'
+                                . '<td>' . htmlspecialchars((string) ($ob['beneficiaryName'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars((string) ($ob['businessName'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars((string) ($ob['barangay'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars((string) ($ob['assignedPdo'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars((string) ($ob['dueMonth'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars((string) ($payment['paymentDate'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars(number_format((float) ($ob['expectedAmount'] ?? 0), 2), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars(number_format((float) ($payment['amount'] ?? 0), 2), ENT_QUOTES) . '</td>'
+                                . '<td>' . htmlspecialchars((string) ($ob['statusLabel'] ?? $ob['status'] ?? ''), ENT_QUOTES) . '</td>'
+                                . '</tr>';
+                        }
+                    } elseif ($hasActivity) {
+                        $xlRows[] = '<tr>'
+                            . '<td>' . htmlspecialchars((string) ($ob['beneficiaryName'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars((string) ($ob['businessName'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars((string) ($ob['barangay'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars((string) ($ob['assignedPdo'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars((string) ($ob['dueMonth'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars((string) ($ob['paymentDate'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars(number_format((float) ($ob['expectedAmount'] ?? 0), 2), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars(number_format((float) ($ob['amountRepresented'] ?? 0), 2), ENT_QUOTES) . '</td>'
+                            . '<td>' . htmlspecialchars((string) ($ob['statusLabel'] ?? $ob['status'] ?? ''), ENT_QUOTES) . '</td>'
+                            . '</tr>';
+                    }
+                }
+                return $xlRows !== []
+                    ? implode('', $xlRows)
+                    : '<tr><td colspan="9">No verified payments for the selected period.</td></tr>';
+            })()
             . '</tbody></table>'
             . '<h3>Training Attendance</h3>'
             . '<table><thead><tr>'

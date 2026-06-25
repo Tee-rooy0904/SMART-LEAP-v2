@@ -68,14 +68,31 @@ class StageOneRegistrationController extends Controller
     public function showRecord(): never
     {
         $registrationId = (int) ($_GET['id'] ?? 0);
-        $record = (new StageOneRegistrationService())->getRegistrationDetail($registrationId);
+        $service = new StageOneRegistrationService();
+        $record = $service->getRegistrationDetail($registrationId);
         if ($record === null) {
             response_json(['ok' => false, 'message' => 'Stage 1 registration not found.'], 404);
+        }
+
+        // Attach matched record details so the modal can render the duplicate warning
+        $matchedRecord = null;
+        if ($record['isPossibleDuplicate'] && $record['duplicateOf'] > 0) {
+            $matchedRecord = $service->getRegistrationDetail((int) $record['duplicateOf']);
+        }
+
+        // Parse matched fields from the system note
+        $matchedFields = [];
+        if (is_string($record['duplicateNote']) && str_contains($record['duplicateNote'], 'System detected possible duplicate:')) {
+            $note = str_replace('System detected possible duplicate:', '', $record['duplicateNote']);
+            $note = rtrim(trim($note), '.');
+            $matchedFields = array_values(array_filter(array_map('trim', explode(';', $note))));
         }
 
         response_json([
             'ok' => true,
             'registration' => $record,
+            'matchedRecord' => $matchedRecord,
+            'matchedFields' => $matchedFields,
         ]);
     }
 
@@ -99,6 +116,18 @@ class StageOneRegistrationController extends Controller
         }
 
         response_json($result, 201);
+    }
+
+    public function reviewDuplicate(): never
+    {
+        $registrationId = (int) ($_POST['registrationId'] ?? 0);
+        $action = trim((string) ($_POST['action'] ?? ''));
+        $result = (new StageOneRegistrationService())->reviewDuplicate($registrationId, $action, auth_user() ?? []);
+        if (!$result['ok']) {
+            response_json($result, 422);
+        }
+
+        response_json($result);
     }
 
     public function resendSelectionEmail(): never

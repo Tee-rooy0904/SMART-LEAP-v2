@@ -63,7 +63,7 @@ class PortalService
             'reference' => null,
             'steps' => [],
             'actionLabel' => 'Open Repayment Dashboard',
-            'actionPath' => 'beneficiary-dashboard#repayments',
+            'actionPath' => 'applicant-dashboard#repayments',
             'userName' => (string) ($user['name'] ?? ($registration['name'] ?? 'Co-maker')),
             'primaryBeneficiaryName' => $primaryName,
             'primaryBusinessName' => $businessName,
@@ -151,7 +151,7 @@ class PortalService
             ]) : null,
             'steps' => $this->buildSteps(6),
             'actionLabel' => 'Open Dashboard',
-            'actionPath' => 'beneficiary-dashboard#overview',
+            'actionPath' => 'applicant-dashboard#dashboard-home',
             'userName' => (string) ($user['name'] ?? ''),
         ];
     }

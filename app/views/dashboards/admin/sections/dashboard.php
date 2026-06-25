@@ -55,5 +55,13 @@
             <div class="admin-v1-legend admin-v1-legend--repayment" id="adminRepaymentLegend"></div>
             <div class="admin-v1-panel__footer" id="adminRepaymentFooter">No repayment records yet.</div>
         </section>
+
+        <section class="admin-v1-panel admin-v1-panel--graph">
+            <div class="admin-v1-panel__title-row"><h2>Training Attendance</h2></div>
+            <div class="admin-v1-repayment-chart" id="adminTrainingAttendanceChart" data-training-attendance='<?= htmlspecialchars(json_encode($overview['trainingAttendanceSummary'] ?? ['segments'=>[],'total'=>0], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>'></div>
+            <div class="admin-v1-legend admin-v1-legend--repayment" id="adminTrainingAttendanceLegend"></div>
+            <div class="admin-v1-panel__footer" id="adminTrainingAttendanceFooter">No attendance records yet.</div>
+        </section>
     </div>
 </section>
+

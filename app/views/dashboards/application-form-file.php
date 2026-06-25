@@ -4,7 +4,7 @@
 <?php
 $role = strtolower((string) ($authUser['role'] ?? 'applicant'));
 $isBeneficiary = $role === 'beneficiary';
-$dashboardPath = $isBeneficiary ? $baseUrl . '/beneficiary-dashboard#repayments' : $baseUrl . '/applicant-dashboard#application-page';
+$dashboardPath = $isBeneficiary ? $baseUrl . '/applicant-dashboard#repayments' : $baseUrl . '/applicant-dashboard#application-page';
 $dashboardLabel = $isBeneficiary ? 'Beneficiary' : 'Applicant';
 $isStandaloneForm = in_array($taskCode, ['availment_form', 'business_plan', 'validation_form', 'buhat_sa_pagpanumpa', 'mungkahing_proyekto'], true);
 $applicantCssVersion = @filemtime(base_path('public/assets/css/dashboards/applicant.css')) ?: time();

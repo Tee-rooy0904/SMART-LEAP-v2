@@ -18,7 +18,15 @@ class PostApprovalComplianceService
     public function stateForApplicant(int $userId): array
     {
         $applicationGate = (new ApplicationService())->applicationFormsGateForUser($userId);
-        if (!($applicationGate['unlocked'] ?? false)) {
+
+        // For beneficiaries: bypass the forms gate.
+        // Their requirements were already fully verified before they became beneficiaries,
+        // and their post-approval tasks already exist in the DB. The gate must not block
+        // them from seeing their own completed/submitted forms.
+        $userRole = $this->fetchUserRole($userId);
+        $isBeneficiary = str_contains(strtolower($userRole), 'beneficiary');
+
+        if (!$isBeneficiary && !($applicationGate['unlocked'] ?? false)) {
             return $this->emptyState();
         }
 
@@ -35,7 +43,11 @@ class PostApprovalComplianceService
         );
         $seminarAccess = $this->openedSeminarAccessForApplicant((int) $context['applicant_profile_id']);
 
-        $tasks = $this->fetchTasks((int) $context['beneficiary_profile_id'], $context, $seminarAccess);
+        // For beneficiaries: fetch ALL tasks, ignoring seminar access filter.
+        // Their training is already complete; show their historical form records.
+        $tasks = $isBeneficiary
+            ? $this->fetchAllTasks((int) $context['beneficiary_profile_id'], $context, $seminarAccess)
+            : $this->fetchTasks((int) $context['beneficiary_profile_id'], $context, $seminarAccess);
 
         return [
             'isUnlocked' => $tasks !== [],
@@ -53,6 +65,10 @@ class PostApprovalComplianceService
 
     public function taskForApplicant(int $userId, string $code): ?array
     {
+        if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+            return null;
+        }
+
         $applicationGate = (new ApplicationService())->applicationFormsGateForUser($userId);
         if (!($applicationGate['unlocked'] ?? false)) {
             return null;
@@ -103,6 +119,10 @@ class PostApprovalComplianceService
 
     public function saveApplicantTask(int $userId, string $code, array $payload): array
     {
+        if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+            return ['ok' => false, 'errors' => ['task' => 'Proof of assistance is reviewed directly by PDO/Admin during application approval.']];
+        }
+
         $applicationGate = (new ApplicationService())->applicationFormsGateForUser($userId);
         if (!($applicationGate['unlocked'] ?? false)) {
             return ['ok' => false, 'errors' => ['task' => 'Your required uploads must be fully verified before seminar forms can be used.']];
@@ -175,6 +195,10 @@ class PostApprovalComplianceService
 
     public function submitApplicantTask(int $userId, string $code, array $payload): array
     {
+        if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+            return ['ok' => false, 'errors' => ['task' => 'Proof of assistance is reviewed directly by PDO/Admin during application approval.']];
+        }
+
         $applicationGate = (new ApplicationService())->applicationFormsGateForUser($userId);
         if (!($applicationGate['unlocked'] ?? false)) {
             return ['ok' => false, 'errors' => ['task' => 'Your required uploads must be fully verified before seminar forms can be used.']];
@@ -283,6 +307,10 @@ class PostApprovalComplianceService
 
     public function saveApplicantUpload(int $userId, string $code, string $fieldKey, array $file): array
     {
+        if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+            return ['ok' => false, 'errors' => ['task' => 'Proof of assistance is reviewed directly by PDO/Admin during application approval.']];
+        }
+
         $applicationGate = (new ApplicationService())->applicationFormsGateForUser($userId);
         if (!($applicationGate['unlocked'] ?? false)) {
             return ['ok' => false, 'errors' => ['task' => 'Your required uploads must be fully verified before seminar forms can be used.']];
@@ -374,6 +402,10 @@ class PostApprovalComplianceService
 
     public function clearApplicantUpload(int $userId, string $code, string $fieldKey): array
     {
+        if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
+            return ['ok' => false, 'errors' => ['task' => 'Proof of assistance is reviewed directly by PDO/Admin during application approval.']];
+        }
+
         $applicationGate = (new ApplicationService())->applicationFormsGateForUser($userId);
         if (!($applicationGate['unlocked'] ?? false)) {
             return ['ok' => false, 'errors' => ['task' => 'Your required uploads must be fully verified before seminar forms can be used.']];
@@ -778,7 +810,7 @@ class PostApprovalComplianceService
              FROM training_invitees
              INNER JOIN training_programs ON training_programs.id = training_invitees.training_program_id
              WHERE training_invitees.applicant_profile_id = :applicant_profile_id
-               AND training_invitees.invite_status IN ("Scheduled", "Notified", "Attended", "Completed")
+               AND training_invitees.invite_status IN ("Scheduled", "Notified", "Attended", "Completed", "Missed", "Excused")
              ORDER BY training_programs.starts_at ASC, training_invitees.id ASC'
         );
         $statement->execute(['applicant_profile_id' => $applicantProfileId]);
@@ -804,7 +836,7 @@ class PostApprovalComplianceService
                 $openedAt = $candidateOpenedAt;
             }
 
-            $candidateClosesAt = trim((string) ($row['starts_at'] ?? ''));
+            $candidateClosesAt = trim((string) ($row['ends_at'] ?? $row['starts_at'] ?? ''));
             if ($candidateClosesAt !== '' && ($closesAt === null || strtotime($candidateClosesAt) < strtotime($closesAt))) {
                 $closesAt = $candidateClosesAt;
             }
@@ -857,6 +889,78 @@ class PostApprovalComplianceService
         return $byCode;
     }
 
+    /**
+     * Fetch all post-approval tasks for a beneficiary profile, bypassing the seminar access filter.
+     * Used for beneficiaries who have already completed training and need to see their historical records.
+     */
+    private function fetchAllTasks(int $beneficiaryProfileId, array $context, array $seminarAccess): array
+    {
+        $statement = db()->prepare(
+            'SELECT
+                post_approval_tasks.id,
+                post_approval_tasks.status,
+                post_approval_tasks.due_date,
+                post_approval_tasks.form_payload,
+                post_approval_tasks.applicant_started_at,
+                post_approval_tasks.applicant_submitted_at,
+                post_approval_tasks.reviewed_at,
+                post_approval_tasks.reviewer_remarks,
+                post_approval_task_types.code,
+                post_approval_task_types.label
+             FROM post_approval_tasks
+             INNER JOIN post_approval_task_types ON post_approval_task_types.id = post_approval_tasks.task_type_id
+             WHERE post_approval_tasks.beneficiary_profile_id = :beneficiary_profile_id
+               AND post_approval_task_types.code <> "seminar_attendance"
+            ORDER BY FIELD(
+                  post_approval_task_types.code,
+                  "availment_form",
+                  "validation_form",
+                  "mungkahing_proyekto",
+                  "business_plan",
+                  "buhat_sa_pagpanumpa",
+                  "fund_release_evidence"
+              ), post_approval_tasks.id ASC'
+        );
+        $statement->execute(['beneficiary_profile_id' => $beneficiaryProfileId]);
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        // No $allowedMap filter — beneficiaries see all tasks regardless of seminar access codes
+        $scheduleByCode = $this->scheduleByCode($seminarAccess);
+
+        return array_map(function (array $row) use ($context, $scheduleByCode): array {
+            $task = $this->mapTask($row, $context);
+            $task['schedule'] = $scheduleByCode[(string) ($row['code'] ?? '')] ?? [
+                'openedAt' => null,
+                'closesAt' => $task['dueDate'] ?? null,
+                'programTitle' => '',
+                'trainingStartsAt' => null,
+                'trainingEndsAt' => null,
+            ];
+            if (empty($task['dueDate']) && !empty($task['schedule']['closesAt'])) {
+                $task['dueDate'] = $task['schedule']['closesAt'];
+            }
+            return $task;
+        }, $rows);
+    }
+
+    /**
+     * Fetch the role name for a given user ID.
+     */
+    private function fetchUserRole(int $userId): string
+    {
+        try {
+            $statement = db()->prepare(
+                'SELECT roles.name FROM users
+                 INNER JOIN roles ON roles.id = users.role_id
+                 WHERE users.id = :user_id LIMIT 1'
+            );
+            $statement->execute(['user_id' => $userId]);
+            return strtolower(trim((string) ($statement->fetchColumn() ?: '')));
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
     private function fetchTasks(int $beneficiaryProfileId, array $context, array $seminarAccess): array
     {
         $statement = db()->prepare(
@@ -890,8 +994,7 @@ class PostApprovalComplianceService
         $allowedMap = array_fill_keys($seminarAccess['codes'] ?? [], true);
         $rows = array_values(array_filter(
             $rows,
-            static fn (array $row): bool => (string) ($row['code'] ?? '') === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE
-                || isset($allowedMap[(string) ($row['code'] ?? '')])
+            static fn (array $row): bool => isset($allowedMap[(string) ($row['code'] ?? '')])
         ));
 
         $scheduleByCode = $this->scheduleByCode($seminarAccess);
@@ -915,7 +1018,7 @@ class PostApprovalComplianceService
     private function canApplicantAccessTaskCode(string $code, array $seminarAccess): bool
     {
         if ($code === POST_APPROVAL_TASK_FUND_RELEASE_EVIDENCE) {
-            return true;
+            return false;
         }
 
         return in_array($code, $seminarAccess['codes'] ?? [], true);

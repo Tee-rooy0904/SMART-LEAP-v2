@@ -23,6 +23,9 @@ class DashboardMetricsService
         $beneficiaryRoster = $this->beneficiaryRoster();
         $coMakerRegistrations = (new CoMakerRegistrationService())->listForActor(['role' => ROLE_ADMIN]);
 
+        $applicantSummary = $this->applicantSummary();
+        $trainingAttendanceSummary = $this->trainingAttendanceSummary();
+
         return [
             'generatedAt' => date(DATE_ATOM),
             'applicationSummary' => $applicationSummary,
@@ -41,6 +44,16 @@ class DashboardMetricsService
             'workflowDistribution' => $this->workflowDistribution($applicationSummary, $trainingSummary, $beneficiarySummary),
             'repaymentDistribution' => $repaymentSummary['distribution'] ?? ['segments' => [], 'total' => 0],
             'recentActivity' => $this->recentActivity(),
+
+            // Added for admin dashboard population donut accuracy
+            'populationSummary' => [
+                'applicants' => (int) ($applicantSummary['total'] ?? 0),
+                'beneficiaries' => (int) ($beneficiarySummary['total'] ?? 0),
+                'total' => (int) (($applicantSummary['total'] ?? 0) + ($beneficiarySummary['total'] ?? 0)),
+            ],
+
+            // Added for admin dashboard training attendance donut/segments
+            'trainingAttendanceSummary' => $trainingAttendanceSummary,
         ];
     }
 
@@ -1347,5 +1360,90 @@ class DashboardMetricsService
     {
         $trimmed = ltrim(str_replace('\\', '/', $path), '/');
         return $trimmed !== '' ? app_url($trimmed) : '';
+    }
+
+    private function applicantSummary(): array
+    {
+        // Keep this aligned with how beneficiaries are excluded in applicationSummary().
+        // This count represents “pipeline applicants” (not yet replaced beneficiaries).
+        // If your expected “10 applicants” uses a different inclusion rule, adjust this query.
+        $summary = ['total' => 0];
+
+        try {
+            $summary['total'] = (int) (db()->query(
+                'SELECT COUNT(*)
+                 FROM applicant_profiles
+                 INNER JOIN users AS applicant_users ON applicant_users.id = applicant_profiles.user_id
+                 LEFT JOIN roles AS applicant_roles ON applicant_roles.id = applicant_users.role_id
+                 LEFT JOIN beneficiary_profiles ON beneficiary_profiles.applicant_profile_id = applicant_profiles.id
+                 WHERE LOWER(COALESCE(applicant_roles.name, "")) <> "beneficiary"
+                   AND NOT (
+                        beneficiary_profiles.id IS NOT NULL
+                        AND (
+                            beneficiary_profiles.approval_date IS NOT NULL
+                            OR LOWER(COALESCE(beneficiary_profiles.beneficiary_status, "")) = "active"
+                        )
+                   )'
+            )->fetchColumn() ?: 0);
+        } catch (\Throwable $exception) {
+            log_database_query_failure('dashboard_metrics.applicant_summary', $exception);
+        }
+
+        return $summary;
+    }
+
+    private function trainingAttendanceSummary(): array
+    {
+        // Aggregate attendance_records by attendance_status.
+        $summary = [
+            'segments' => [],
+            'total' => 0,
+        ];
+
+        try {
+            $rows = db()->query(
+                'SELECT
+                    LOWER(COALESCE(attendance_status, "pending")) AS attendance_status,
+                    COUNT(*) AS aggregate
+                 FROM attendance_records
+                 GROUP BY attendance_status'
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            $segmentsMap = [
+                'attended' => ['key' => 'attended', 'label' => 'Attended', 'count' => 0],
+                'absent' => ['key' => 'absent', 'label' => 'Absent', 'count' => 0],
+                'excused' => ['key' => 'excused', 'label' => 'Excused', 'count' => 0],
+                'pending' => ['key' => 'pending', 'label' => 'Pending', 'count' => 0],
+            ];
+
+            foreach ($rows as $row) {
+                $raw = strtolower(trim((string) ($row['attendance_status'] ?? '')));
+                $count = (int) ($row['aggregate'] ?? 0);
+
+                // normalize possible DB values
+                $key = match ($raw) {
+                    'attended', 'present', 'completed' => 'attended',
+                    'missed', 'absent' => 'absent',
+                    'excused' => 'excused',
+                    default => 'pending',
+                };
+
+                if (!isset($segmentsMap[$key])) {
+                    $segmentsMap['pending']['count'] += $count;
+                    continue;
+                }
+                $segmentsMap[$key]['count'] += $count;
+            }
+
+            $segments = array_values($segmentsMap);
+            $total = array_sum(array_column($segments, 'count'));
+
+            $summary['segments'] = $segments;
+            $summary['total'] = (int) $total;
+        } catch (\Throwable $exception) {
+            log_database_query_failure('dashboard_metrics.training_attendance_summary', $exception);
+        }
+
+        return $summary;
     }
 }

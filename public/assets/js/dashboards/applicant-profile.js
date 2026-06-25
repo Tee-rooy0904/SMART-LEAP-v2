@@ -957,12 +957,12 @@
         ];
 
         if (!isDashboardEmbedded() && role === 'beneficiary') {
-            window.location.href = routeUrl('beneficiary-dashboard');
+            window.location.href = routeUrl('applicant-dashboard');
             return;
         }
 
         if (!isDashboardEmbedded() && (status === 'approved' || status === 'active' || status === 'released')) {
-            window.location.href = routeUrl(role === 'beneficiary' ? 'beneficiary-dashboard' : 'applicant-dashboard');
+            window.location.href = routeUrl('applicant-dashboard');
             return;
         }
 

@@ -134,14 +134,15 @@
     const selectedGroupNumber = Number(state.filters.group || 0);
     const selectedSessionNumber = Number(state.filters.session || 0);
     const selectedInvitees = selectedProgram ? inviteesForProgram(selectedProgram) : [];
-    // notifyEnabled uses participantCount from the API summary so it works even before
-    // hydrateProgramDetails completes. Falls back to the hydrated invitees array length.
+    // notifyEnabled: button is active whenever a valid session+group is selected and not currently sending.
+    // isLocked (notices already sent) no longer disables the button — admins can resend notices.
+    // The server enforces any hard locks. participantCount > 0 is still required.
     const programParticipantCount = Number(selectedProgram?.participantCount ?? selectedInvitees.length);
-    const notifyEnabled = Boolean(selectedProgram?.id && selectedGroupNumber > 0 && selectedSessionNumber > 0 && !selectedProgram.isLocked && programParticipantCount > 0);
+    const notifyEnabled = Boolean(selectedProgram?.id && selectedGroupNumber > 0 && selectedSessionNumber > 0 && programParticipantCount > 0 && !state.loading.notices);
     const notifyLabel = selectedGroupNumber > 0 ? `Notify Group ${selectedGroupNumber}` : 'Notify Group';
     const notifyTitle = !selectedProgram
-      ? 'Select a scheduled session and group first.'
-      : (notifyEnabled ? 'Send the training notice to the participants in this session and group.' : 'Assign at least one participant before sending notices.');
+      ? 'Select a session and group first.'
+      : (programParticipantCount === 0 ? 'Assign at least one participant before sending notices.' : 'Send the training notice to the participants in this session and group.');
 
     setHTML(root, `
       <section class="admin-section-tools admin-training-tools training-session-toolbar">
@@ -164,7 +165,7 @@
       <section class="po-training-workspace training-session-filter-panel">
         <header class="po-training-workspace__header">
           <div><span class="po-panel-label">Filters</span><h4>Training Session Table</h4></div>
-          <button type="button" class="action-button po-case-action" data-training-notify-group ${notifyEnabled && !state.loading.notices ? '' : 'disabled'} title="${escapeHtml(notifyTitle)}">${state.loading.notices ? 'Sending...' : escapeHtml(notifyLabel)}</button>
+          <button type="button" class="action-button po-case-action" data-training-notify-group ${notifyEnabled ? '' : 'disabled'} title="${escapeHtml(notifyTitle)}">${state.loading.notices ? 'Sending...' : escapeHtml(notifyLabel)}</button>
         </header>
         <div class="training-session-filters">
           ${selectField('Session', 'session', filterSessionOptions(), state.filters.session, '', false, true, false)}
@@ -280,8 +281,6 @@
 
     const program = state.modalProgram;
     const isEdit = Number(program.id || 0) > 0;
-    const locked = Boolean(program.isLocked);
-
     setHTML(root, `
       <div class="training-session-modal is-open" role="dialog" aria-modal="true" aria-labelledby="trainingSessionModalTitle">
         <div class="training-session-modal__backdrop" data-training-close-modal></div>
@@ -297,27 +296,27 @@
           <input type="hidden" name="programId" value="${escapeHtml(String(program.id || ''))}">
           <div class="training-session-modal__body">
             <div class="training-session-modal__grid">
-              ${selectField('Session Number', 'roundNumber', sessionOptions(), String(program.roundNumber || ''), 'Choose session', locked, false)}
-              ${selectField('Group Number', 'targetGroupNumber', groupOptions(), String(program.targetGroupNumber || ''), 'Choose group', locked, false)}
-              ${field('Activity Name', 'programName', program.programName || '', 'text', locked)}
-              ${field('Location', 'venue', program.venue || '', 'text', locked)}
-              ${field('Date', 'date', normalizeDate(program.date || program.startsAt), 'date', locked)}
-              ${field('Start Time', 'startTime', normalizeTime(program.startTime || program.startsAt), 'time', locked)}
-              ${field('End Time', 'endTime', normalizeTime(program.endTime || program.endsAt), 'time', locked)}
-              ${field('Speaker / Facilitator', 'speaker', program.speaker || '', 'text', locked)}
+              ${selectField('Session Number', 'roundNumber', sessionOptions(), String(program.roundNumber || ''), 'Choose session', false, false)}
+              ${selectField('Group Number', 'targetGroupNumber', groupOptions(), String(program.targetGroupNumber || ''), 'Choose group', false, false)}
+              ${field('Activity Name', 'programName', program.programName || '', 'text', false)}
+              ${field('Location', 'venue', program.venue || '', 'text', false)}
+              ${field('Date', 'date', normalizeDate(program.date || program.startsAt), 'date', false)}
+              ${field('Start Time', 'startTime', normalizeTime(program.startTime || program.startsAt), 'time', false)}
+              ${field('End Time', 'endTime', normalizeTime(program.endTime || program.endsAt), 'time', false)}
+              ${field('Speaker / Facilitator', 'speaker', program.speaker || '', 'text', false)}
             </div>
-            ${textareaField('What to Bring', 'whatToBring', program.whatToBring || '', 3, locked)}
-            ${textareaField('Instructions / Reminders', 'instructions', program.instructions || '', 3, locked)}
+            ${textareaField('What to Bring', 'whatToBring', program.whatToBring || '', 3, false)}
+            ${textareaField('Instructions / Reminders', 'instructions', program.instructions || '', 3, false)}
             <section class="training-session-form-picker">
               <span class="po-panel-label">Forms Assigned</span>
               <div class="training-session-chip-list">
-                ${formPickerChips(program, locked)}
+                ${formPickerChips(program, false)}
               </div>
             </section>
           </div>
           <footer class="training-session-modal__footer">
             <button type="button" class="app-btn-outline" data-training-close-modal>Cancel</button>
-            <button type="submit" class="app-btn-primary" ${locked || state.loading.save ? 'disabled' : ''}>${state.loading.save ? 'Saving...' : 'Save Session Schedule'}</button>
+            <button type="submit" class="app-btn-primary" ${state.loading.save ? 'disabled' : ''}>${state.loading.save ? 'Saving...' : 'Save Session Schedule'}</button>
           </footer>
         </form>
       </div>
