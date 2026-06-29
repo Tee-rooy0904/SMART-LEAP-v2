@@ -15,6 +15,7 @@ $reportsModuleJsVersion = @filemtime(base_path('public/assets/js/modules/reports
 $projectOfficerJsVersion = @filemtime(base_path('public/assets/js/dashboards/project-officer.js')) ?: time();
 $repaymentWorkspaceJsVersion = @filemtime(base_path('public/assets/js/dashboards/repayment-review-workspace.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 $overview = is_array($overview ?? null) ? $overview : [];
 $repaymentData = is_array($repaymentData ?? null) ? $repaymentData : ['payments' => []];
 $initialRepaymentBeneficiaries = array_values(array_filter($overview['beneficiaryRoster'] ?? [], static fn ($row): bool => is_array($row)));
@@ -171,6 +172,8 @@ $initialReportBars = [
 
   <!-- Browser tab title for the Project Development Officer workspace. -->
   <title>SMART LEAP - Project Officer</title>
+  <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+  <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
 
   <!-- Shared dashboard, reporting, beneficiary, repayment, and PDO-specific styles used in this workspace. -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -281,7 +284,7 @@ $initialReportBars = [
                   <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm2 0h6V8a3 3 0 0 0-6 0v2Z"/></svg>
                   <span>Change Password</span>
                 </button>
-                <button type="button" class="app-btn-outline app-btn-outline--danger admin-account-menu__action admin-account-menu__action--danger" id="po-logout">
+                <button type="button" class="app-btn-ghost admin-account-menu__action" id="po-logout">
                   <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h8v2H6v12h6v2H4V4Zm12.6 4.4L21.2 13l-4.6 4.6-1.4-1.4 2.2-2.2H10v-2h7.4l-2.2-2.2 1.4-1.4Z"/></svg>
                   <span>Logout</span>
                 </button>
@@ -586,65 +589,6 @@ $initialReportBars = [
                   </article>
                 </section>
 
-                <section class="po-repayment-modal-shell__top">
-                  <article class="po-preview-panel po-repayment-proof-panel">
-                    <div class="po-review-section__header">
-                      <div>
-                        <span class="po-panel-label">Uploaded OR / Proof</span>
-                        <h6>Proof / Receipt Preview</h6>
-                      </div>
-                    </div>
-                    <div class="po-repayment-proof-meta">
-                      <strong id="poRepaymentProofName">No proof uploaded</strong>
-                      <span id="poRepaymentProofType">--</span>
-                      <small id="poRepaymentProofDate">--</small>
-                    </div>
-                    <div class="staff-proof-preview" id="poRepaymentProofPreview">No proof preview available.</div>
-                    <div class="po-repayment-proof-actions">
-                      <button type="button" class="app-btn-outline" id="poRepaymentOpenProof">Open file</button>
-                      <button type="button" class="app-btn-outline" id="poRepaymentDownloadProof">Download file</button>
-                      <button type="button" class="app-btn-outline" id="poRepaymentFullscreenProof">Fullscreen</button>
-                    </div>
-                  </article>
-
-                  <div class="po-repayment-modal-shell__details">
-                    <article class="po-requirement-nav po-repayment-beneficiary-panel">
-                      <div class="po-review-section__header">
-                        <div>
-                          <span class="po-panel-label">Beneficiary Summary</span>
-                          <h6 id="poRepaymentBeneficiaryName">Beneficiary</h6>
-                        </div>
-                      </div>
-                      <div class="po-repayment-detail-grid">
-                        <article><span>Business</span><strong id="poRepaymentBusiness">--</strong></article>
-                        <article><span>Barangay</span><strong id="poRepaymentBarangay">--</strong></article>
-                        <article><span>Assigned PDO</span><strong id="poRepaymentAssignedPdo">--</strong></article>
-                        <article><span>Submission date</span><strong id="poRepaymentSubmittedAt">--</strong></article>
-                      </div>
-                    </article>
-
-                    <article class="po-requirement-nav po-repayment-submission-panel">
-                      <div class="po-review-section__header">
-                        <div>
-                          <span class="po-panel-label">OR Details</span>
-                          <h6>Submission Details</h6>
-                        </div>
-                      </div>
-                      <div class="po-repayment-detail-grid">
-                        <article><span>OR number</span><strong id="poRepaymentOrNumber">--</strong></article>
-                        <article><span>Payment date</span><strong id="poRepaymentPaymentDate">--</strong></article>
-                        <article><span>Submitted by</span><strong id="poRepaymentSubmittedBy">--</strong></article>
-                        <article><span>Submission type</span><strong id="poRepaymentSubmissionType">--</strong></article>
-                        <article><span>Coverage month(s)</span><strong id="poRepaymentCoverage">--</strong></article>
-                        <article><span>Amount</span><strong id="poRepaymentAmount">PHP 0.00</strong></article>
-                        <article><span>Uploaded status</span><strong id="poRepaymentUploadStatus">--</strong></article>
-                        <article><span>Hard copy submitted to office</span><strong id="poRepaymentHardCopyStatus">Not tracked</strong></article>
-                      </div>
-                      <div class="po-blocker-box is-hidden" id="poRepaymentDuplicateWarning"></div>
-                    </article>
-                  </div>
-                </section>
-
                 <section class="data-table-card po-repayment-history-panel">
                   <header class="data-table-card__header">
                     <div>
@@ -652,7 +596,7 @@ $initialReportBars = [
                       <h3>Repayment History</h3>
                     </div>
                   </header>
-                  <div class="data-table-wrapper">
+                  <div class="data-table-wrapper po-repayment-history-wrapper">
                     <table class="data-table po-repayment-history-table">
                       <colgroup>
                         <col>
@@ -672,12 +616,12 @@ $initialReportBars = [
                           <th>Expected Amount</th>
                           <th>Submitted Amount</th>
                           <th>OR Number</th>
-                          <th>Proof</th>
                           <th>Submission Status</th>
                           <th>Verification Result</th>
                           <th>Reviewer</th>
                           <th>Remarks</th>
                           <th>Date Reviewed</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody id="poRepaymentHistoryBody">
@@ -688,43 +632,117 @@ $initialReportBars = [
                     </table>
                   </div>
                 </section>
-
-                <section class="po-decision-panel po-repayment-decision-panel">
-                  <div class="po-review-section__header">
-                    <div>
-                      <span class="po-panel-label">Review Decision</span>
-                      <h6>Decision Actions</h6>
-                    </div>
-                  </div>
-                  <div class="po-repayment-decision-grid">
-                    <label class="po-filter-field" for="po-repayment-remarks">
-                      <span>Remarks</span>
-                      <textarea id="po-repayment-remarks" class="section-filter staff-review-remarks" rows="5" placeholder="Record review findings, correction notes, or rejection basis."></textarea>
-                    </label>
-                    <div class="po-repayment-decision-actions">
-                      <p class="po-repayment-decision-note" id="poRepaymentDecisionNote">Open a beneficiary repayment record to review proof and apply a decision.</p>
-                      <label class="po-filter-field po-repayment-office-status-group" for="poRepaymentHardCopyInput">
-                        <span>Hard copy office status</span>
-                        <select id="poRepaymentHardCopyInput" class="section-filter">
-                          <option value="not_submitted">Not Submitted</option>
-                          <option value="submitted_to_office">Submitted to Office</option>
-                          <option value="confirmed_by_office">Confirmed by Office</option>
-                        </select>
-                      </label>
-                      <div class="po-decision-rail__actions">
-                        <button type="button" class="app-btn-outline" id="poRepaymentVerifyPartial">Verify Partial</button>
-                        <button type="button" class="app-btn-primary" id="poRepaymentVerifyFull">Verify Fully</button>
-                        <button type="button" class="app-btn-outline" id="poRepaymentNeedsCorrection">Needs Correction</button>
-                        <button type="button" class="app-btn-danger" id="poRepaymentReject">Reject</button>
-                      </div>
-                    </div>
-                  </div>
-                </section>
               </div>
 
               <footer class="po-repayment-modal-shell__footer">
                 <button type="button" class="app-btn-outline" id="poRepaymentClose">Close</button>
               </footer>
+            </div>
+
+            <div class="po-repayment-record-modal" id="poRepaymentRecordModal" aria-hidden="true">
+              <div class="po-repayment-record-modal__backdrop" data-repayment-record-close></div>
+              <div class="po-repayment-record-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="poRepaymentBeneficiaryName">
+                <header class="po-repayment-record-modal__header">
+                  <div>
+                    <span class="po-panel-label">Repayment Review</span>
+                    <h4 id="poRepaymentBeneficiaryName">Beneficiary</h4>
+                  </div>
+                  <button type="button" class="po-repayment-modal-shell__close" id="poRepaymentRecordClose" data-repayment-record-close aria-label="Close repayment record review">&times;</button>
+                </header>
+
+                <div class="po-repayment-record-modal__body">
+                  <section class="po-repayment-modal-shell__top">
+                    <article class="po-preview-panel po-repayment-proof-panel">
+                      <div class="po-review-section__header">
+                        <div>
+                          <span class="po-panel-label">Uploaded OR / Proof</span>
+                          <h6>Proof / Receipt Preview</h6>
+                        </div>
+                      </div>
+                      <div class="po-repayment-proof-meta">
+                        <strong id="poRepaymentProofName">No proof uploaded</strong>
+                        <span id="poRepaymentProofType">--</span>
+                        <small id="poRepaymentProofDate">--</small>
+                      </div>
+                      <div class="staff-proof-preview" id="poRepaymentProofPreview">No proof preview available.</div>
+                      <div class="po-repayment-proof-actions">
+                        <button type="button" class="app-btn-outline" id="poRepaymentOpenProof">Open file</button>
+                        <button type="button" class="app-btn-outline" id="poRepaymentDownloadProof">Download file</button>
+                        <button type="button" class="app-btn-outline" id="poRepaymentFullscreenProof">Fullscreen</button>
+                      </div>
+                    </article>
+
+                    <div class="po-repayment-modal-shell__details">
+                      <article class="po-requirement-nav po-repayment-beneficiary-panel">
+                        <div class="po-review-section__header">
+                          <div>
+                            <span class="po-panel-label">Beneficiary Summary</span>
+                            <h6>Account Details</h6>
+                          </div>
+                        </div>
+                        <div class="po-repayment-detail-grid">
+                          <article><span>Business</span><strong id="poRepaymentBusiness">--</strong></article>
+                          <article><span>Barangay</span><strong id="poRepaymentBarangay">--</strong></article>
+                          <article><span>Assigned PDO</span><strong id="poRepaymentAssignedPdo">--</strong></article>
+                          <article><span>Submission date</span><strong id="poRepaymentSubmittedAt">--</strong></article>
+                        </div>
+                      </article>
+
+                      <article class="po-requirement-nav po-repayment-submission-panel">
+                        <div class="po-review-section__header">
+                          <div>
+                            <span class="po-panel-label">OR Details</span>
+                            <h6>Submission Details</h6>
+                          </div>
+                        </div>
+                        <div class="po-repayment-detail-grid">
+                          <article><span>OR number</span><strong id="poRepaymentOrNumber">--</strong></article>
+                          <article><span>Payment date</span><strong id="poRepaymentPaymentDate">--</strong></article>
+                          <article><span>Submitted by</span><strong id="poRepaymentSubmittedBy">--</strong></article>
+                          <article><span>Submission type</span><strong id="poRepaymentSubmissionType">--</strong></article>
+                          <article><span>Coverage month(s)</span><strong id="poRepaymentCoverage">--</strong></article>
+                          <article><span>Amount</span><strong id="poRepaymentAmount">PHP 0.00</strong></article>
+                          <article><span>Uploaded status</span><strong id="poRepaymentUploadStatus">--</strong></article>
+                          <article><span>Hard copy submitted to office</span><strong id="poRepaymentHardCopyStatus">Not tracked</strong></article>
+                        </div>
+                        <div class="po-blocker-box is-hidden" id="poRepaymentDuplicateWarning"></div>
+                      </article>
+                    </div>
+                  </section>
+
+                  <section class="po-decision-panel po-repayment-decision-panel">
+                    <div class="po-review-section__header">
+                      <div>
+                        <span class="po-panel-label">Review Decision</span>
+                        <h6>Decision Actions</h6>
+                      </div>
+                    </div>
+                    <div class="po-repayment-decision-grid">
+                      <label class="po-filter-field" for="po-repayment-remarks">
+                        <span>Remarks</span>
+                        <textarea id="po-repayment-remarks" class="section-filter staff-review-remarks" rows="5" placeholder="Record review findings, correction notes, or rejection basis."></textarea>
+                      </label>
+                      <div class="po-repayment-decision-actions">
+                        <p class="po-repayment-decision-note" id="poRepaymentDecisionNote">Open a beneficiary repayment record to review proof and apply a decision.</p>
+                        <label class="po-filter-field po-repayment-office-status-group" for="poRepaymentHardCopyInput">
+                          <span>Hard copy office status</span>
+                          <select id="poRepaymentHardCopyInput" class="section-filter">
+                            <option value="not_submitted">Not Submitted</option>
+                            <option value="submitted_to_office">Submitted to Office</option>
+                            <option value="confirmed_by_office">Confirmed by Office</option>
+                          </select>
+                        </label>
+                        <div class="po-decision-rail__actions">
+                          <button type="button" class="app-btn-outline" id="poRepaymentVerifyPartial">Verify Partial</button>
+                          <button type="button" class="app-btn-primary" id="poRepaymentVerifyFull">Verify Fully</button>
+                          <button type="button" class="app-btn-outline" id="poRepaymentNeedsCorrection">Needs Correction</button>
+                          <button type="button" class="app-btn-danger" id="poRepaymentReject">Reject</button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
             </div>
           </div>
         </section>

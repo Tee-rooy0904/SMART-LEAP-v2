@@ -414,12 +414,213 @@
     document.addEventListener('keydown', handleEscape);
   }
 
+  function openAdminPasswordModal() {
+    const modalRoot = document.getElementById('modal-root');
+    if (!modalRoot) return;
+
+    const closeModal = () => {
+      document.removeEventListener('keydown', handleEscape);
+      modalRoot.innerHTML = '';
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') closeModal();
+    };
+
+    const renderModal = (error = '', saving = false) => {
+      modalRoot.innerHTML = `
+        <div class="modal-overlay" data-admin-password-overlay>
+          <div class="modal-card admin-profile-modal" role="dialog" aria-modal="true" aria-labelledby="adminPasswordTitle">
+            <div class="modal-header">
+              <div class="po-modal-title-block">
+                <h2 class="modal-title" id="adminPasswordTitle">Change Password</h2>
+              </div>
+              <button type="button" class="modal-close" data-admin-password-close aria-label="Close password modal">&times;</button>
+            </div>
+            <form id="adminPasswordForm" class="modal-body admin-profile-modal__form">
+              <section class="admin-record-sheet admin-record-sheet--account">
+                <section class="admin-record-sheet__section admin-record-sheet__section--amber">
+                  <div class="admin-record-sheet__section-head"><span>Administrator</span></div>
+                  <div class="admin-record-sheet__grid">
+                    <label class="admin-record-sheet__field admin-record-sheet__field--wide">
+                      <span class="admin-profile-modal__label">Current Password</span>
+                      <div class="password-input-wrap">
+                        <input class="admin-profile-modal__input" type="password" name="currentPassword" required autofocus>
+                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                          <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                        </button>
+                      </div>
+                    </label>
+                    <label class="admin-record-sheet__field admin-record-sheet__field--wide">
+                      <span class="admin-profile-modal__label">New Password</span>
+                      <div class="password-input-wrap">
+                        <input class="admin-profile-modal__input" type="password" name="newPassword" minlength="8" required>
+                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                          <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                        </button>
+                      </div>
+                      <div class="password-strength" hidden>
+                        <div class="password-strength__bar"><div class="password-strength__fill"></div></div>
+                        <div class="password-strength__hints"></div>
+                      </div>
+                    </label>
+                    <label class="admin-record-sheet__field admin-record-sheet__field--wide">
+                      <span class="admin-profile-modal__label">Confirm New Password</span>
+                      <div class="password-input-wrap">
+                        <input class="admin-profile-modal__input" type="password" name="confirmPassword" minlength="8" required>
+                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                          <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                        </button>
+                      </div>
+                      <div class="password-match-feedback" hidden></div>
+                    </label>
+                    ${error ? `<div class="notice danger admin-profile-modal__notice">${escapeHtml(error)}</div>` : ''}
+                  </div>
+                </section>
+              </section>
+            </form>
+            <div class="modal-footer">
+              <button type="button" class="app-btn-outline" data-admin-password-close>Back</button>
+              <button type="submit" form="adminPasswordForm" class="app-btn-primary"${saving ? ' disabled' : ''}>${saving ? 'Saving...' : 'Save Password'}</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modalRoot.querySelectorAll('[data-admin-password-close]').forEach((el) => {
+        el.addEventListener('click', closeModal);
+      });
+
+      modalRoot.querySelector('[data-admin-password-overlay]')?.addEventListener('click', (event) => {
+        if (event.target.hasAttribute('data-admin-password-overlay')) closeModal();
+      });
+
+      wirePasswordToggle(modalRoot);
+      wirePasswordStrength(modalRoot, 'input[name="newPassword"]');
+      wirePasswordMatch(modalRoot, 'input[name="newPassword"]', 'input[name="confirmPassword"]');
+    };
+
+    renderModal();
+
+    modalRoot.addEventListener('submit', async (event) => {
+      const form = event.target.closest('#adminPasswordForm');
+      if (!form) return;
+      event.preventDefault();
+      const submitButton = modalRoot.querySelector('[form="adminPasswordForm"]');
+      submitButton.disabled = true;
+      try {
+        const body = new URLSearchParams();
+        body.set('currentPassword', String(form.currentPassword?.value || ''));
+        body.set('newPassword', String(form.newPassword?.value || ''));
+        body.set('confirmPassword', String(form.confirmPassword?.value || ''));
+        const response = await fetch(routeUrl('account/change-password'), {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          },
+          credentials: 'same-origin',
+          body: body.toString(),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.message || 'Unable to change password.');
+        }
+        showToast(payload.message || 'Password updated.', 'success');
+        closeModal();
+      } catch (requestError) {
+        renderModal(requestError.message || 'Unable to change password.', false);
+      }
+    });
+
+    function wirePasswordToggle(root) {
+      root.querySelectorAll('.password-toggle-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const wrap = btn.closest('.password-input-wrap');
+          const input = wrap?.querySelector('input');
+          if (!input) return;
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          btn.classList.toggle('is-visible', isPassword);
+        });
+      });
+    }
+
+    function wirePasswordStrength(root, inputSelector) {
+      const input = root.querySelector(inputSelector);
+      if (!input) return;
+      const strengthEl = root.querySelector('.password-strength');
+      const fillEl = root.querySelector('.password-strength__fill');
+      const hintsEl = root.querySelector('.password-strength__hints');
+      if (!strengthEl || !fillEl) return;
+
+      input.addEventListener('input', () => {
+        const val = input.value;
+        if (!val) { strengthEl.hidden = true; return; }
+        strengthEl.hidden = false;
+
+        let score = 0;
+        const hints = [];
+        if (val.length >= 8) { score += 25; } else { hints.push('At least 8 characters'); }
+        if (/[a-z]/.test(val) && /[A-Z]/.test(val)) { score += 25; } else { hints.push('Uppercase & lowercase'); }
+        if (/\d/.test(val)) { score += 25; } else { hints.push('At least one number'); }
+        if (/[^a-zA-Z0-9]/.test(val)) { score += 25; } else { hints.push('At least one symbol'); }
+
+        let level = 'weak';
+        if (score >= 100) level = 'strong';
+        else if (score >= 75) level = 'medium';
+        else if (score >= 50) level = 'fair';
+
+        fillEl.className = 'password-strength__fill';
+        fillEl.classList.add(`strength--${level}`);
+
+        if (hintsEl) {
+          hintsEl.innerHTML = hints.map((h) => `<span class="strength-hint">${h}</span>`).join('');
+        }
+      });
+    }
+
+    function wirePasswordMatch(root, pwSelector, confirmSelector) {
+      const pw = root.querySelector(pwSelector);
+      const confirm = root.querySelector(confirmSelector);
+      if (!pw || !confirm) return;
+      const feedbackEl = root.querySelector('.password-match-feedback');
+      if (!feedbackEl) return;
+
+      const check = () => {
+        if (!confirm.value) { feedbackEl.hidden = true; return; }
+        feedbackEl.hidden = false;
+        if (pw.value === confirm.value) {
+          feedbackEl.textContent = 'Passwords match';
+          feedbackEl.className = 'password-match-feedback match--ok';
+        } else {
+          feedbackEl.textContent = 'Passwords do not match';
+          feedbackEl.className = 'password-match-feedback match--error';
+        }
+      };
+
+      pw.addEventListener('input', check);
+      confirm.addEventListener('input', check);
+    }
+
+    document.addEventListener('keydown', handleEscape);
+  }
+
   function initProfileModal() {
     const button = document.getElementById('adminAccountProfile');
     if (!button) return;
     button.addEventListener('click', () => {
       window.App.adminShell?.closeAccountMenu?.();
       openAdminProfileModal();
+    });
+  }
+
+  function initPasswordModal() {
+    const button = document.getElementById('adminAccountPassword');
+    if (!button) return;
+    button.addEventListener('click', () => {
+      window.App.adminShell?.closeAccountMenu?.();
+      openAdminPasswordModal();
     });
   }
 
@@ -904,6 +1105,7 @@
     initSidebar();
     initAccountMenu();
     initProfileModal();
+    initPasswordModal();
     initLogout();
     initLiveRefresh();
 

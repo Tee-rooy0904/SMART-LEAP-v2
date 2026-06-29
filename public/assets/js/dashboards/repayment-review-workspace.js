@@ -19,6 +19,11 @@
   }
 
   function asDate(value) {
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split('-').map(Number);
+      const parsed = new Date(y, m - 1, d);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
     const parsed = new Date(value || '');
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
@@ -634,6 +639,11 @@
       if (node) node.innerHTML = value;
     }
 
+    function historyScrollContainer() {
+      const body = byId(ids.historyBody);
+      return body?.closest('.admin-repayment-history-wrapper, .po-repayment-history-wrapper, .data-table-wrapper') || null;
+    }
+
     function notify(message, tone = 'info') {
       if (typeof config.notify === 'function') {
         config.notify(message, tone);
@@ -719,7 +729,12 @@
       return true;
     }
 
+    function hasRecordDetailModal() {
+      return Boolean(config.recordModalId && byId(config.recordModalId));
+    }
+
     function openRecordDetail() {
+      if (!hasRecordDetailModal()) return;
       toggleRecordDetail(true);
     }
 
@@ -774,7 +789,12 @@
         if (state.filters.barangay && normalizeFilterValue(entry.barangay) !== state.filters.barangay) return false;
         if (state.filters.pdo && normalizeFilterValue(entry.assignedPdo) !== state.filters.pdo) return false;
         if (state.filters.repaymentState && entry.rosterState !== state.filters.repaymentState) return false;
-        if ((state.filters.fromDate || state.filters.toDate) && !withinRange(entry.latestSubmittedAt || entry.lastActivity, state.filters.fromDate, state.filters.toDate)) return false;
+        if (state.filters.fromDate || state.filters.toDate) {
+          const hasPaymentInRange = entry.records.some(function(record) {
+            return withinRange(record.paymentDate || record.submittedAt, state.filters.fromDate, state.filters.toDate);
+          }) || withinRange(entry.lastActivity, state.filters.fromDate, state.filters.toDate);
+          if (!hasPaymentInRange) return false;
+        }
         if (!search) return true;
         const haystack = [
           entry.name,
@@ -839,15 +859,13 @@
       if (!body) return;
       if (!beneficiary || !beneficiary.records.length) {
         body.innerHTML = '<tr><td colspan="10">No repayment history recorded yet.</td></tr>';
-        body.closest('.admin-repayment-history-wrapper')?.scrollTo({ left: 0, top: 0 });
+        historyScrollContainer()?.scrollTo({ left: 0, top: 0 });
         return;
       }
 
       body.innerHTML = beneficiary.records.map((record) => {
         const isActive = currentRecord && currentRecord.id === record.id;
-        const actionLabel = record.stage === 'verified' && normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus) === 'confirmed_by_office'
-          ? 'View'
-          : 'Verify';
+        const actionLabel = 'Open Repayment';
         const verificationResult = record.stage === 'verified'
           ? submissionStatusLabel(record)
           : record.stage === 'needs_correction'
@@ -870,7 +888,7 @@
           </tr>
         `;
       }).join('');
-      body.closest('.admin-repayment-history-wrapper')?.scrollTo({ left: 0, top: 0 });
+      historyScrollContainer()?.scrollTo({ left: 0, top: 0 });
     }
 
     // Enable or lock review buttons depending on verification progress and hard-copy office confirmation.

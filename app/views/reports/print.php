@@ -21,6 +21,7 @@ $selectedPdoName = trim((string) ($filters['pdo'] ?? ''));
 $repaymentMetrics = $report['repaymentAnalytics']['periodMetrics'] ?? ($report['summary']['repaymentPerformance'] ?? []);
 $trainingRows = is_array($report['trainingAnalytics']['rows'] ?? null) ? $report['trainingAnalytics']['rows'] : [];
 $adminReportsCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-reports.css')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 $reportPayload = json_encode($report, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 $distributionColor = static function (mixed $label, int $index = 0): string {
     $palette = ['#2563eb', '#16a34a', '#f97316', '#dc2626', '#7c3aed', '#0891b2', '#eab308', '#be185d', '#475569', '#65a30d'];
@@ -139,6 +140,13 @@ $renderDistributionFallback = static function (array $rows, string $label) use (
         . '</svg></div><div class="reports-donut__legend">' . $legend . '</div></div>';
 };
 $summary = $report['summary'] ?? [];
+$demographicRows = array_values(array_filter(
+    is_array($report['records'] ?? null) ? $report['records'] : [],
+    static fn(mixed $row): bool => is_array($row)
+));
+usort($demographicRows, static fn(array $a, array $b): int => strcmp((string) ($a['populationStage'] ?? ''), (string) ($b['populationStage'] ?? ''))
+    ?: strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')));
+$demographicChunks = $demographicRows === [] ? [[]] : array_chunk($demographicRows, 18);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -146,6 +154,8 @@ $summary = $report['summary'] ?? [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP Report Graph Export</title>
+    <link rel="icon" type="image/png" href="<?= $e($assetBase) ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $e($assetBase) ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $e($assetBase) ?>/assets/css/dashboards/admin-reports.css?v=<?= urlencode((string) $adminReportsCssVersion) ?>">
     <style>
         :root {
@@ -667,6 +677,71 @@ $summary = $report['summary'] ?? [];
             </div>
         </section>
 
+        <?php foreach ($demographicChunks as $chunkIndex => $chunk): ?>
+        <section class="sheet">
+            <div class="standard-header-wrap">
+                <img class="standard-header" src="<?= $e($assetBase) ?>/assets/img/report-header-2026.jpg" alt="City Government of Butuan report header">
+            </div>
+
+            <div class="report-body">
+                <div class="report-heading">
+                    <h1>SMART LEAP DEMOGRAPHIC PARTICIPANTS</h1>
+                    <p>City Social Welfare and Development Department</p>
+                </div>
+                <p class="report-page-subtitle">
+                    Applicants and beneficiaries included in the distribution charts
+                    <?php if (count($demographicChunks) > 1): ?>
+                        - Page <?= $e((string) ($chunkIndex + 1)) ?> of <?= $e((string) count($demographicChunks)) ?>
+                    <?php endif; ?>
+                </p>
+
+                <div class="report-table-card">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Population</th>
+                                <th>Participant</th>
+                                <th>Business</th>
+                                <th>Barangay</th>
+                                <th>Assigned PDO</th>
+                                <th>Service Type</th>
+                                <th>Sector</th>
+                                <th>Gender</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if ($chunk === []): ?>
+                                <tr><td class="report-table__empty" colspan="9">No applicant or beneficiary records found for the selected filters.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($chunk as $participant): ?>
+                                    <tr>
+                                        <td><?= $e($participant['populationStage'] ?? ((bool) ($participant['isBeneficiary'] ?? false) ? 'Beneficiary' : 'Applicant')) ?></td>
+                                        <td>
+                                            <strong><?= $e($participant['name'] ?? '--') ?></strong><br>
+                                            <span><?= $e($participant['email'] ?? '--') ?></span>
+                                        </td>
+                                        <td><?= $e($participant['businessName'] ?? '--') ?></td>
+                                        <td><?= $e($participant['barangay'] ?? '--') ?></td>
+                                        <td><?= $e($participant['assignedPdo'] ?? 'Unassigned') ?></td>
+                                        <td><?= $e($participant['serviceType'] ?? '--') ?></td>
+                                        <td><?= $e($participant['sector'] ?? '--') ?></td>
+                                        <td><?= $e($participant['gender'] ?? '--') ?></td>
+                                        <td><?= $e($participant['programStatus'] ?? '--') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="standard-footer-wrap">
+                <img class="standard-footer" src="<?= $e($assetBase) ?>/assets/img/report-footer-2026.jpg" alt="City Government of Butuan report footer">
+            </div>
+        </section>
+        <?php endforeach; ?>
+
         <?php if (false): ?>
         <section class="sheet">
             <div class="standard-header-wrap">
@@ -770,7 +845,7 @@ $summary = $report['summary'] ?? [];
                     ? $report['repaymentAnalytics']['obligations']
                     : [];
                 $period = (string) ($report['filters']['period'] ?? 'monthly');
-                $usePaymentDate = in_array($period, ['daily', 'weekly', 'custom'], true);
+                $usePaymentDate = $period === 'custom';
 
                 $paymentRows = [];
                 foreach ($obligations as $ob) {
@@ -1002,7 +1077,13 @@ $summary = $report['summary'] ?? [];
             const renderKpis = (metrics, itemCount) => {
                 const period = report.filters?.period || 'all';
                 const isPaymentDriven = metrics?.targetMode === 'payment_beneficiaries';
-                const periodUnit = period === 'weekly' ? 'week' : 'day';
+                const periodUnit = period === 'custom'
+                    ? 'range'
+                    : period === 'quarterly'
+                        ? 'quarter'
+                        : period === 'yearly'
+                            ? 'year'
+                            : 'month';
                 const cards = [
                     { label: 'Target Amount', value: formatCurrency(metrics.targetAmount || 0), meta: metrics.label || 'Selected period', color: '#2563eb' },
                     {
@@ -1224,8 +1305,8 @@ $summary = $report['summary'] ?? [];
                     root.innerHTML = `
                         <div class="reports-svg-chart" role="img" aria-label="${escapeHtml(`Repayment performance by ${xAxisTitle.toLowerCase()}`)}">
                             <svg viewBox="0 0 980 500" aria-hidden="true">
-                                <text x="22" y="94" transform="rotate(-90 22 94)" text-anchor="middle" font-size="12" font-weight="800" fill="#526b8f">PAYMENTS</text>
-                                <text x="22" y="358" transform="rotate(-90 22 358)" text-anchor="middle" font-size="12" font-weight="800" fill="#526b8f">PAYMENTS</text>
+                                <text x="8" y="94" transform="rotate(-90 8 94)" text-anchor="middle" font-size="12" font-weight="800" fill="#526b8f">PAYMENTS</text>
+                                <text x="8" y="358" transform="rotate(-90 8 358)" text-anchor="middle" font-size="12" font-weight="800" fill="#526b8f">PAYMENTS</text>
                                 ${topPlot.gridLines}
                                 ${topPlot.groups}
                                 ${bottomPlot.gridLines}
@@ -1244,7 +1325,7 @@ $summary = $report['summary'] ?? [];
                 root.innerHTML = `
                     <div class="reports-svg-chart" role="img" aria-label="${escapeHtml(`Repayment performance by ${xAxisTitle.toLowerCase()}`)}">
                         <svg viewBox="0 0 980 360" aria-hidden="true">
-                            <text x="22" y="${period === 'monthly' ? '168' : '182'}" transform="rotate(-90 22 ${period === 'monthly' ? '168' : '182'})" text-anchor="middle" font-size="12" font-weight="800" fill="#526b8f">PAYMENTS</text>
+                            <text x="8" y="${period === 'monthly' ? '168' : '182'}" transform="rotate(-90 8 ${period === 'monthly' ? '168' : '182'})" text-anchor="middle" font-size="12" font-weight="800" fill="#526b8f">PAYMENTS</text>
                             ${singlePlot.gridLines}
                             ${singlePlot.groups}
                         </svg>

@@ -12,6 +12,7 @@ $notificationsCssVersion = @filemtime(base_path('public/assets/css/components/no
 $reportsModuleJsVersion = @filemtime(base_path('public/assets/js/modules/reports.js')) ?: time();
 $socialWorkerJsVersion = @filemtime(base_path('public/assets/js/dashboards/social-worker.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 
 $applicationSummary = $overview['applicationSummary'] ?? [];
 $assessmentQueue = $overview['assessmentQueue'] ?? [];
@@ -34,6 +35,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
 
   <!-- Browser tab title for the Social Worker oversight workspace. -->
   <title>SMART LEAP | Social Worker</title>
+  <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+  <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
 
   <!-- Shared admin component styles plus Social Worker-specific dashboard styling. -->
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin.css?v=<?= urlencode((string) $adminCssVersion) ?>">
@@ -140,7 +143,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                   <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm2 0h6V8a3 3 0 0 0-6 0v2Z"/></svg>
                   <span>Change Password</span>
                 </button>
-                <button type="button" class="app-btn-outline app-btn-outline--danger admin-account-menu__action admin-account-menu__action--danger" id="sw-logout">
+                <button type="button" class="app-btn-ghost admin-account-menu__action" id="sw-logout">
                   <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h8v2H6v12h6v2H4V4Zm12.6 4.4L21.2 13l-4.6 4.6-1.4-1.4 2.2-2.2H10v-2h7.4l-2.2-2.2 1.4-1.4Z"/></svg>
                   <span>Logout</span>
                 </button>
@@ -480,6 +483,10 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                     <h2>Assigned Support Concerns</h2>
                     <p class="section-subtitle" data-sw-ticket-count>0 tickets</p>
                   </div>
+                </div>
+                <div class="sw-ticket-search">
+                  <svg class="sw-ticket-search__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="search" class="sw-ticket-search__input" id="swSupportSearch" placeholder="Search tickets..." autocomplete="off">
                 </div>
                 <div class="sw-ticket-list" data-sw-ticket-list>
                   <p class="sw-empty">Loading support concerns...</p>

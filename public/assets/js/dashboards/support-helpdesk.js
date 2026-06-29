@@ -26,9 +26,16 @@
             renderTickets();
             if (state.selectedId) {
                 await loadTicketDetail(state.selectedId, true);
+            } else if (state.tickets.length) {
+                await loadTicketDetail(Number(state.tickets[0].id || 0), true);
+            } else {
+                state.detail = null;
+                renderConversation();
             }
         } catch (error) {
+            renderSummary({});
             renderTickets(error.message || 'Unable to load support concerns.');
+            renderConversation(error.message || 'Unable to load support concerns.');
         }
     }
 
@@ -131,7 +138,17 @@
     }
 
     function renderSummary(summary) {
-        void summary;
+        const defaults = {
+            open: 0,
+            waitingForStaff: 0,
+            resolved: 0,
+            unread: 0,
+        };
+        const safeSummary = Object.assign({}, defaults, summary || {});
+        root.querySelectorAll('[data-helpdesk-summary]').forEach((item) => {
+            const key = item.getAttribute('data-helpdesk-summary') || '';
+            item.textContent = String(Number(safeSummary[key] || 0));
+        });
     }
 
     function renderTickets(errorMessage) {
@@ -154,7 +171,7 @@
                         ${ticket.unread ? '<span class="helpdesk-unread">Unread</span>' : ''}
                     </div>
                     <h4>${escapeHtml(ticket.subject || '')}</h4>
-                    <p>${escapeHtml(ticket.category || '')} Â· Assigned to: ${escapeHtml(ticket.assignedRole || '')}</p>
+                    <p>${escapeHtml(ticket.category || '')} | Assigned to: ${escapeHtml(ticket.assignedRole || '')}</p>
                 </div>
                 <div class="helpdesk-ticket__meta">
                     <span class="helpdesk-badge ${statusClass(ticket.status)}">${escapeHtml(ticket.status || 'New')}</span>
@@ -168,8 +185,22 @@
     function renderConversation(errorMessage) {
         const panel = root.querySelector('[data-helpdesk-conversation]');
         if (!panel) return;
-        if (errorMessage || !state.detail?.ticket) {
-            panel.innerHTML = '';
+        if (errorMessage) {
+            panel.innerHTML = `
+                <div class="helpdesk-empty-state">
+                    <strong>Unable to open this concern</strong>
+                    <p>${escapeHtml(errorMessage)}</p>
+                </div>
+            `;
+            return;
+        }
+        if (!state.detail?.ticket) {
+            panel.innerHTML = `
+                <div class="helpdesk-empty-state">
+                    <strong>No concern selected yet</strong>
+                    <p>Choose a concern from your list to open the full conversation with SMART LEAP support.</p>
+                </div>
+            `;
             return;
         }
 
@@ -182,7 +213,7 @@
                 <div>
                     <strong>${escapeHtml(ticket.ticketNo || '')}</strong>
                     <h4>${escapeHtml(ticket.subject || '')}</h4>
-                    <p>${escapeHtml(ticket.category || '')} Â· Assigned to: ${escapeHtml(ticket.assignedRole || '')}</p>
+                    <p>${escapeHtml(ticket.category || '')} | Assigned to: ${escapeHtml(ticket.assignedRole || '')}</p>
                 </div>
                 <span class="helpdesk-badge ${statusClass(ticket.status)}">${escapeHtml(ticket.status || '')}</span>
                 <dl>
@@ -244,7 +275,9 @@
     }
 
     function clearFormErrors(form) {
-        form.querySelectorAll('[data-helpdesk-error]').forEach((item) => { item.textContent = ''; });
+        form.querySelectorAll('[data-helpdesk-error]').forEach((item) => {
+            item.textContent = '';
+        });
     }
 
     function showFormErrors(form, errors) {

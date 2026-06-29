@@ -171,6 +171,24 @@
         });
     }
 
+    function setupRememberMe() {
+        const rememberMe = document.getElementById('rememberMe');
+        const emailInput = document.getElementById('email');
+        if (!rememberMe || !emailInput) return;
+
+        const saved = localStorage.getItem('smleap_remember_email');
+        if (saved) {
+            emailInput.value = saved;
+            rememberMe.checked = true;
+        }
+
+        rememberMe.addEventListener('change', () => {
+            if (!rememberMe.checked) {
+                localStorage.removeItem('smleap_remember_email');
+            }
+        });
+    }
+
     function setupAuth() {
         const form = document.getElementById('authForm') || document.getElementById('loginForm');
         const email = document.getElementById('email');
@@ -179,6 +197,7 @@
         const signInBtn = document.getElementById('signInBtn') || form?.querySelector('button[type="submit"]');
         const entryPoint = form?.querySelector('input[name="entryPoint"]');
         const capsHint = document.getElementById('capsHint');
+        const rememberMe = document.getElementById('rememberMe');
 
         if (form && !authError) {
             authError = document.createElement('p');
@@ -236,10 +255,14 @@
                 return;
             }
 
-            if (signInBtn) {
-                signInBtn.disabled = true;
-                signInBtn.textContent = 'Signing in...';
+            if (rememberMe?.checked && emailVal) {
+                localStorage.setItem('smleap_remember_email', emailVal);
+            } else if (rememberMe) {
+                localStorage.removeItem('smleap_remember_email');
             }
+
+            signInBtn?.classList.add('is-loading');
+            if (signInBtn) signInBtn.disabled = true;
             setAuthLoading(true, 'Securing your SMART LEAP session...');
             let isRedirecting = false;
 
@@ -284,13 +307,11 @@
             } finally {
                 if (!isRedirecting && document.visibilityState !== 'hidden') {
                     setAuthLoading(false);
-                    if (signInBtn) {
-                        signInBtn.disabled = false;
-                        signInBtn.textContent = 'Sign in';
-                    }
+                    signInBtn?.classList.remove('is-loading');
+                    if (signInBtn) signInBtn.disabled = false;
                 } else if (!isRedirecting && signInBtn) {
+                    signInBtn?.classList.remove('is-loading');
                     signInBtn.disabled = false;
-                    signInBtn.textContent = 'Sign in';
                 }
                 if (isRedirecting) {
                     return;
@@ -359,6 +380,57 @@
         });
     }
 
+    function setupStaggeredFields() {
+        const loginCard = document.querySelector('.portal-login-card');
+        if (!loginCard) return;
+
+        const formChildren = loginCard.querySelectorAll('.auth-card__top, .field, .auth-inline-actions, .auth-error, .auth-submit, .auth-card__security');
+        formChildren.forEach((el, index) => {
+            el.style.setProperty('--stagger-index', index);
+            el.classList.add('login-stagger');
+        });
+    }
+
+    function setupPortalAudienceCards() {
+        const cards = Array.from(document.querySelectorAll('[data-portal-audience-card]'));
+        if (cards.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        let activeIndex = 0;
+        let timer = null;
+
+        const activate = (index) => {
+            activeIndex = index;
+            cards.forEach((card, cardIndex) => {
+                card.classList.toggle('is-active', cardIndex === index);
+            });
+        };
+
+        const start = () => {
+            window.clearInterval(timer);
+            timer = window.setInterval(() => {
+                activate((activeIndex + 1) % cards.length);
+            }, 3200);
+        };
+
+        cards.forEach((card, index) => {
+            card.addEventListener('mouseenter', () => {
+                activate(index);
+                window.clearInterval(timer);
+            });
+            card.addEventListener('focusin', () => {
+                activate(index);
+                window.clearInterval(timer);
+            });
+            card.addEventListener('mouseleave', start);
+            card.addEventListener('focusout', start);
+        });
+
+        activate(0);
+        start();
+    }
+
     function setupScrollReveal() {
         if (document.body.classList.contains('portal-page--signup')) {
             document.querySelectorAll('.auth-card, .portal-reveal').forEach((item) => {
@@ -405,11 +477,14 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         setupMobileNav();
+        setupRememberMe();
         setupAuth();
         setupFileIntegrityChecks();
         setupAccordions();
         setupSelectableCards();
         setupTimelineDetails();
+        setupStaggeredFields();
+        setupPortalAudienceCards();
         setupScrollReveal();
     });
 })();

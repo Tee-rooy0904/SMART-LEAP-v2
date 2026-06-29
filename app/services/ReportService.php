@@ -276,7 +276,7 @@ class ReportService
         $currentYear = (int) $now->format('Y');
         $availableYears = $this->reportYearOptions();
         $period = strtolower(trim((string) ($filters['period'] ?? 'monthly')));
-        if ($period === 'all' || !in_array($period, ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'], true)) {
+        if ($period === 'all' || !in_array($period, ['monthly', 'quarterly', 'yearly', 'custom'], true)) {
             $period = 'monthly';
         }
 
@@ -398,7 +398,7 @@ class ReportService
     private function normalizeRepaymentPeriodFiltersForRecords(array $filters, array $records): array
     {
         $period = (string) ($filters['period'] ?? 'all');
-        if (!in_array($period, ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'], true) || $records === []) {
+        if (!in_array($period, ['monthly', 'quarterly', 'yearly', 'custom'], true) || $records === []) {
             return $filters;
         }
 

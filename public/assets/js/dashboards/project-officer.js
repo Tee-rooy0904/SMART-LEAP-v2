@@ -523,15 +523,35 @@
                 <div class="admin-record-sheet__grid">
                   <label class="admin-record-sheet__field admin-record-sheet__field--wide">
                     <span class="admin-profile-modal__label">Current Password</span>
-                    <input class="admin-profile-modal__input" type="password" name="currentPassword" required>
+                    <div class="password-input-wrap">
+                      <input class="admin-profile-modal__input" type="password" name="currentPassword" required autofocus>
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                        <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                      </button>
+                    </div>
                   </label>
                   <label class="admin-record-sheet__field admin-record-sheet__field--wide">
                     <span class="admin-profile-modal__label">New Password</span>
-                    <input class="admin-profile-modal__input" type="password" name="newPassword" required minlength="8">
+                    <div class="password-input-wrap">
+                      <input class="admin-profile-modal__input" type="password" name="newPassword" required minlength="8">
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                        <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                      </button>
+                    </div>
+                    <div class="password-strength" hidden>
+                      <div class="password-strength__bar"><div class="password-strength__fill"></div></div>
+                      <div class="password-strength__hints"></div>
+                    </div>
                   </label>
                   <label class="admin-record-sheet__field admin-record-sheet__field--wide">
                     <span class="admin-profile-modal__label">Confirm New Password</span>
-                    <input class="admin-profile-modal__input" type="password" name="confirmPassword" required minlength="8">
+                    <div class="password-input-wrap">
+                      <input class="admin-profile-modal__input" type="password" name="confirmPassword" required minlength="8">
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                        <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                      </button>
+                    </div>
+                    <div class="password-match-feedback" hidden></div>
                   </label>
                   <div class="notice danger admin-profile-modal__notice" id="staffPasswordError" hidden></div>
                 </div>
@@ -547,6 +567,11 @@
     `;
     const overlay = modal.firstElementChild;
     if (!overlay) return;
+
+    wirePasswordToggleStaff(overlay);
+    wirePasswordStrengthStaff(overlay, 'input[name="newPassword"]');
+    wirePasswordMatchStaff(overlay, 'input[name="newPassword"]', 'input[name="confirmPassword"]');
+
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay || event.target.closest('[data-staff-profile-close]')) closeStaffProfile();
     });
@@ -590,6 +615,76 @@
       }
     });
     document.body.appendChild(overlay);
+  }
+
+  function wirePasswordToggleStaff(root) {
+    root.querySelectorAll('.password-toggle-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const wrap = btn.closest('.password-input-wrap');
+        const input = wrap?.querySelector('input');
+        if (!input) return;
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.classList.toggle('is-visible', isPassword);
+      });
+    });
+  }
+
+  function wirePasswordStrengthStaff(root, inputSelector) {
+    const input = root.querySelector(inputSelector);
+    if (!input) return;
+    const strengthEl = root.querySelector('.password-strength');
+    const fillEl = root.querySelector('.password-strength__fill');
+    const hintsEl = root.querySelector('.password-strength__hints');
+    if (!strengthEl || !fillEl) return;
+
+    input.addEventListener('input', () => {
+      const val = input.value;
+      if (!val) { strengthEl.hidden = true; return; }
+      strengthEl.hidden = false;
+
+      let score = 0;
+      const hints = [];
+      if (val.length >= 8) { score += 25; } else { hints.push('At least 8 characters'); }
+      if (/[a-z]/.test(val) && /[A-Z]/.test(val)) { score += 25; } else { hints.push('Uppercase & lowercase'); }
+      if (/\d/.test(val)) { score += 25; } else { hints.push('At least one number'); }
+      if (/[^a-zA-Z0-9]/.test(val)) { score += 25; } else { hints.push('At least one symbol'); }
+
+      let level = 'weak';
+      if (score >= 100) level = 'strong';
+      else if (score >= 75) level = 'medium';
+      else if (score >= 50) level = 'fair';
+
+      fillEl.className = 'password-strength__fill';
+      fillEl.classList.add(`strength--${level}`);
+
+      if (hintsEl) {
+        hintsEl.innerHTML = hints.map((h) => `<span class="strength-hint">${h}</span>`).join('');
+      }
+    });
+  }
+
+  function wirePasswordMatchStaff(root, pwSelector, confirmSelector) {
+    const pw = root.querySelector(pwSelector);
+    const confirm = root.querySelector(confirmSelector);
+    if (!pw || !confirm) return;
+    const feedbackEl = root.querySelector('.password-match-feedback');
+    if (!feedbackEl) return;
+
+    const check = () => {
+      if (!confirm.value) { feedbackEl.hidden = true; return; }
+      feedbackEl.hidden = false;
+      if (pw.value === confirm.value) {
+        feedbackEl.textContent = 'Passwords match';
+        feedbackEl.className = 'password-match-feedback match--ok';
+      } else {
+        feedbackEl.textContent = 'Passwords do not match';
+        feedbackEl.className = 'password-match-feedback match--error';
+      }
+    };
+
+    pw.addEventListener('input', check);
+    confirm.addEventListener('input', check);
   }
 
   function closeStaffProfile() {
@@ -1100,6 +1195,8 @@
       actorRole: 'Project Officer',
       notify: showToast,
       initialPayments: state.repaymentRecords,
+      recordModalId: 'poRepaymentRecordModal',
+      recordCloseId: 'poRepaymentRecordClose',
       beneficiaryRecordsProvider: () => Array.isArray(state.beneficiaryRoster) ? state.beneficiaryRoster : [],
       onPaymentsUpdated: (payments) => {
         state.repaymentRecords = Array.isArray(payments) ? payments : [];

@@ -109,8 +109,7 @@
     repaymentYear: '1',
     date: formatDateInput(today),
     week: isoWeekInput(today),
-    from: '',
-    to: '',
+
     sector: '',
     serviceType: '',
     gender: '',
@@ -123,7 +122,7 @@
     activeReport: 'repayments',
     ...(state.filters.reports || {}),
   };
-  if (String(state.filters.reports.period || '').toLowerCase() === 'all') {
+  if (['all', 'daily', 'weekly'].includes(String(state.filters.reports.period || '').toLowerCase())) {
     state.filters.reports.period = 'monthly';
   }
   if (!['repayments', 'demographics', 'training'].includes(String(state.filters.reports.activeReport || ''))) {
@@ -185,8 +184,7 @@
       ['repaymentYear', filters.repaymentYear],
       ['date', filters.date],
       ['week', filters.week],
-      ['from', filters.from],
-      ['to', filters.to],
+
       ['search', filters.search],
       ['ageGroup', normalizeFilterValue(filters.ageGroup)],
       ['pdo', normalizeFilterValue(filters.pdo)],
@@ -319,7 +317,7 @@
     const filters = state.filters.reports;
     const options = reportData?.options || {};
     const activeReport = String(filters.activeReport || 'repayments');
-    const period = ['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'].includes(String(filters.period || ''))
+    const period = ['monthly', 'quarterly', 'yearly'].includes(String(filters.period || ''))
       ? filters.period
       : 'monthly';
     filters.period = period;
@@ -337,17 +335,6 @@
       ? String(filters.quarter)
       : String(quarterOptions[0]?.value || '1');
     if (period === 'quarterly') filters.quarter = selectedQuarter;
-
-    const rangeControls = `
-        <div class="reports-field">
-          <span class="reports-label">From Date</span>
-          <input type="date" id="reports-from" value="${escapeHtml(filters.from || '')}">
-        </div>
-        <div class="reports-field">
-          <span class="reports-label">To Date</span>
-          <input type="date" id="reports-to" value="${escapeHtml(filters.to || '')}">
-        </div>
-      `;
 
     const yearControl = `
         <div class="reports-field">
@@ -380,18 +367,6 @@
             </select>
           </div>
         ` : ''}
-        ${period === 'daily' ? `
-          <div class="reports-field">
-            <span class="reports-label">Repayment Date</span>
-            <input type="date" id="reports-date" value="${escapeHtml(filters.date || formatDateInput(today))}">
-          </div>
-        ` : ''}
-        ${period === 'weekly' ? `
-          <div class="reports-field">
-            <span class="reports-label">Repayment Week</span>
-            <input type="week" id="reports-week" value="${escapeHtml(filters.week || isoWeekInput(today))}">
-          </div>
-        ` : ''}
         ${period === 'quarterly' ? `
           <div class="reports-field">
             <span class="reports-label">Repayment Quarter</span>
@@ -402,19 +377,15 @@
             </select>
           </div>
         ` : ''}
-        ${period === 'custom' ? rangeControls : ''}
       `;
 
     const repaymentControls = activeReport === 'repayments' ? `
           <div class="reports-field">
             <span class="reports-label">View Type</span>
             <select id="reports-period">
-              <option value="daily" ${selectedAttr(period, 'daily')}>Daily</option>
-              <option value="weekly" ${selectedAttr(period, 'weekly')}>Weekly</option>
               <option value="monthly" ${selectedAttr(period, 'monthly')}>Monthly</option>
               <option value="quarterly" ${selectedAttr(period, 'quarterly')}>Quarterly</option>
               <option value="yearly" ${selectedAttr(period, 'yearly')}>Yearly</option>
-              <option value="custom" ${selectedAttr(period, 'custom')}>Custom Range</option>
             </select>
           </div>
           ${periodControls}
@@ -692,9 +663,7 @@
             ? 'Years'
             : period === 'all'
               ? 'Months'
-              : period === 'custom'
-                ? 'Selected Range'
-                : 'Months';
+              : 'Months';
 
     const chunks = [];
     for (let index = 0; index < rows.length; index += 6) {
@@ -781,19 +750,22 @@
 
   const repaymentKpiCards = (metrics) => {
     const period = reportData?.filters?.period || state.filters.reports.period || 'all';
-    const isCustom = period === 'custom';
     const isAll = period === 'all';
     const isPaymentDriven = metrics?.targetMode === 'payment_beneficiaries';
-    const periodUnit = period === 'weekly' ? 'week' : 'day';
+    const periodUnit = period === 'quarterly'
+        ? 'quarter'
+        : period === 'yearly'
+          ? 'year'
+          : 'month';
     return [
       {
-        label: isCustom ? 'Expected Due in Range' : (isAll ? 'Expected Due' : 'Expected Due'),
+        label: isAll ? 'Expected Due' : 'Expected Due',
         value: formatCurrency(metrics.targetAmount || 0),
         meta: metrics.label || 'Selected period',
         color: '#2563eb',
       },
       {
-        label: isCustom ? 'Collected in Range' : 'Actual Collected',
+        label: 'Actual Collected',
         value: formatCurrency(metrics.actualCollectedAmount || 0),
         meta: isPaymentDriven
           ? `${metrics.paymentBeneficiaryCount || 0} beneficiaries paid in the selected ${periodUnit}`
@@ -801,7 +773,7 @@
         color: '#16a34a',
       },
       {
-        label: isCustom ? 'Uncollected in Range' : 'Gap',
+        label: 'Gap',
         value: formatCurrency(metrics.gapAmount || 0),
         meta: isPaymentDriven
           ? `${metrics.obligationCount || 0} paid beneficiaries counted for target`
@@ -880,6 +852,33 @@
           <h4>Sector Distribution</h4>
         </div>
         <div class="chart-wrap" id="reports-sector-donut"></div>
+      </div>
+      <div class="chart-card chart-card--full reports-demographic-participants-card">
+        <div class="reports-payment-participants-summary reports-demographic-participants-summary" aria-label="Demographic participant summary">
+          <span id="reports-demographic-participants-count">0 participants</span>
+          <span><strong id="reports-demographic-applicants-count">0</strong> applicants</span>
+          <span><strong id="reports-demographic-beneficiaries-count">0</strong> beneficiaries</span>
+        </div>
+        <div class="table-wrapper reports-payment-participants-wrap reports-demographic-participants-wrap">
+          <table class="data-table reports-payment-participants-table reports-demographic-participants-table">
+            <thead>
+              <tr>
+                <th>Population</th>
+                <th>Participant</th>
+                <th>Business</th>
+                <th>Barangay</th>
+                <th>Assigned PDO</th>
+                <th>Service Type</th>
+                <th>Sector</th>
+                <th>Gender</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="reports-demographic-participants-body">
+              <tr><td colspan="9">No applicant or beneficiary records found for the selected filters.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>` : ''}
       ${['all', 'training'].includes(reportType) ? `<div class="chart-card chart-card--full">
         <div class="chart-card__header">
@@ -888,25 +887,28 @@
             <small>Filtered by session and group number.</small>
           </div>
         </div>
-        <div class="table-wrapper reports-training-attendance-wrap">
-          <table class="data-table reports-training-attendance-table">
-            <thead>
-              <tr>
-                <th>Participant Name</th>
-                <th>Session</th>
-                <th>Group</th>
-                <th>PDO</th>
-                <th>Activity</th>
-                <th>Location</th>
-                <th>Attendance</th>
-                <th>Proof</th>
-                <th>Remarks</th>
-              </tr>
-            </thead>
-            <tbody id="reports-training-attendance-body">
-              <tr><td colspan="9">No training attendance records found.</td></tr>
-            </tbody>
-          </table>
+        <div class="reports-training-attendance-shell">
+          <div id="reports-training-attendance-summary"></div>
+          <div class="table-wrapper reports-training-attendance-wrap">
+            <table class="data-table reports-training-attendance-table">
+              <thead>
+                <tr>
+                  <th>Participant Name</th>
+                  <th>Session</th>
+                  <th>Group</th>
+                  <th>PDO</th>
+                  <th>Activity</th>
+                  <th>Location</th>
+                  <th>Attendance</th>
+                  <th>Proof</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="reports-training-attendance-body">
+                <tr><td colspan="9">No training attendance records found.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>` : ''}
     </div>
@@ -952,34 +954,12 @@
 
   /**
    * Build payment participant rows from the filteredObligations.
-   * One row per verified payment — if a beneficiary paid 2 months in the
+   * One row per verified payment - if a beneficiary paid 2 months in the
    * selected period they appear twice (once per coverage month).
-   * For daily/weekly the verifiedPayments sub-array is used; for
-   * monthly/quarterly/yearly the obligation-level status is used.
    */
   const buildPaymentParticipantRows = (obligations, period) => {
     const rows = [];
-    const usePaymentDate = ['daily', 'weekly', 'custom'].includes(String(period || ''));
-
     (Array.isArray(obligations) ? obligations : []).forEach((ob) => {
-      if (usePaymentDate) {
-        // One row per verified payment in the date range
-        const payments = Array.isArray(ob.verifiedPayments) ? ob.verifiedPayments : [];
-        payments.forEach((payment) => {
-          rows.push({
-            beneficiaryName: ob.beneficiaryName || '--',
-            businessName: ob.businessName || '--',
-            barangay: ob.barangay || '--',
-            assignedPdo: ob.assignedPdo || '--',
-            dueMonth: ob.dueMonth || '--',
-            paymentDate: payment.paymentDate || ob.paymentDate || '--',
-            expectedAmount: ob.expectedAmount || 0,
-            amountPaid: payment.amount || 0,
-            status: ob.status,
-            statusLabel: ob.statusLabel || paymentStatusLabel(ob.status),
-          });
-        });
-      } else {
         // One row per obligation that has activity (paid/partial/pending)
         const hasActivity = ['paid_on_time', 'partial_delayed', 'pending_verification'].includes(String(ob.status || ''));
         if (!hasActivity) return;
@@ -995,7 +975,6 @@
           status: ob.status,
           statusLabel: ob.statusLabel || paymentStatusLabel(ob.status),
         });
-      }
     });
 
     // Sort by coverage month asc, then by name
@@ -1061,11 +1040,105 @@
         <td>${escapeHtml(row.assignedPdo || 'Unassigned')}</td>
         <td>${escapeHtml(row.activityName || '--')}</td>
         <td>${escapeHtml(row.location || '--')}</td>
-        <td>${escapeHtml(attendanceLabel(row.status))}</td>
-        <td>${row.proofPath ? `<a class="action-link" href="${escapeHtml(routeUrl(row.proofPath))}" target="_blank" rel="noopener">${escapeHtml(row.proofName || 'View proof')}</a>` : '--'}</td>
+        <td><span class="reports-training-attendance-chip reports-training-attendance-chip--${escapeHtml(trainingAttendanceTone(row.status))}">${escapeHtml(attendanceLabel(row.status))}</span></td>
+        <td>${row.proofPath ? `<a class="action-link" href="${escapeHtml(routeUrl(row.proofPath))}" target="_blank" rel="noopener">${escapeHtml(row.proofName || 'View proof')}</a>` : '<span class="reports-training-attendance-chip reports-training-attendance-chip--slate">No proof</span>'}</td>
         <td>${escapeHtml(row.remarks || '--')}</td>
       </tr>
     `).join('') : '<tr><td colspan="9">No training attendance records found.</td></tr>';
+  };
+
+  const trainingAttendanceTone = (status) => {
+    const text = String(status || '').trim().toLowerCase();
+    if (['attended', 'completed', 'present'].includes(text)) return 'emerald';
+    if (['missed', 'absent'].includes(text)) return 'rose';
+    if (text === 'excused') return 'amber';
+    return 'slate';
+  };
+
+  const buildTrainingAttendanceSummary = (trainingAnalytics = {}) => {
+    const root = qs('#reports-training-attendance-summary');
+    if (!root) return;
+
+    const summary = trainingAnalytics.summary || {};
+    const breakdown = Array.isArray(trainingAnalytics.breakdown) ? trainingAnalytics.breakdown : [];
+    const filters = trainingAnalytics.filters || {};
+    const filterParts = [];
+    if (Number(filters.session || 0) > 0) filterParts.push(`Session ${filters.session}`);
+    if (Number(filters.group || 0) > 0) filterParts.push(`Group ${filters.group}`);
+
+    root.innerHTML = `
+      <div class="reports-training-attendance-summary">
+        <div class="reports-training-attendance-summary__header">
+          <div>
+            <strong>${escapeHtml(filterParts.length ? filterParts.join(' | ') : 'All Sessions and Groups')}</strong>
+            <span>${escapeHtml(`${summary.participants || 0} participant${Number(summary.participants || 0) === 1 ? '' : 's'} matched the current report filters.`)}</span>
+          </div>
+          <div class="reports-training-attendance-summary__chips">
+            <span>Present <strong>${escapeHtml(String(summary.present || 0))}</strong></span>
+            <span>Absent <strong>${escapeHtml(String(summary.absent || 0))}</strong></span>
+            <span>Excused <strong>${escapeHtml(String(summary.excused || 0))}</strong></span>
+            <span>Completed <strong>${escapeHtml(String(summary.completed || 0))}</strong></span>
+          </div>
+        </div>
+        <div class="reports-training-attendance-breakdown">
+          ${breakdown.map((item) => `
+            <article class="reports-training-attendance-breakdown__card">
+              <span>${escapeHtml(item.label || `Session ${item.session || '--'}`)}</span>
+              <strong>${escapeHtml(String((item.present || 0) + (item.absent || 0) + (item.excused || 0)))}</strong>
+              <small>${escapeHtml(`${item.present || 0} present | ${item.absent || 0} absent | ${item.excused || 0} excused`)}</small>
+            </article>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  };
+
+  const sortParticipantRecords = (items) => [...(Array.isArray(items) ? items : [])].sort((left, right) => {
+    const stageCmp = String(left.populationStage || '').localeCompare(String(right.populationStage || ''));
+    if (stageCmp !== 0) return stageCmp;
+    return String(left.name || '').localeCompare(String(right.name || ''));
+  });
+
+  const renderDemographicParticipantsTable = (items) => {
+    const body = qs('#reports-demographic-participants-body');
+    const countNode = qs('#reports-demographic-participants-count');
+    const applicantsNode = qs('#reports-demographic-applicants-count');
+    const beneficiariesNode = qs('#reports-demographic-beneficiaries-count');
+    if (!body) return;
+
+    const rows = sortParticipantRecords(items);
+    const applicantCount = rows.filter((row) => !row.isBeneficiary).length;
+    const beneficiaryCount = rows.filter((row) => !!row.isBeneficiary).length;
+
+    if (countNode) {
+      countNode.textContent = `${rows.length} ${rows.length === 1 ? 'participant' : 'participants'}`;
+    }
+    if (applicantsNode) applicantsNode.textContent = String(applicantCount);
+    if (beneficiariesNode) beneficiariesNode.textContent = String(beneficiaryCount);
+
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="9">No applicant or beneficiary records found for the selected filters.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = rows.map((row) => `
+      <tr>
+        <td>${escapeHtml(row.populationStage || (row.isBeneficiary ? 'Beneficiary' : 'Applicant'))}</td>
+        <td>
+          <div class="reports-person-cell">
+            <strong>${escapeHtml(row.name || '--')}</strong>
+            <small>${escapeHtml(row.email || '--')}</small>
+          </div>
+        </td>
+        <td>${escapeHtml(row.businessName || '--')}</td>
+        <td>${escapeHtml(row.barangay || '--')}</td>
+        <td>${escapeHtml(row.assignedPdo || 'Unassigned')}</td>
+        <td>${escapeHtml(row.serviceType || '--')}</td>
+        <td>${escapeHtml(row.sector || '--')}</td>
+        <td>${escapeHtml(row.gender || '--')}</td>
+        <td>${escapeHtml(row.programStatus || '--')}</td>
+      </tr>
+    `).join('');
   };
 
   const renderToolbarOnly = () => {
@@ -1126,6 +1199,8 @@
       label: 'Sector distribution chart',
       centerLabel: 'Sectors',
     });
+    renderDemographicParticipantsTable(items);
+    buildTrainingAttendanceSummary(reportData?.trainingAnalytics || {});
     renderTrainingAttendanceTable(reportData?.trainingAnalytics?.rows || []);
   };
 
@@ -1145,13 +1220,46 @@
     renderStatus();
   };
 
+  const printReportInPlace = (url) => {
+    const frameId = 'reports-export-print-frame';
+    let frame = document.getElementById(frameId);
+    if (!frame) {
+      frame = document.createElement('iframe');
+      frame.id = frameId;
+      frame.setAttribute('aria-hidden', 'true');
+      frame.style.position = 'fixed';
+      frame.style.right = '0';
+      frame.style.bottom = '0';
+      frame.style.width = '0';
+      frame.style.height = '0';
+      frame.style.opacity = '0';
+      frame.style.pointerEvents = 'none';
+      frame.style.border = '0';
+      document.body.appendChild(frame);
+    }
+
+    frame.onload = () => {
+      try {
+        const win = frame.contentWindow;
+        if (!win) throw new Error('Missing print window.');
+        win.focus();
+        window.setTimeout(() => win.print(), 120);
+      } catch (_) {
+        window.open(url, '_blank', 'noopener');
+      }
+    };
+    frame.src = url;
+  };
+
   const exportReport = (formatType) => {
     const query = buildReportQuery();
-    if (formatType === 'pdf') {
-      query.set('autoprint', '1');
-    }
     const target = routeUrl(`${reportExportBase()}/${formatType}`);
-    window.open(query.toString() ? `${target}?${query}` : target, '_blank', 'noopener');
+    const url = query.toString() ? `${target}?${query}` : target;
+    if (formatType === 'pdf') {
+      printReportInPlace(url);
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
   };
 
   const bindEvents = () => {
@@ -1202,10 +1310,6 @@
       else if (id === 'reports-month') state.filters.reports.month = event.target.value;
       else if (id === 'reports-quarter') state.filters.reports.quarter = event.target.value;
       else if (id === 'reports-repayment-year') state.filters.reports.repaymentYear = event.target.value;
-      else if (id === 'reports-date') state.filters.reports.date = event.target.value;
-      else if (id === 'reports-week') state.filters.reports.week = event.target.value;
-      else if (id === 'reports-from') state.filters.reports.from = event.target.value;
-      else if (id === 'reports-to') state.filters.reports.to = event.target.value;
       else if (id === 'reports-pdo') state.filters.reports.pdo = event.target.value;
       else if (id === 'reports-sector') state.filters.reports.sector = event.target.value;
       else if (id === 'reports-service-type') state.filters.reports.serviceType = event.target.value;

@@ -6,6 +6,7 @@ $verificationEntryPoint = strtolower(trim($entryPoint ?? 'portal'));
 $heading = 'Verify your SMART LEAP account';
 $copy = 'Enter the six-digit code sent to your registered email. Your portal account stays inactive until verification is complete.';
 $submitLabel = 'Verify account';
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,6 +14,8 @@ $submitLabel = 'Verify account';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP | Verify Account</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=44">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/signup.css?v=6">
     <script defer src="<?= $baseUrl ?>/assets/js/public/portal.js?v=18"></script>

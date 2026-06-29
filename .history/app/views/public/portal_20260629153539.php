@@ -2,6 +2,8 @@
 <?php
 $portalUser = isset($authUser) && is_array($authUser) ? $authUser : null;
 $portalQuickView = isset($quickView) && is_array($quickView) ? $quickView : null;
+$portalJsVersion = @filemtime(base_path('public/assets/js/public/portal.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 $isCoMakerQuickView = $portalQuickView !== null && (string) ($portalQuickView['type'] ?? '') === 'co-maker';
 $primaryActionHref = $portalQuickView
     ? $baseUrl . '/' . ltrim((string) ($portalQuickView['actionPath'] ?? 'applicant-dashboard'), '/')
@@ -31,6 +33,8 @@ $heroFactLine = $portalQuickView
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP Applicant and Beneficiary Portal</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) (@filemtime(base_path('public/assets/css/public/portal.css')) ?: time())) ?>">
 </head>
 <body class="portal-page portal-page--home">
@@ -126,33 +130,68 @@ $heroFactLine = $portalQuickView
             </section>
 
             <div class="portal-home-content">
-            <section class="content-section portal-section" aria-labelledby="portal-readiness">
-                <div class="container content-grid">
-                    <article class="content-card portal-static-copy">
-                        <span class="section-kicker">Who Can Apply</span>
-                        <h2 id="portal-readiness">Who can register</h2>
-                        <ul class="content-list">
-                            <li>Residents of Butuan City with an existing microbusiness or a livelihood activity they are actively operating.</li>
-                            <li>Applicants who can provide correct personal, address, contact, and business details during registration and account setup.</li>
-                            <li>Users who are ready to complete the portal requirements, respond to review notices, and continue the process after approval.</li>
-                        </ul>
-                    </article>
-                    <article class="content-card portal-static-copy">
-                        <span class="section-kicker">Requirements Preview</span>
-                        <h2>Prepare these first</h2>
-                        <ul class="content-list">
-                            <li>A valid ID and personal details that match your registration information.</li>
-                            <li>Your complete address, active contact number, email address, and basic business information.</li>
-                            <li>Readable photos or scans of the documents required for account review and application processing.</li>
-                            <li>Supporting local records such as barangay documents and other files requested inside the portal.</li>
-                        </ul>
-                    </article>
-                </div>
-            </section>
+                <section class="content-section portal-section" aria-labelledby="portal-readiness">
+                    <div class="container">
+                        <div class="portal-section__head">
+                            <span class="section-kicker">Start Here</span>
+                            <h2 id="portal-readiness" class="section-title">Understand the current SMART LEAP process before you apply.</h2>
+                            <p class="portal-section__lead">The public portal now has one clear flow: Stage 1 registration, email-code verification, Admin batch review, applicant portal activation for selected registrants, then the same account continues later for training and beneficiary records.</p>
+                        </div>
+
+                        <div class="portal-fact-strip">
+                            <article class="portal-fact-card">
+                                <span class="portal-fact-card__label">Public start</span>
+                                <strong>Stage 1 registration</strong>
+                                <p>Submit your personal details, business details, valid ID, profile photo, and existing business photo first.</p>
+                            </article>
+                            <article class="portal-fact-card">
+                                <span class="portal-fact-card__label">Before Admin review</span>
+                                <strong>Email-code verification</strong>
+                                <p>Your registration enters the queue only after the six-digit code sent to your email is accepted.</p>
+                            </article>
+                            <article class="portal-fact-card">
+                                <span class="portal-fact-card__label">Same account later</span>
+                                <strong>Applicant to beneficiary</strong>
+                                <p>If you move forward in the program, the same portal account continues for training, notices, and repayments.</p>
+                            </article>
+                        </div>
+
+                        <div class="content-grid portal-grid--three">
+                            <article class="content-card portal-rich-card">
+                                <span class="portal-rich-card__eyebrow">Who can register</span>
+                                <h3>For Butuan City livelihood applicants</h3>
+                                <ul class="content-list">
+                                    <li>Residents of Butuan City with an existing microbusiness or livelihood activity.</li>
+                                    <li>Applicants ready to provide accurate personal, contact, address, and business details.</li>
+                                    <li>Users who can monitor notices and complete any follow-up steps inside the portal.</li>
+                                </ul>
+                            </article>
+                            <article class="content-card portal-rich-card">
+                                <span class="portal-rich-card__eyebrow">Prepare first</span>
+                                <h3>What to have ready</h3>
+                                <ul class="content-list">
+                                    <li>An active email address that you can access during verification and later notices.</li>
+                                    <li>A profile photo, one clear valid ID file, and one clear photo of your existing business.</li>
+                                    <li>Your complete address, barangay, contact number, and microbusiness details.</li>
+                                </ul>
+                            </article>
+                            <article class="content-card portal-rich-card">
+                                <span class="portal-rich-card__eyebrow">After submission</span>
+                                <h3>What happens next</h3>
+                                <ul class="content-list">
+                                    <li>Admin reviews who will be placed in the current yearly batch and who may wait for the next batch.</li>
+                                    <li>Selected registrants receive the official portal password setup link by email.</li>
+                                    <li>The applicant portal later shows notices, training updates, and beneficiary continuation steps.</li>
+                                </ul>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
             </div>
 
         </main>
-        <?php require __DIR__ . '/../layout/public-footer.php'; ?>
+        <?php require __DIR__ . '/../layouts/public-footer.php'; ?>
     </div>
 
     <div class="auth-loading-screen" id="authLoadingScreen" hidden aria-live="polite" aria-label="Loading">
@@ -162,6 +201,6 @@ $heroFactLine = $portalQuickView
         <p class="auth-loading-screen__copy" id="authLoadingCopy">Securing your SMART LEAP session...</p>
     </div>
 
-    <script src="<?= $baseUrl ?>/assets/js/public/portal.js?v=19" defer></script>
+    <script src="<?= $baseUrl ?>/assets/js/public/portal.js?v=<?= urlencode((string) $portalJsVersion) ?>" defer></script>
 </body>
 </html>

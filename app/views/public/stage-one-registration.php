@@ -16,6 +16,7 @@ $selectedLivelihood = $isCustomLivelihood ? 'Other' : $oldLivelihoodValue;
 $oldLivelihoodOtherSpecify = $oldValue('livelihoodOtherSpecify') !== ''
     ? $oldValue('livelihoodOtherSpecify')
     : ($isCustomLivelihood ? $oldLivelihoodValue : '');
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -23,6 +24,8 @@ $oldLivelihoodOtherSpecify = $oldValue('livelihoodOtherSpecify') !== ''
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP | Stage 1 Registration</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) (@filemtime(base_path('public/assets/css/public/portal.css')) ?: time())) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/signup.css?v=<?= urlencode((string) (@filemtime(base_path('public/assets/css/public/signup.css')) ?: time())) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/stage-one-registration.css?v=<?= urlencode((string) (@filemtime(base_path('public/assets/css/public/stage-one-registration.css')) ?: time())) ?>">

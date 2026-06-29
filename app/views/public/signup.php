@@ -17,6 +17,7 @@ $portalCssVersion = @filemtime(base_path('public/assets/css/public/portal.css'))
 $signupCssVersion = @filemtime(base_path('public/assets/css/public/signup.css')) ?: time();
 $portalJsVersion = @filemtime(base_path('public/assets/js/public/portal.js')) ?: time();
 $signupJsVersion = @filemtime(base_path('public/assets/js/public/signup.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,6 +25,8 @@ $signupJsVersion = @filemtime(base_path('public/assets/js/public/signup.js')) ?:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP | <?= $isCoMakerMode ? 'Create Co-maker Account' : 'Create Account' ?></title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) $portalCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/signup.css?v=<?= urlencode((string) $signupCssVersion) ?>">
     <script defer src="<?= $baseUrl ?>/assets/js/public/portal.js?v=<?= urlencode((string) $portalJsVersion) ?>"></script>

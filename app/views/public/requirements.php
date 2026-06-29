@@ -1,12 +1,32 @@
 <?php /** @var string $baseUrl */ ?>
 <?php /** @var array $requirements */ ?>
+<?php
+$portalStylesVersion = @filemtime(base_path('public/assets/css/public/portal.css')) ?: time();
+$portalJsVersion = @filemtime(base_path('public/assets/js/public/portal.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
+$followUpRequirements = [];
+if ($requirements !== []) {
+    foreach ($requirements as $requirement) {
+        $label = trim((string) ($requirement->attributes['label'] ?? ''));
+        if ($label === '' || stripos($label, 'endorsement') !== false) {
+            continue;
+        }
+        $followUpRequirements[] = [
+            'label' => $label,
+            'description' => trim((string) ($requirement->attributes['description'] ?? ''))
+        ];
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP Requirements</title>
-    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=44">
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) $portalStylesVersion) ?>">
 </head>
 <body class="portal-page portal-page--content">
     <div class="page-shell">
@@ -20,56 +40,72 @@
             <section class="content-hero">
                 <div class="container content-hero__inner">
                     <span class="section-kicker">Requirements</span>
-                    <h1 class="section-title">Prepare complete and readable files before starting your SMART LEAP application.</h1>
-                    <p class="page-intro">Use this page as a checklist so you can upload clear and complete documents without delay.</p>
+                    <h1 class="section-title">Prepare the right files for Stage 1 first, then watch your portal for any follow-up requirements later.</h1>
+                    <p class="page-intro">The current system does not ask for every document on day one. Public Stage 1 needs the basic registration details and initial proof files first, while other items may appear later in your private portal or through reviewer notices.</p>
                 </div>
             </section>
 
-            <section class="content-section">
+            <section class="content-section portal-section">
                 <div class="container content-grid portal-grid--three">
-                    <article class="content-card">
-                        <h2>Prepare these first</h2>
+                    <article class="content-card portal-rich-card">
+                        <span class="portal-rich-card__eyebrow">Stage 1 public registration</span>
+                        <h2>Required when you first apply</h2>
                         <ul class="content-list">
-                            <?php $renderedRequirementLabels = []; ?>
-                            <?php if ($requirements !== []): ?>
-                                <?php foreach ($requirements as $requirement): ?>
-                                    <?php
-                                        $label = (string) ($requirement->attributes['label'] ?? 'Requirement');
-                                        if (stripos($label, 'endorsement') !== false) {
-                                            continue;
-                                        }
-                                        $renderedRequirementLabels[] = $label;
-                                    ?>
+                            <li>One clear profile photo.</li>
+                            <li>One clear photo or file of your valid ID.</li>
+                            <li>One clear photo of your existing business or livelihood activity.</li>
+                            <li>Your complete personal, address, contact, and business information.</li>
+                        </ul>
+                    </article>
+                    <article class="content-card portal-rich-card">
+                        <span class="portal-rich-card__eyebrow">Before you submit</span>
+                        <h2>Information to prepare</h2>
+                        <ul class="content-list">
+                            <li>An active email address for the verification code and official notices.</li>
+                            <li>Your barangay, complete address, birthdate, contact number, and basic demographic information.</li>
+                            <li>Your business name and specific livelihood or microbusiness type.</li>
+                        </ul>
+                    </article>
+                    <article class="content-card portal-rich-card">
+                        <span class="portal-rich-card__eyebrow">Later in the process</span>
+                        <h2>Possible follow-up requirements</h2>
+                        <p class="small-note">These may appear later in the private portal or when a reviewer asks for additional support.</p>
+                        <ul class="content-list">
+                            <?php if ($followUpRequirements !== []): ?>
+                                <?php foreach ($followUpRequirements as $requirement): ?>
                                     <li>
-                                        <?= htmlspecialchars($label) ?>
-                                        <span class="small-note"> - <?= htmlspecialchars((string) ($requirement->attributes['description'] ?? 'Prepare this document before starting your application.')) ?></span>
+                                        <?= htmlspecialchars($requirement['label']) ?>
+                                        <?php if ($requirement['description'] !== ''): ?>
+                                            <span class="small-note"> - <?= htmlspecialchars($requirement['description']) ?></span>
+                                        <?php endif; ?>
                                     </li>
                                 <?php endforeach; ?>
-                                <?php if (!in_array('Barangay Clearance', $renderedRequirementLabels, true)): ?>
-                                    <li>Barangay Clearance</li>
-                                <?php endif; ?>
                             <?php else: ?>
-                                <li>Valid ID</li>
-                                <li>Barangay Clearance</li>
-                                <li>Health Certificate</li>
-                                <li>Cedula</li>
+                                <li>Additional documents requested by reviewer notice.</li>
+                                <li>Portal forms that open only when your record reaches the right step.</li>
+                                <li>Training or post-approval proof files when applicable.</li>
                             <?php endif; ?>
                         </ul>
                     </article>
-                    <article class="content-card">
-                        <h2>File quality reminders</h2>
-                        <ul class="content-list">
-                            <li>Use a clear scan or a bright photo.</li>
-                            <li>Make sure all document edges and text are visible.</li>
-                        </ul>
+                </div>
+            </section>
+
+            <section class="content-section portal-section portal-section--soft">
+                <div class="container portal-support-strip">
+                    <article class="portal-support-card portal-surface-card">
+                        <span class="portal-support-card__label">File quality</span>
+                        <h3>Keep uploads readable</h3>
+                        <p>Use a bright photo or clean scan. Make sure names, numbers, document edges, and dates can be read without zooming too much.</p>
                     </article>
-                    <article class="content-card">
-                        <h2>Before you begin</h2>
-                        <ul class="content-list">
-                            <li>Use an active email address for official notices.</li>
-                            <li>Prepare complete information before you submit.</li>
-                            <li>Check the portal again for review updates, training schedules, and official notices.</li>
-                        </ul>
+                    <article class="portal-support-card portal-surface-card">
+                        <span class="portal-support-card__label">Common delay</span>
+                        <h3>Do not submit unclear files</h3>
+                        <p>Blurry uploads, cropped IDs, and dark business photos often lead to follow-up correction notices and a slower review.</p>
+                    </article>
+                    <article class="portal-support-card portal-surface-card">
+                        <span class="portal-support-card__label">After submission</span>
+                        <h3>Keep checking your notices</h3>
+                        <p>Once your private portal is activated, that is where reviewer notes, additional requirements, training updates, and beneficiary notices appear.</p>
                     </article>
                 </div>
             </section>
@@ -78,6 +114,6 @@
         <?php require __DIR__ . '/../layouts/public-footer.php'; ?>
     </div>
 
-    <script src="<?= $baseUrl ?>/assets/js/public/portal.js?v=18" defer></script>
+    <script src="<?= $baseUrl ?>/assets/js/public/portal.js?v=<?= urlencode((string) $portalJsVersion) ?>" defer></script>
 </body>
 </html>

@@ -11,6 +11,7 @@ $applicantProfileJsVersion = @filemtime(base_path('public/assets/js/dashboards/a
 $languageToggleJsVersion = @filemtime(base_path('public/assets/js/dashboards/language-toggle.js')) ?: time();
 $supportHelpdeskJsVersion = @filemtime(base_path('public/assets/js/dashboards/support-helpdesk.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 $butuanBarangays = array_map(
     static fn (array $row): string => (string) ($row['name'] ?? ''),
     (new \App\Services\BarangayCatalogService())->all()
@@ -25,6 +26,8 @@ $butuanBarangays = array_map(
 
     <!-- Browser tab title for the Stage 2 applicant workspace. -->
     <title>SMART LEAP | Dashboard</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
 
     <!-- Applicant and post-approval styles used across profile, application, training, and support pages. -->
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/applicant.css?v=<?= urlencode((string) $applicantCssVersion) ?>">
@@ -273,35 +276,35 @@ $butuanBarangays = array_map(
                     <section class="panel dash-section panel--hero applicant-current-step" aria-labelledby="nextStepHeading">
                         <!-- Current-step card points the applicant to the single most important next action. -->
                         <div class="applicant-current-step__main">
-                            <div class="panel-header panel-header--compact">
-                                <h3 id="nextStepHeading">Current step</h3>
-                                <p class="panel-subtitle">This is the most important action to complete right now.</p>
+                            <div class="applicant-current-step__eyebrow">
+                                <div class="panel-header panel-header--compact">
+                                    <h3 id="nextStepHeading">Current step</h3>
+                                    <p class="panel-subtitle">Focus on one clear next action at a time.</p>
+                                </div>
+                                <span class="journey-pill" id="nextStepStatus">Loading current status</span>
                             </div>
-                            <span class="journey-pill" id="nextStepStatus">Loading current status</span>
-                            <strong class="applicant-current-step__title" id="nextStepTitle">Loading your next step</strong>
-                            <p class="applicant-current-step__copy" id="nextStepDescription">Please wait while the workspace checks your current workflow stage.</p>
-                            <div class="applicant-current-step__actions">
-                                <!-- JS rewrites this label and destination based on the applicant's current workflow step. -->
-                                <button type="button" class="btn-primary" id="nextStepAction" disabled>Loading</button>
+                            <div class="applicant-current-step__content">
+                                <div class="applicant-current-step__copy-block">
+                                    <strong class="applicant-current-step__title" id="nextStepTitle">Loading your next step</strong>
+                                    <p class="applicant-current-step__copy" id="nextStepDescription">Please wait while the workspace checks your current workflow stage.</p>
+                                </div>
+                                <div class="applicant-current-step__actions">
+                                    <!-- JS rewrites this label and destination based on the applicant's current workflow step. -->
+                                    <button type="button" class="btn-primary" id="nextStepAction" disabled>Loading</button>
+                                </div>
                             </div>
+                            <p class="applicant-current-step__support-note">Your dashboard updates automatically as your profile, uploads, training, and certificate readiness move forward.</p>
                         </div>
-                        <aside class="applicant-current-step__aside" aria-label="Current step context">
-                            <div class="current-step-meta">
-                                <span class="overview-label">Current workflow status</span>
-                                <strong class="overview-value" id="dashboardSnapshotStatus">Loading</strong>
-                                <p class="overview-meta" id="dashboardSnapshotDate">Checking your latest workflow record.</p>
-                            </div>
-                            <div class="current-step-meta">
-                                <span class="overview-label">What happens next</span>
-                                <strong class="overview-value" id="dashboardSnapshotPdo">Loading</strong>
-                                <p class="overview-meta" id="dashboardSnapshotRemark">Preparing your current-step guidance.</p>
-                            </div>
-                        </aside>
+                        <div class="current-step-meta" id="dashboardSnapshotLive" hidden>
+                            <span class="overview-label">Workflow status</span>
+                            <strong class="overview-value" id="dashboardSnapshotStatus">Loading</strong>
+                            <p class="overview-meta" id="dashboardSnapshotDate">Checking your latest workflow record.</p>
+                        </div>
                     </section>
                     <section id="overview" class="panel dash-section dash-section--summary panel--summary applicant-journey-panel" aria-labelledby="overviewHeading">
                         <div class="panel-header">
                             <h3 id="overviewHeading">Progress overview</h3>
-                            <p class="panel-subtitle">Three milestones from profile completion to training progress.</p>
+                            <p class="panel-subtitle">See your profile, application, training, and certificate progress in one row.</p>
                         </div>
                         <div class="applicant-journey-strip" role="list" aria-label="Milestones sa proseso sa aplikante">
                             <article class="journey-step" id="journeyStepProfile" role="listitem">
@@ -334,7 +337,7 @@ $butuanBarangays = array_map(
                         <section class="panel dash-section panel--review applicant-alerts-panel" aria-labelledby="importantUpdatesHeading">
                             <div class="panel-header">
                                 <h3 id="importantUpdatesHeading">Important updates</h3>
-                                <p class="panel-subtitle">Only items that need attention or explain the next movement in your application.</p>
+                                <p class="panel-subtitle">Only the updates that need your attention or explain the next movement in your application.</p>
                             </div>
                             <ul class="attention-list" id="applicantAlertList">
                                 <li class="attention-list__empty">Important updates will appear here while your application moves through review.</li>
@@ -549,16 +552,41 @@ $butuanBarangays = array_map(
                         <div>
                             <span class="support-card__eyebrow">SMART LEAP Help Desk</span>
                             <h2>Support Center</h2>
-                            <p>Submit a concern, track replies, and get help from Social Worker support.</p>
+                            <p>Submit a concern, check staff replies, and get help for applicant, beneficiary, training, or repayment concerns in one place.</p>
                         </div>
                         <a class="btn-outline" href="#helpdeskNewConcern">New concern</a>
                     </header>
+                    <section class="helpdesk-summary" aria-label="Support concern summary">
+                        <article class="helpdesk-stat">
+                            <span>Open concerns</span>
+                            <strong data-helpdesk-summary="open">0</strong>
+                            <small>Active concerns still being worked on.</small>
+                        </article>
+                        <article class="helpdesk-stat">
+                            <span>Waiting for staff</span>
+                            <strong data-helpdesk-summary="waitingForStaff">0</strong>
+                            <small>Concerns queued for SMART LEAP support review.</small>
+                        </article>
+                        <article class="helpdesk-stat">
+                            <span>Resolved</span>
+                            <strong data-helpdesk-summary="resolved">0</strong>
+                            <small>Concerns already completed or addressed.</small>
+                        </article>
+                        <article class="helpdesk-stat">
+                            <span>Unread updates</span>
+                            <strong data-helpdesk-summary="unread">0</strong>
+                            <small>Replies or updates you still need to read.</small>
+                        </article>
+                    </section>
                     <div class="helpdesk-layout">
                         <div class="helpdesk-main">
-                            <section class="panel helpdesk-card" id="helpdeskNewConcern" aria-labelledby="helpdeskFormHeading">
+                            <section class="panel helpdesk-card helpdesk-card--composer" id="helpdeskNewConcern" aria-labelledby="helpdeskFormHeading">
                                 <div class="panel-header">
-                                    <h3 id="helpdeskFormHeading">Submit New Concern</h3>
-                                    <p class="panel-subtitle">Tell us what you need help with. Your concern will be routed to Social Worker support.</p>
+                                    <div>
+                                        <span class="support-card__eyebrow">New concern</span>
+                                        <h3 id="helpdeskFormHeading">Submit a Concern</h3>
+                                    </div>
+                                    <p class="panel-subtitle">Describe the issue clearly so SMART LEAP support can route it faster and reply with the right next step.</p>
                                 </div>
                                 <form class="helpdesk-form" data-helpdesk-form novalidate>
                                     <label class="form-field">
@@ -604,18 +632,58 @@ $butuanBarangays = array_map(
                                     </div>
                                 </form>
                             </section>
-                            <section class="panel helpdesk-card" aria-labelledby="helpdeskTicketsHeading">
+                            <section class="panel helpdesk-card helpdesk-card--tickets" aria-labelledby="helpdeskTicketsHeading">
                                 <div class="panel-header panel-header--compact">
                                     <div>
-                                        <span class="support-card__eyebrow">My Concerns</span>
+                                        <span class="support-card__eyebrow">Concern tracker</span>
                                         <h3 id="helpdeskTicketsHeading">My Concerns</h3>
                                     </div>
+                                    <p class="panel-subtitle">Open any concern to review the full conversation and latest staff response.</p>
                                 </div>
                                 <div class="helpdesk-ticket-list" data-helpdesk-ticket-list>
                                     <p class="helpdesk-empty">No concerns submitted yet. Use the form to submit a concern when you need help from Social Worker support.</p>
                                 </div>
                             </section>
                         </div>
+                        <aside class="helpdesk-side">
+                            <section class="panel helpdesk-card helpdesk-card--conversation" aria-labelledby="helpdeskConversationHeading">
+                                <div class="panel-header panel-header--compact">
+                                    <div>
+                                        <span class="support-card__eyebrow">Conversation</span>
+                                        <h3 id="helpdeskConversationHeading">Selected Concern</h3>
+                                    </div>
+                                    <p class="panel-subtitle">Read updates, send replies, and continue the same concern thread here.</p>
+                                </div>
+                                <div class="helpdesk-conversation" data-helpdesk-conversation>
+                                    <div class="helpdesk-empty-state">
+                                        <strong>No concern selected yet</strong>
+                                        <p>Choose a concern from your list to open the full conversation with SMART LEAP support.</p>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="panel helpdesk-card helpdesk-card--guide" aria-labelledby="helpdeskGuideHeading">
+                                <div class="panel-header panel-header--compact">
+                                    <div>
+                                        <span class="support-card__eyebrow">Support tips</span>
+                                        <h3 id="helpdeskGuideHeading">Before You Submit</h3>
+                                    </div>
+                                </div>
+                                <div class="helpdesk-guide-list">
+                                    <article class="helpdesk-guide-item">
+                                        <strong>Use the closest category</strong>
+                                        <p>Select the category that best matches your issue so staff can route it without delay.</p>
+                                    </article>
+                                    <article class="helpdesk-guide-item">
+                                        <strong>Add exact details</strong>
+                                        <p>Include document names, training titles, repayment months, OR numbers, or screenshots when relevant.</p>
+                                    </article>
+                                    <article class="helpdesk-guide-item">
+                                        <strong>Keep one issue per concern</strong>
+                                        <p>A single clear concern is easier to track, respond to, and resolve than multiple unrelated issues in one ticket.</p>
+                                    </article>
+                                </div>
+                            </section>
+                        </aside>
                     </div>
                 </section>
             </main>

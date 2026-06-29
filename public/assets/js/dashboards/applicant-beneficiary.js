@@ -42,11 +42,6 @@
                 closeRepaymentUploadModal();
             }
         });
-        window.addEventListener('hashchange', () => {
-            if (!isBeneficiary() && (window.location.hash || '').replace('#', '') === 'repayments') {
-                showToast('Beneficiary tools are available after your PDO/Admin confirms your approval.', 'info');
-            }
-        });
     }
 
     function applyPortalMode() {

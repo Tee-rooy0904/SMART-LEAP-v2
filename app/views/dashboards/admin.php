@@ -27,6 +27,7 @@ $coMakerRegistrationsModuleJsVersion = @filemtime(base_path('public/assets/js/mo
 $repaymentWorkspaceJsVersion = @filemtime(base_path('public/assets/js/dashboards/repayment-review-workspace.js')) ?: time();
 $reportsModuleJsVersion = @filemtime(base_path('public/assets/js/modules/reports.js')) ?: time();
 $trainingModuleJsVersion = @filemtime(base_path('public/assets/js/modules/training.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 
 $applicationSummary = $overview['applicationSummary'] ?? [];
 $trainingSummary = $overview['trainingSummary'] ?? [];
@@ -47,6 +48,8 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
 
     <!-- Browser tab title for the Admin-only workspace. -->
     <title>SMART LEAP Admin Control Center</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
 
     <!-- Shared and admin-specific dashboard styles used across the shell and mounted sections. -->
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/project-officer.css?v=<?= urlencode((string) $projectOfficerCssVersion) ?>">
@@ -139,7 +142,7 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
                                     <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm2 0h6V8a3 3 0 0 0-6 0v2Z"/></svg>
                                     <span>Change Password</span>
                                 </button>
-                                <button type="button" class="app-btn-outline app-btn-outline--danger admin-account-menu__action admin-account-menu__action--danger" id="system-logout">
+                                <button type="button" class="app-btn-ghost admin-account-menu__action" id="system-logout">
                                     <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h8v2H6v12h6v2H4V4Zm12.6 4.4L21.2 13l-4.6 4.6-1.4-1.4 2.2-2.2H10v-2h7.4l-2.2-2.2 1.4-1.4Z"/></svg>
                                     <span>Logout</span>
                                 </button>
@@ -152,9 +155,9 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
             <main class="content-main">
                 <!-- Each required partial below owns one admin workspace and is hydrated by its matching JS module. -->
                 <?php require __DIR__ . '/admin/sections/dashboard.php'; ?>
-                <?php require __DIR__ . '/admin/sections/validation.php'; ?>
+                <?php require __DIR__ . '/admin/sections/validation.php'; ?>    
                 <?php require __DIR__ . '/admin/sections/applications.php'; ?>
-                <?php require __DIR__ . '/admin/sections/training.php'; ?>
+                <?php require __DIR__. '/admin/sections/training.php'; ?>
                 <?php require __DIR__ . '/admin/sections/team.php'; ?>
                 <?php require __DIR__ . '/admin/sections/beneficiaries.php'; ?>
                 <?php require __DIR__ . '/admin/sections/co-makers.php'; ?>

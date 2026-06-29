@@ -5693,6 +5693,69 @@ body.po-repayment-modal-open {
   margin-top: 14px;
 }
 
+.po-repayment-record-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.po-repayment-record-modal.is-open {
+  display: flex;
+}
+
+.po-repayment-record-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.po-repayment-record-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(1278px, calc(100vw - 24px));
+  height: min(888px, calc(100vh - 16px));
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 24px;
+  background: #f8fbff;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+  display: flex;
+  flex-direction: column;
+}
+
+.po-repayment-record-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  background: linear-gradient(135deg, #0f4f7f, #155b8b);
+  color: #fff;
+}
+
+.po-repayment-record-modal__header .po-panel-label,
+.po-repayment-record-modal__header h4 {
+  color: #fff;
+}
+
+.po-repayment-record-modal__body {
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem 1.15rem 1.25rem;
+  display: grid;
+  gap: 18px;
+}
+
+.po-repayment-record-modal__body .po-repayment-modal-shell__top {
+  align-items: start;
+}
+
 .po-repayment-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5741,6 +5804,14 @@ body.po-repayment-modal-open {
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.po-repayment-modal-shell .po-repayment-history-wrapper {
+  min-height: 150px;
+}
+
+.po-repayment-modal-shell .po-repayment-history-panel {
+  min-height: 250px;
 }
 
 .po-repayment-history-panel .data-table-wrapper::-webkit-scrollbar {
@@ -6064,6 +6135,14 @@ body.po-repayment-modal-open {
     margin: 6px auto;
     border-radius: 22px;
   }
+
+  .po-repayment-record-modal__dialog {
+    width: min(100vw, calc(100vw - 20px));
+    height: min(100vh, calc(100vh - 12px));
+    max-height: calc(100vh - 12px);
+    margin: 6px auto;
+    border-radius: 22px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -6095,13 +6174,31 @@ body.po-repayment-modal-open {
     border-radius: 0;
   }
 
+  .po-repayment-record-modal__dialog {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+  }
+
   .po-repayment-modal-shell.is-open {
+    padding: 0;
+  }
+
+  .po-repayment-record-modal {
     padding: 0;
   }
 
   .po-repayment-modal-shell__header,
   .po-repayment-modal-shell__body,
   .po-repayment-modal-shell__footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .po-repayment-record-modal__header,
+  .po-repayment-record-modal__body {
     padding-left: 16px;
     padding-right: 16px;
   }

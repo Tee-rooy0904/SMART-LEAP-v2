@@ -242,7 +242,6 @@
         const profile = state.dashboard.profile;
         const application = state.dashboard.application;
         const training = state.dashboard.training || {};
-        const certificate = state.dashboard.certificate || {};
         const nextStep = state.dashboard.nextStep || {};
         const requirements = state.dashboard.requirements || [];
         const uploadedCount = requirements.filter((item) => item.file && item.file.path).length;
@@ -269,8 +268,6 @@
         );
         setText('dashboardTrainingCompletion', `${Math.round((((trainingSummary.attended || 0) + (trainingSummary.completed || 0)) / Math.max(1, training.invitees?.length || 0)) * 100)}% complete`);
         setText('dashboardTrainingCompletionNote', buildTrainingOverviewNote(trainingSummary, training));
-        setText('dashboardSertipikoStatus', certificate.statusLabel || 'Locked');
-        setText('dashboardSertipikoStatusNote', sanitizeSertipikoNote(certificate.note || 'Available after your training and application requirements are complete.'));
         setText('nextStepTitle', sanitizeApplicantWording(nextStep.title || 'Complete your applicant profile'));
         setText('nextStepDescription', workflowActionDescription(nextStep.actionPath, nextStep.description || 'The next required action will appear here.'));
     }
@@ -447,6 +444,11 @@
             window.__smartleapAppFormCaptureAdded = true;
             document.addEventListener('pointerdown', (ev) => {
                 try {
+                    // Skip if the pointer is on a navigation element to avoid intercepting
+                    // tabbar/sidebar clicks when form cards sit behind the fixed mobile bar.
+                    if (ev.target && ev.target.closest('.applicant-mobile-tabbar, .dash-sidebar, .sidebar-link')) {
+                        return;
+                    }
                     const x = ev.clientX, y = ev.clientY;
                     const stacked = document.elementsFromPoint(x, y);
                     for (const el of stacked) {
@@ -516,15 +518,14 @@
                 ? truncateText(latestRemark.comment || 'Applicant-visible note available.', 150)
                 : 'Applicant-visible review notes will appear here first.'
         );
-        setText('dashboardSnapshotStatus', application?.status || 'Draft');
-        setText('dashboardSnapshotDate', buildAplikasyonDateMeta(application));
-        setText('dashboardSnapshotPdo', assignedPdo?.name || 'Not yet assigned');
-        setText(
-            'dashboardSnapshotRemark',
-            latestRemark
-                ? `${latestRemark.actorName || 'CSWDD'} | ${truncateText(latestRemark.comment || '', 110)}`
-                : 'Reviewer remarks will appear here once visible to you.'
-        );
+        const snapshotLive = document.getElementById('dashboardSnapshotLive');
+        if (snapshotLive) {
+            snapshotLive.hidden = !application;
+            if (application) {
+                setText('dashboardSnapshotStatus', application.status || 'Draft');
+                setText('dashboardSnapshotDate', buildAplikasyonDateMeta(application));
+            }
+        }
 
         renderTimelineList('historyList', application?.history || [], renderHistoryItem, 'No status history yet.');
         renderTimelineList('remarksList', application?.remarks || [], renderRemarkItem, 'No applicant-visible remarks yet.');
@@ -708,7 +709,6 @@
         const profile = state.dashboard.profile || {};
         const application = state.dashboard.application || {};
         const training = state.dashboard.training || {};
-        const certificate = state.dashboard.certificate || {};
 
         setJourneyState('journeyStepProfile', (profile.completionPercent || 0) >= 100 ? 'complete' : 'current');
 
@@ -720,7 +720,6 @@
         const trainingStarted = (training.invitees || []).length > 0;
         const trainingComplete = (trainingSummary.totalPrograms || 0) > 0 && (trainingSummary.completed || 0) >= (trainingSummary.totalPrograms || 0);
         setJourneyState('journeyStepTraining', trainingComplete ? 'complete' : (trainingStarted ? 'current' : 'upcoming'));
-        setJourneyState('journeyStepSertipiko', certificate.eligible ? 'complete' : (trainingComplete ? 'current' : 'upcoming'));
     }
 
     function renderAlerts() {
@@ -1430,45 +1429,154 @@
         modal.innerHTML = `
             <div class="beneficiary-centered-modal__backdrop" data-close-centered-modal></div>
             <div class="beneficiary-centered-modal__card applicant-password-modal" role="dialog" aria-modal="true" aria-labelledby="applicantPasswordTitle">
-                <button type="button" class="beneficiary-centered-modal__close" data-close-centered-modal aria-label="Close">&times;</button>
+                <button type="button" class="beneficiary-centered-modal__close applicant-password-modal__close" data-close-centered-modal aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                </button>
                 <div class="beneficiary-centered-modal__header applicant-password-modal__header">
-                    <div class="applicant-password-modal__eyebrow">Account Security</div>
-                    <h3 id="applicantPasswordTitle">Change Password</h3>
-                    <p>Update your portal password securely. Enter your current password first, then choose a new one that is easy for you to remember and hard for others to guess.</p>
-                    <div class="applicant-password-modal__tip" aria-hidden="true">
-                        <span class="applicant-password-modal__tip-badge">8+ characters</span>
-                        <span class="applicant-password-modal__tip-copy">Use a mix of uppercase, lowercase, and numbers.</span>
+                    <div class="applicant-password-modal__eyebrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        Account Security
                     </div>
+                    <h3 id="applicantPasswordTitle">Change Password</h3>
+                    <p>Update your portal password securely. Enter your current password first, then choose a new one.</p>
                 </div>
-                <form id="applicantChangePasswordForm" class="beneficiary-centered-modal__form applicant-password-modal__form">
+                <form id="applicantChangePasswordForm" class="beneficiary-centered-modal__form applicant-password-modal__form" novalidate>
+                    <div class="applicant-password-modal__strength-hints" id="passwordStrengthHints">
+                        <span class="applicant-password-modal__hint-pill" data-hint="length">8+ characters</span>
+                        <span class="applicant-password-modal__hint-pill" data-hint="upper">Uppercase</span>
+                        <span class="applicant-password-modal__hint-pill" data-hint="lower">Lowercase</span>
+                        <span class="applicant-password-modal__hint-pill" data-hint="number">Number</span>
+                    </div>
                     <label class="form-field applicant-password-modal__field">
                         <span class="applicant-password-modal__label">Current password</span>
-                        <input type="password" name="currentPassword" class="applicant-password-modal__input" autocomplete="current-password" required>
+                        <div class="applicant-password-modal__input-wrap">
+                            <input type="password" name="currentPassword" class="applicant-password-modal__input" autocomplete="current-password" required>
+                            <button type="button" class="applicant-password-modal__toggle" data-toggle-pw="currentPassword" aria-label="Toggle current password visibility" tabindex="-1">
+                                <svg class="pw-eye pw-eye--open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="pw-eye pw-eye--closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
                     </label>
                     <label class="form-field applicant-password-modal__field">
                         <span class="applicant-password-modal__label">New password</span>
-                        <input type="password" name="newPassword" class="applicant-password-modal__input" autocomplete="new-password" required minlength="8">
-                        <small class="applicant-password-modal__hint">Choose at least 8 characters for better security.</small>
+                        <div class="applicant-password-modal__input-wrap">
+                            <input type="password" name="newPassword" class="applicant-password-modal__input" autocomplete="new-password" required minlength="8">
+                            <button type="button" class="applicant-password-modal__toggle" data-toggle-pw="newPassword" aria-label="Toggle new password visibility" tabindex="-1">
+                                <svg class="pw-eye pw-eye--open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="pw-eye pw-eye--closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                        <div class="applicant-password-modal__strength" id="passwordStrengthBar" hidden>
+                            <div class="applicant-password-modal__strength-track">
+                                <div class="applicant-password-modal__strength-fill" id="passwordStrengthFill"></div>
+                            </div>
+                            <span class="applicant-password-modal__strength-label" id="passwordStrengthLabel"></span>
+                        </div>
                     </label>
                     <label class="form-field applicant-password-modal__field">
                         <span class="applicant-password-modal__label">Confirm new password</span>
-                        <input type="password" name="confirmPassword" class="applicant-password-modal__input" autocomplete="new-password" required minlength="8">
+                        <div class="applicant-password-modal__input-wrap">
+                            <input type="password" name="confirmPassword" class="applicant-password-modal__input" autocomplete="new-password" required minlength="8">
+                            <button type="button" class="applicant-password-modal__toggle" data-toggle-pw="confirmPassword" aria-label="Toggle confirm password visibility" tabindex="-1">
+                                <svg class="pw-eye pw-eye--open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg class="pw-eye pw-eye--closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            </button>
+                        </div>
+                        <div class="applicant-password-modal__match" id="passwordMatchFeedback" hidden>
+                            <svg class="pw-match-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Passwords match</span>
+                        </div>
                     </label>
-                    <div class="notice error" id="applicantPasswordError" hidden></div>
+                    <div class="notice error applicant-password-modal__error" id="applicantPasswordError" hidden></div>
                     <div class="beneficiary-centered-modal__actions applicant-password-modal__actions">
                         <button type="button" class="btn-outline" data-close-centered-modal>Back</button>
-                        <button type="submit" class="btn-primary">Save Password</button>
+                        <button type="submit" class="btn-primary" id="applicantPasswordSubmit">
+                            <span class="pw-submit-text">Save Password</span>
+                            <span class="pw-submit-spinner" hidden>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32" stroke-linecap="round"><animate attributeName="stroke-dashoffset" values="32;0;32" dur="1.2s" repeatCount="indefinite"/></svg>
+                            </span>
+                        </button>
                     </div>
                 </form>
             </div>
         `;
+
         modal.addEventListener('click', (event) => {
             if (event.target.closest('[data-close-centered-modal]')) {
                 closeCenteredModal();
             }
         });
-        modal.querySelector('#applicantChangePasswordForm')?.addEventListener('submit', submitChangePassword);
+
+        const form = modal.querySelector('#applicantChangePasswordForm');
+        form?.addEventListener('submit', submitChangePassword);
+
+        // Password visibility toggle
+        modal.querySelectorAll('[data-toggle-pw]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const input = form?.querySelector(`[name="${btn.dataset.togglePw}"]`);
+                if (!input) return;
+                const isPassword = input.getAttribute('type') === 'password';
+                input.setAttribute('type', isPassword ? 'text' : 'password');
+                btn.classList.toggle('is-visible', isPassword);
+            });
+        });
+
+        // Live password strength & match validation
+        const newPw = form?.querySelector('[name="newPassword"]');
+        const confirmPw = form?.querySelector('[name="confirmPassword"]');
+        const strengthBar = document.getElementById('passwordStrengthBar');
+        const strengthFill = document.getElementById('passwordStrengthFill');
+        const strengthLabel = document.getElementById('passwordStrengthLabel');
+        const matchFeedback = document.getElementById('passwordMatchFeedback');
+        const hints = document.querySelectorAll('[data-hint]');
+
+        function evaluateStrength(pw) {
+            const checks = {
+                length: pw.length >= 8,
+                upper: /[A-Z]/.test(pw),
+                lower: /[a-z]/.test(pw),
+                number: /\d/.test(pw),
+            };
+            hints.forEach((el) => {
+                const ok = checks[el.dataset.hint] || false;
+                el.classList.toggle('is-met', ok);
+            });
+            const met = Object.values(checks).filter(Boolean).length;
+            if (pw.length === 0) {
+                strengthBar?.setAttribute('hidden', '');
+                return;
+            }
+            strengthBar?.removeAttribute('hidden');
+            const levels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+            const level = levels[met] || '';
+            if (strengthFill) {
+                strengthFill.className = 'applicant-password-modal__strength-fill';
+                if (met <= 1) strengthFill.classList.add('is-weak');
+                else if (met === 2) strengthFill.classList.add('is-fair');
+                else if (met === 3) strengthFill.classList.add('is-good');
+                else strengthFill.classList.add('is-strong');
+            }
+            if (strengthLabel) strengthLabel.textContent = level;
+        }
+
+        function evaluateMatch() {
+            if (!confirmPw?.value) {
+                matchFeedback?.setAttribute('hidden', '');
+                return;
+            }
+            const match = confirmPw.value === newPw?.value;
+            matchFeedback?.toggleAttribute('hidden', !match);
+            matchFeedback?.classList.toggle('is-match', match);
+            confirmPw.classList.toggle('is-match', match && confirmPw.value.length > 0);
+            confirmPw.classList.toggle('is-mismatch', !match && confirmPw.value.length > 0);
+        }
+
+        newPw?.addEventListener('input', () => { evaluateStrength(newPw.value); evaluateMatch(); });
+        confirmPw?.addEventListener('input', evaluateMatch);
+
         document.body.appendChild(modal);
+        // Focus first field
+        setTimeout(() => form?.querySelector('[name="currentPassword"]')?.focus(), 100);
     }
 
     function closeCenteredModal() {
@@ -1479,8 +1587,13 @@
         event.preventDefault();
         const form = event.currentTarget;
         const errorNode = document.getElementById('applicantPasswordError');
-        const submitButton = form.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
+        const submitButton = document.getElementById('applicantPasswordSubmit');
+        const submitText = submitButton?.querySelector('.pw-submit-text');
+        const submitSpinner = submitButton?.querySelector('.pw-submit-spinner');
+
+        if (submitButton) submitButton.disabled = true;
+        if (submitSpinner) submitSpinner.hidden = false;
+        if (submitText) submitText.textContent = 'Saving...';
         if (errorNode) {
             errorNode.hidden = true;
             errorNode.textContent = '';
@@ -1513,7 +1626,9 @@
                 errorNode.textContent = error.message || 'Unable to change password.';
             }
         } finally {
-            submitButton.disabled = false;
+            if (submitButton) submitButton.disabled = false;
+            if (submitSpinner) submitSpinner.hidden = true;
+            if (submitText) submitText.textContent = 'Save Password';
         }
     }
 

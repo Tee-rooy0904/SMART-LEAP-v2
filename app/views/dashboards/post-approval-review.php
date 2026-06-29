@@ -8,6 +8,7 @@ $postApprovalCssVersion = (string) @filemtime(base_path('public/assets/css/dashb
 $reviewJsVersion = (string) @filemtime(base_path('public/assets/js/dashboards/post-approval-review.js'));
 $notificationsCssVersion = (string) @filemtime(base_path('public/assets/css/components/notifications.css'));
 $notificationsJsVersion = (string) @filemtime(base_path('public/assets/js/shared/notifications.js'));
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,6 +16,8 @@ $notificationsJsVersion = (string) @filemtime(base_path('public/assets/js/shared
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMART LEAP | Application Form Review</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval.css?v=<?= urlencode($postApprovalCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval-review.css?v=<?= urlencode($reviewCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode($notificationsCssVersion) ?>">

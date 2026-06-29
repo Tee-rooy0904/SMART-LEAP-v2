@@ -134,6 +134,7 @@ class ReportController extends Controller
         $this->writeCsvDistributionSection($stream, 'Donut Chart Data - Gender Segregation', $summary['genderDistribution'] ?? []);
         $this->writeCsvDistributionSection($stream, 'Donut Chart Data - Service Type Distribution', $summary['serviceTypeDistribution'] ?? []);
         $this->writeCsvDistributionSection($stream, 'Donut Chart Data - Sector Distribution', $summary['sectorDistribution'] ?? []);
+        $this->writeCsvDemographicParticipantsSection($stream, $report['records'] ?? []);
 
         $trainingRows = $report['trainingAnalytics']['rows'] ?? [];
         fputcsv($stream, []);
@@ -150,8 +151,8 @@ class ReportController extends Controller
             'Status',
         ]);
         $obligations   = is_array($report['repaymentAnalytics']['obligations'] ?? null) ? $report['repaymentAnalytics']['obligations'] : [];
-        $csvPeriod     = (string) ($report['filters']['period'] ?? 'monthly');
-        $usePayDate    = in_array($csvPeriod, ['daily', 'weekly', 'custom'], true);
+        $csvPeriod      = (string) ($report['filters']['period'] ?? 'monthly');
+        $usePayDate     = $csvPeriod === 'custom';
         $paymentCsvRows = [];
         foreach ($obligations as $ob) {
             $hasActivity = in_array((string) ($ob['status'] ?? ''), ['paid_on_time', 'partial_delayed', 'pending_verification'], true);
@@ -267,6 +268,48 @@ class ReportController extends Controller
                 (string) ($data['label'] ?? 'Not Set'),
                 $count,
                 round(($count / $total) * 100, 2),
+            ]);
+        }
+    }
+
+    private function writeCsvDemographicParticipantsSection(mixed $stream, mixed $records): void
+    {
+        $rows = is_array($records) ? $records : [];
+        usort($rows, static fn(array $a, array $b): int => strcmp((string) ($a['populationStage'] ?? ''), (string) ($b['populationStage'] ?? ''))
+            ?: strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')));
+
+        fputcsv($stream, []);
+        fputcsv($stream, ['Demographic Participants']);
+        fputcsv($stream, [
+            'Population',
+            'Name',
+            'Email',
+            'Business Name',
+            'Barangay',
+            'Assigned PDO',
+            'Service Type',
+            'Sector',
+            'Gender',
+            'Program Status',
+        ]);
+
+        if ($rows === []) {
+            fputcsv($stream, ['No applicant or beneficiary records found for the selected filters.']);
+            return;
+        }
+
+        foreach ($rows as $row) {
+            fputcsv($stream, [
+                (string) ($row['populationStage'] ?? ((bool) ($row['isBeneficiary'] ?? false) ? 'Beneficiary' : 'Applicant')),
+                (string) ($row['name'] ?? ''),
+                (string) ($row['email'] ?? ''),
+                (string) ($row['businessName'] ?? ''),
+                (string) ($row['barangay'] ?? ''),
+                (string) ($row['assignedPdo'] ?? ''),
+                (string) ($row['serviceType'] ?? ''),
+                (string) ($row['sector'] ?? ''),
+                (string) ($row['gender'] ?? ''),
+                (string) ($row['programStatus'] ?? ''),
             ]);
         }
     }

@@ -1718,20 +1718,30 @@
       list.innerHTML = '<p class="sw-empty">No Social Worker support concerns are assigned right now.</p>';
       return;
     }
-    list.innerHTML = state.tickets.map((ticket) => `
-      <button type="button" class="sw-ticket-card ${String(ticket.id) === String(state.activeTicketId) ? 'is-active' : ''}" data-open-ticket="${Number(ticket.id || 0)}">
-        <span class="sw-ticket-card__top">
-          <strong>${escapeHtml(ticket.ticketNo || ticket.ticket_no || 'Ticket')}</strong>
-          <span class="sw-status ${statusClass(ticket.status)}">${escapeHtml(ticket.status || 'New')}</span>
-        </span>
-        <h3>${escapeHtml(ticket.subject || 'Support concern')}</h3>
-        <p>${escapeHtml(ticket.category || 'Other')} | ${escapeHtml(ticket.assignedRole || ticket.assigned_role || 'Social Worker')}</p>
-        <span class="sw-ticket-card__meta">
-          <small>${escapeHtml(formatDate(ticket.updatedAt || ticket.updated_at || ticket.createdAt))}</small>
-          ${ticket.unreadForStaff || ticket.unread_for_staff ? '<span class="sw-status is-warning">Unread</span>' : ''}
-        </span>
-      </button>
-    `).join('');
+    list.innerHTML = state.tickets.map((ticket) => {
+      const isActive = String(ticket.id) === String(state.activeTicketId);
+      const senderName = ticket.createdByName || ticket.created_by_name || ticket.assignedToName || ticket.assigned_to_name || '';
+      const initials = senderName ? senderName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() : '?';
+      const lastMsg = ticket.lastMessage || ticket.last_message || '';
+      const unread = ticket.unreadForStaff || ticket.unread_for_staff;
+      return `
+        <button type="button" class="sw-ticket-card ${isActive ? 'is-active' : ''} ${unread ? 'has-unread' : ''}" data-open-ticket="${Number(ticket.id || 0)}">
+          <div class="sw-ticket-card__avatar">${escapeHtml(initials)}</div>
+          <div class="sw-ticket-card__body">
+            <div class="sw-ticket-card__top">
+              <strong>${escapeHtml(ticket.ticketNo || ticket.ticket_no || 'Ticket')}</strong>
+              <span class="sw-status ${statusClass(ticket.status)}">${escapeHtml(ticket.status || 'New')}</span>
+            </div>
+            <h3>${escapeHtml(ticket.subject || 'Support concern')}</h3>
+            <p class="sw-ticket-card__preview">${escapeHtml(lastMsg || ticket.category || 'Other')}</p>
+            <div class="sw-ticket-card__meta">
+              <small>${escapeHtml(formatDate(ticket.updatedAt || ticket.updated_at || ticket.createdAt))}</small>
+              ${unread ? '<span class="sw-unread-dot"></span>' : ''}
+            </div>
+          </div>
+        </button>
+      `;
+    }).join('');
   }
 
   // Initialize the help-desk ticket list and bind the message composer for oversight support work.
@@ -1740,6 +1750,23 @@
       const button = event.target.closest('[data-open-ticket]');
       if (button) openTicket(Number(button.dataset.openTicket || 0));
     });
+
+    const searchInput = document.getElementById('swSupportSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', filterTicketList);
+    }
+  }
+
+  let ticketSearchTimer = null;
+  function filterTicketList() {
+    if (ticketSearchTimer) clearTimeout(ticketSearchTimer);
+    ticketSearchTimer = setTimeout(() => {
+      const q = (document.getElementById('swSupportSearch')?.value || '').toLowerCase();
+      document.querySelectorAll('.sw-ticket-card').forEach((card) => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(q) ? '' : 'none';
+      });
+    }, 150);
   }
 
   async function openTicket(ticketId) {
@@ -1763,50 +1790,70 @@
     if (!detail || !ticket) return;
     const messages = Array.isArray(ticket.messages) ? ticket.messages : [];
     const closed = String(ticket.status || '').toLowerCase() === 'closed';
+    const createdBy = ticket.createdByName || ticket.created_by_name || 'Sender';
+    const initials = createdBy.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
     detail.innerHTML = `
-      <div class="section-header admin-section__header">
-        <div>
-          <span class="admin-section-eyebrow">${escapeHtml(ticket.ticketNo || ticket.ticket_no || 'Ticket')}</span>
-          <h2>${escapeHtml(ticket.subject || 'Support concern')}</h2>
-          <p class="section-subtitle">${escapeHtml(ticket.category || 'Other')} | Assigned to ${escapeHtml(ticket.assignedRole || 'Social Worker')}</p>
+      <div class="sw-chat-header">
+        <div class="sw-chat-header__info">
+          <div class="sw-chat-header__avatar">${escapeHtml(initials || '?')}</div>
+          <div>
+            <div class="sw-chat-header__ticket">${escapeHtml(ticket.ticketNo || ticket.ticket_no || 'Ticket')}</div>
+            <h2 class="sw-chat-header__subject">${escapeHtml(ticket.subject || 'Support concern')}</h2>
+            <p class="sw-chat-header__subtitle">${escapeHtml(ticket.category || 'Other')} &middot; ${escapeHtml(formatDate(ticket.createdAt || ticket.created_at))}</p>
+          </div>
         </div>
         <span class="sw-status ${statusClass(ticket.status)}">${escapeHtml(ticket.status || 'New')}</span>
       </div>
-      <div class="sw-ticket-thread">
-        ${messages.length ? messages.map(renderMessage).join('') : '<p class="sw-empty">No messages recorded yet.</p>'}
+      <div class="sw-ticket-thread" data-thread-container>
+        ${messages.length ? messages.map(renderMessage).join('') : '<div class="sw-chat-empty">No messages yet. Start the conversation below.</div>'}
       </div>
-      ${closed ? '<p class="sw-empty">This concern is closed.</p>' : `
+      ${closed ? '<div class="sw-chat-closed">This concern is closed. No further replies can be sent.</div>' : `
         <form class="sw-ticket-reply" data-ticket-reply data-ticket-id="${Number(ticket.id || 0)}">
-          <textarea name="message" rows="4" required placeholder="Write a public reply to the applicant or beneficiary."></textarea>
-          <label class="sw-ticket-status-field">
-            <span>Ticket status after reply</span>
-            <select name="nextStatus">
-              <option value="">Keep current status</option>
-              <option value="In Review">In Review</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </label>
-          <p class="sw-inline-error" data-ticket-error></p>
-          <div class="sw-ticket-reply__actions">
-            <button type="submit" class="app-btn-primary">Send Reply</button>
+          <div class="sw-reply-composer">
+            <textarea name="message" rows="2" required placeholder="Type your reply here..." data-auto-resize></textarea>
+            <div class="sw-reply-toolbar">
+              <button type="submit" class="app-btn-primary sw-reply-send">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Send
+              </button>
+            </div>
           </div>
+          <p class="sw-inline-error" data-ticket-error></p>
         </form>
       `}
     `;
     detail.querySelector('[data-ticket-reply]')?.addEventListener('submit', sendTicketReply);
+
+    const thread = detail.querySelector('[data-thread-container]');
+    if (thread) {
+      requestAnimationFrame(() => { thread.scrollTop = thread.scrollHeight; });
+    }
+
+    const autoResize = detail.querySelector('[data-auto-resize]');
+    if (autoResize) {
+      const resize = () => {
+        autoResize.style.height = 'auto';
+        autoResize.style.height = Math.min(autoResize.scrollHeight, 160) + 'px';
+      };
+      autoResize.addEventListener('input', resize);
+    }
   }
 
   function renderMessage(message) {
     const isStaff = String(message.senderType || '').toLowerCase() !== 'beneficiary' && String(message.senderType || '').toLowerCase() !== 'applicant';
+    const senderName = message.senderName || message.senderType || 'Sender';
+    const initials = senderName.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
     return `
-      <article class="sw-ticket-message ${isStaff ? 'is-staff' : ''}">
-        <div class="sw-ticket-message__meta">
-          <strong>${escapeHtml(message.senderName || message.senderType || 'Sender')}</strong>
-          <span>${escapeHtml(message.senderType || '')}</span>
-          <span>${escapeHtml(formatDate(message.timestamp || message.createdAt))}</span>
+      <article class="sw-chat-bubble ${isStaff ? 'is-staff' : ''}">
+        <div class="sw-chat-bubble__avatar">${escapeHtml(initials)}</div>
+        <div class="sw-chat-bubble__body">
+          <div class="sw-chat-bubble__meta">
+            <strong>${escapeHtml(senderName)}</strong>
+            <span>${escapeHtml(message.senderType || '')}</span>
+            <span class="sw-chat-bubble__time">${escapeHtml(formatDate(message.timestamp || message.createdAt))}</span>
+          </div>
+          <p>${escapeHtml(message.body || message.message || '')}</p>
         </div>
-        <p>${escapeHtml(message.body || message.message || '')}</p>
       </article>
     `;
   }
@@ -1816,18 +1863,10 @@
     const form = event.currentTarget;
     const ticketId = Number(form.dataset.ticketId || 0);
     const errorNode = form.querySelector('[data-ticket-error]');
-    const nextStatus = form.nextStatus?.value || '';
     const data = new FormData(form);
-    data.delete('nextStatus');
     data.append('ticket_id', String(ticketId));
     try {
       await request('staff/support/ticket/messages', { method: 'POST', body: data });
-      if (nextStatus) {
-        const statusData = new FormData();
-        statusData.append('ticket_id', String(ticketId));
-        statusData.append('status', nextStatus);
-        await request('staff/support/ticket/status', { method: 'POST', body: statusData });
-      }
       showToast('Reply sent.', 'success');
       await loadSupportTickets();
       await openTicket(ticketId);
@@ -2040,15 +2079,35 @@
               <div class="admin-record-sheet__grid">
                 <label class="admin-record-sheet__field admin-record-sheet__field--wide">
                   <span class="admin-profile-modal__label">Current Password</span>
-                  <input class="admin-profile-modal__input" type="password" name="currentPassword" required>
+                  <div class="password-input-wrap">
+                    <input class="admin-profile-modal__input" type="password" name="currentPassword" required autofocus>
+                    <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                      <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                    </button>
+                  </div>
                 </label>
                 <label class="admin-record-sheet__field admin-record-sheet__field--wide">
                   <span class="admin-profile-modal__label">New Password</span>
-                  <input class="admin-profile-modal__input" type="password" name="newPassword" minlength="8" required>
+                  <div class="password-input-wrap">
+                    <input class="admin-profile-modal__input" type="password" name="newPassword" minlength="8" required>
+                    <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                      <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                    </button>
+                  </div>
+                  <div class="password-strength" hidden>
+                    <div class="password-strength__bar"><div class="password-strength__fill"></div></div>
+                    <div class="password-strength__hints"></div>
+                  </div>
                 </label>
                 <label class="admin-record-sheet__field admin-record-sheet__field--wide">
                   <span class="admin-profile-modal__label">Confirm New Password</span>
-                  <input class="admin-profile-modal__input" type="password" name="confirmPassword" minlength="8" required>
+                  <div class="password-input-wrap">
+                    <input class="admin-profile-modal__input" type="password" name="confirmPassword" minlength="8" required>
+                    <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+                      <svg class="eye-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5zm0-8c-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3-1.3-3-3-3z"/></svg>
+                    </button>
+                  </div>
+                  <div class="password-match-feedback" hidden></div>
                 </label>
                 <div class="notice danger admin-profile-modal__notice" id="swPasswordError" hidden></div>
               </div>
@@ -2061,6 +2120,14 @@
         </div>
       </div>
     `);
+
+    const root = document.getElementById('swModalRoot');
+    if (root) {
+      wirePasswordToggle(root);
+      wirePasswordStrength(root, 'input[name="newPassword"]');
+      wirePasswordMatch(root, 'input[name="newPassword"]', 'input[name="confirmPassword"]');
+    }
+
     document.getElementById('swPasswordForm')?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = event.currentTarget;
@@ -2100,6 +2167,76 @@
         submitButton.disabled = false;
       }
     });
+  }
+
+  function wirePasswordToggle(root) {
+    root.querySelectorAll('.password-toggle-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const wrap = btn.closest('.password-input-wrap');
+        const input = wrap?.querySelector('input');
+        if (!input) return;
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.classList.toggle('is-visible', isPassword);
+      });
+    });
+  }
+
+  function wirePasswordStrength(root, inputSelector) {
+    const input = root.querySelector(inputSelector);
+    if (!input) return;
+    const strengthEl = root.querySelector('.password-strength');
+    const fillEl = root.querySelector('.password-strength__fill');
+    const hintsEl = root.querySelector('.password-strength__hints');
+    if (!strengthEl || !fillEl) return;
+
+    input.addEventListener('input', () => {
+      const val = input.value;
+      if (!val) { strengthEl.hidden = true; return; }
+      strengthEl.hidden = false;
+
+      let score = 0;
+      const hints = [];
+      if (val.length >= 8) { score += 25; } else { hints.push('At least 8 characters'); }
+      if (/[a-z]/.test(val) && /[A-Z]/.test(val)) { score += 25; } else { hints.push('Uppercase & lowercase'); }
+      if (/\d/.test(val)) { score += 25; } else { hints.push('At least one number'); }
+      if (/[^a-zA-Z0-9]/.test(val)) { score += 25; } else { hints.push('At least one symbol'); }
+
+      let level = 'weak';
+      if (score >= 100) level = 'strong';
+      else if (score >= 75) level = 'medium';
+      else if (score >= 50) level = 'fair';
+
+      fillEl.className = 'password-strength__fill';
+      fillEl.classList.add(`strength--${level}`);
+
+      if (hintsEl) {
+        hintsEl.innerHTML = hints.map((h) => `<span class="strength-hint">${h}</span>`).join('');
+      }
+    });
+  }
+
+  function wirePasswordMatch(root, pwSelector, confirmSelector) {
+    const pw = root.querySelector(pwSelector);
+    const confirm = root.querySelector(confirmSelector);
+    if (!pw || !confirm) return;
+    const feedbackEl = root.querySelector('.password-match-feedback');
+    if (!feedbackEl) return;
+
+    const check = () => {
+      if (!confirm.value) { feedbackEl.hidden = true; return; }
+      feedbackEl.hidden = false;
+      if (pw.value === confirm.value) {
+        feedbackEl.textContent = 'Passwords match';
+        feedbackEl.className = 'password-match-feedback match--ok';
+      } else {
+        feedbackEl.textContent = 'Passwords do not match';
+        feedbackEl.className = 'password-match-feedback match--error';
+      }
+    };
+
+    pw.addEventListener('input', check);
+    confirm.addEventListener('input', check);
   }
 
   function openModal(content) {

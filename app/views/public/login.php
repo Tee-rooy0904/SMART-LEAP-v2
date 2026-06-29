@@ -2,6 +2,7 @@
 <?php
 $sharedStylesVersion = @filemtime(base_path('public/assets/css/shared/styles.css')) ?: time();
 $authJsVersion = @filemtime(base_path('public/assets/js/shared/auth.js')) ?: time();
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -9,6 +10,8 @@ $authJsVersion = @filemtime(base_path('public/assets/js/shared/auth.js')) ?: tim
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSWDD-SMART LEAP Admin System</title>
+    <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
+    <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= $baseUrl ?>/assets/css/shared/styles.css?v=<?= urlencode((string) $sharedStylesVersion) ?>" rel="stylesheet">

@@ -1448,22 +1448,6 @@
   grid-template-columns: minmax(260px, 1.4fr) repeat(4, minmax(150px, 0.8fr));
 }
 
-.content-main #reports-section .reports-custom-dates {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 240px));
-  gap: 12px;
-}
-
-.content-main #reports-section .reports-custom-dates.is-hidden {
-  display: none;
-}
-
-.content-main #reports-section .reports-custom-dates label {
-  display: grid;
-  gap: 7px;
-}
-
 .content-main #reports-section .reports-filter-actions {
   display: flex;
   justify-content: space-between;
@@ -1505,13 +1489,6 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.content-main #reports-section .reports-date-group {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
 }
 
 .content-main #reports-section input,
@@ -1982,14 +1959,15 @@
 
 .reports-monthly-payment-chart__body {
   display: grid;
-  grid-template-columns: 18px 92px minmax(0, 1fr) 104px;
-  gap: 14px;
+  grid-template-columns: 28px 96px minmax(0, 1fr) 104px;
+  gap: 18px;
   min-height: 310px;
   align-items: stretch;
 }
 
 .reports-monthly-payment-chart__axis-title {
   align-self: center;
+  justify-self: center;
   color: #5d5d5d;
   font-size: 0.74rem;
   font-weight: 900;
@@ -2392,7 +2370,6 @@
   .content-main #reports-section .reports-kpis,
   .content-main #reports-section .charts-grid,
   .content-main #reports-section .reports-filter-grid,
-  .content-main #reports-section .reports-custom-dates,
   .content-main #reports-section .reports-toolbar__row,
   .content-main #reports-section .reports-toolbar__row:last-child {
     grid-template-columns: 1fr;
@@ -2559,6 +2536,174 @@
   text-align: center;
 }
 
+.reports-person-cell small {
+  display: block;
+  margin-top: 4px;
+  color: #607893;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.reports-demographic-participants-summary {
+  background:
+    linear-gradient(135deg, rgba(255, 247, 237, 0.92), rgba(239, 246, 255, 0.9)),
+    #f8fbff;
+}
+
+.reports-demographic-participants-table {
+  min-width: 1080px;
+}
+
+.reports-training-attendance-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.reports-training-attendance-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.94), rgba(240, 253, 250, 0.9)),
+    #f8fbff;
+}
+
+.reports-training-attendance-summary__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.reports-training-attendance-summary__header strong {
+  display: block;
+  color: #0c2d52;
+  font-size: 1rem;
+}
+
+.reports-training-attendance-summary__header span {
+  display: block;
+  margin-top: 4px;
+  color: #607893;
+  font-size: 0.82rem;
+}
+
+.reports-training-attendance-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.reports-training-attendance-summary__chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+  color: #42607c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.reports-training-attendance-summary__chips strong {
+  color: #0b2e55;
+  font-size: 0.92rem;
+}
+
+.reports-training-attendance-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.reports-training-attendance-breakdown__card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  text-align: center;
+}
+
+.reports-training-attendance-breakdown__card span {
+  color: #5d7591;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reports-training-attendance-breakdown__card strong {
+  color: #102347;
+  font-size: 1.2rem;
+}
+
+.reports-training-attendance-breakdown__card small {
+  color: #607893;
+  line-height: 1.45;
+}
+
+.reports-training-attendance-table thead th,
+.reports-training-attendance-table tbody td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.reports-training-attendance-table tbody td strong,
+.reports-training-attendance-table tbody td small {
+  display: block;
+  text-align: center;
+}
+
+.reports-training-attendance-table tbody td small {
+  margin-top: 4px;
+  color: #607893;
+}
+
+.reports-training-attendance-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.reports-training-attendance-chip--emerald {
+  background: rgba(5, 150, 105, 0.1);
+  color: #047857;
+  border-color: rgba(5, 150, 105, 0.2);
+}
+
+.reports-training-attendance-chip--rose {
+  background: rgba(225, 29, 72, 0.1);
+  color: #be123c;
+  border-color: rgba(225, 29, 72, 0.18);
+}
+
+.reports-training-attendance-chip--amber {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.reports-training-attendance-chip--slate {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+  border-color: rgba(100, 116, 139, 0.18);
+}
+
 /* Payment status chips */
 .reports-payment-chip {
   display: inline-flex;
@@ -2618,6 +2763,15 @@
   }
 
   .reports-payment-participants-summary span {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .reports-training-attendance-summary__chips {
+    justify-content: flex-start;
+  }
+
+  .reports-training-attendance-summary__chips span {
     width: 100%;
     justify-content: space-between;
   }
