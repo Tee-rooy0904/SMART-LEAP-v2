@@ -1,16 +1,109 @@
 <?php
 declare(strict_types=1);
 
-function auth_user(): ?array
+function auth_session_key_for_entry_point(string $entryPoint): string
 {
-    $sessionUser = session_get('auth.user');
+    return $entryPoint === 'staff' ? 'auth.staff.user' : 'auth.portal.user';
+}
+
+function current_request_path(): string
+{
+    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+    $path = str_replace('\\', '/', $path);
+    $scriptName = str_replace('\\', '//', $_SERVER['SCRIPT_NAME'] ?? '/public/index.php');
+    $baseUrl = rtrim(str_replace('\\', '//', dirname($scriptName)), '//');
+    $basePrefix = $baseUrl === '/' || $baseUrl === '' ? '' : preg_quote($baseUrl, '#');
+    $path = preg_replace('#^' . $basePrefix . '/?#', '', $path);
+    $path = '/' . trim($path, '/');
+    return $path === '/' ? '/' : rtrim($path, '/');
+}
+
+function detect_entry_point_from_path(string $path): string
+{
+    if (preg_match('#^/(portal(?:/login)?|portal-login|applicant-dashboard|beneficiary-dashboard|signup|profile-completion|post-approval|application-form-file)#i', $path)) {
+        return 'portal';
+    }
+
+    if (preg_match('#^/(admin|project-officer|social-worker|pdo|login)$#i', $path)) {
+        return 'staff';
+    }
+
+    return '';
+}
+
+function detect_entry_point_from_referer(): string
+{
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    if ($referer === '') {
+        return '';
+    }
+    $refPath = parse_url($referer, PHP_URL_PATH) ?: '';
+    $refPath = str_replace('\\', '/', $refPath);
+    $scriptName = str_replace('\\', '//', $_SERVER['SCRIPT_NAME'] ?? '/public/index.php');
+    $baseUrl = rtrim(str_replace('\\', '//', dirname($scriptName)), '//');
+    $basePrefix = $baseUrl === '/' || $baseUrl === '' ? '' : preg_quote($baseUrl, '#');
+    $refPath = preg_replace('#^' . $basePrefix . '/?#', '', $refPath);
+    $refPath = '/' . trim($refPath, '/');
+    $refPath = $refPath === '/' ? '/' : rtrim($refPath, '/');
+    return detect_entry_point_from_path($refPath);
+}
+
+function detect_current_entry_point(): string
+{
+    $explicit = strtolower(trim((string) ($_POST['entryPoint'] ?? $_GET['entryPoint'] ?? '')));
+    if ($explicit === 'portal' || $explicit === 'staff') {
+        return $explicit;
+    }
+
+    $path = current_request_path();
+
+    $fromPath = detect_entry_point_from_path($path);
+    if ($fromPath !== '') {
+        return $fromPath;
+    }
+
+    if ($path === '/') {
+        return 'staff';
+    }
+
+    $fromReferer = detect_entry_point_from_referer();
+    if ($fromReferer !== '') {
+        return $fromReferer;
+    }
+
+    return '';
+}
+
+function auth_user(?string $entryPoint = null): ?array
+{
+    $entryPoint = $entryPoint ?? detect_current_entry_point();
+
+    if ($entryPoint === '') {
+        $fromReferer = detect_entry_point_from_referer();
+        if ($fromReferer !== '') {
+            return auth_user_from_key(auth_session_key_for_entry_point($fromReferer));
+        }
+        $staffUser = auth_user_from_key('auth.staff.user');
+        if ($staffUser !== null) {
+            return $staffUser;
+        }
+        return auth_user_from_key('auth.portal.user');
+    }
+
+    return auth_user_from_key(auth_session_key_for_entry_point($entryPoint));
+}
+
+function auth_user_from_key(string $sessionKey): ?array
+{
+    $sessionUser = session_get($sessionKey);
     if (!is_array($sessionUser) || !isset($sessionUser['id'])) {
         return null;
     }
 
     if (auth_session_expired($sessionUser)) {
         session_put('auth.expired_redirect', auth_session_redirect_path($sessionUser));
-        logout_user();
+        session_forget($sessionKey);
         return null;
     }
 
@@ -29,7 +122,7 @@ function auth_user(): ?array
     }
 
     if (!is_array($user) || !(bool) $user['is_active'] || (bool) $user['is_disabled']) {
-        logout_user();
+        session_forget($sessionKey);
         return null;
     }
 
@@ -47,7 +140,7 @@ function auth_user(): ?array
             auth_session_last_activity_timestamp($sessionUser)
         ),
     ];
-    session_put('auth.user', $freshUser);
+    session_put($sessionKey, $freshUser);
 
     return $freshUser;
 }
@@ -57,20 +150,31 @@ function is_authenticated(): bool
     return auth_user() !== null;
 }
 
-function login_user(array $user): void
+function login_user(array $user, string $entryPoint = 'portal'): void
 {
+    $key = auth_session_key_for_entry_point($entryPoint);
     $startedAt = date('c');
     $lastActivityAt = $startedAt;
-    session_put('auth.user', array_merge($user, [
+    session_put($key, array_merge($user, [
         'session_started_at' => $startedAt,
         'last_activity_at' => $lastActivityAt,
         'session_expires_at' => auth_session_expiry_for_role((string) ($user['role'] ?? ''), $startedAt, $lastActivityAt),
     ]));
 }
 
-function logout_user(): void
+function logout_user(?string $entryPoint = null): void
 {
-    session_forget('auth.user');
+    if ($entryPoint === null) {
+        $entryPoint = detect_current_entry_point();
+    }
+
+    if ($entryPoint === '') {
+        session_forget('auth.staff.user');
+        session_forget('auth.portal.user');
+        return;
+    }
+
+    session_forget(auth_session_key_for_entry_point($entryPoint));
 }
 
 function auth_session_expired(array $user): bool

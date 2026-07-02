@@ -130,28 +130,24 @@
             <div class="po-snapshot-card__eyebrow">In Progress</div>
             <div class="po-snapshot-card__body">
               <strong>${summary.inProgress || 0}</strong>
-              <span>Still preparing submissions and requirements</span>
             </div>
           </article>
           <article class="po-snapshot-card po-application-stat">
             <div class="po-snapshot-card__eyebrow">Ready for Review</div>
             <div class="po-snapshot-card__body">
               <strong>${summary.readyForReview || 0}</strong>
-              <span>Ready for review and assessment movement</span>
             </div>
           </article>
           <article class="po-snapshot-card po-application-stat">
             <div class="po-snapshot-card__eyebrow">Approved</div>
             <div class="po-snapshot-card__body">
               <strong>${summary.approved || 0}</strong>
-              <span>Approved and moved forward in the pipeline</span>
             </div>
           </article>
           <article class="po-snapshot-card po-application-stat">
             <div class="po-snapshot-card__eyebrow">Needs Correction</div>
             <div class="po-snapshot-card__body">
               <strong>${summary.needsCorrection || 0}</strong>
-              <span>Cases still waiting on applicant updates</span>
             </div>
           </article>
         </div>

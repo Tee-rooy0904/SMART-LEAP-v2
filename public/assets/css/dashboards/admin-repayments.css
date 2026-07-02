@@ -1006,23 +1006,85 @@ body.admin-repayment-modal-open {
   overflow-wrap: anywhere;
 }
 
-.admin-repayment-decision-buttons {
+.admin-repayment-decision-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.repayment-decision-card {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 1.5px solid rgba(203, 213, 225, 0.8);
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.repayment-decision-card:hover:not(:disabled) {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(239, 246, 255, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.repayment-decision-card:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.repayment-decision-card.is-active {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(209, 250, 229, 0.85);
+  cursor: default;
+}
+
+.repayment-decision-card__icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.repayment-decision-card__label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.repayment-decision-card__desc {
+  font-size: 0.78rem;
+  color: #5f7591;
+}
+
+.admin-repayment-hardcopy-update {
+  display: flex;
+  align-items: flex-end;
   gap: 12px;
-  align-items: stretch;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
-.admin-repayment-decision-buttons > * {
-  flex: 1 1 calc(50% - 6px);
-  min-width: 150px;
+.admin-repayment-hardcopy-update .filter-group {
+  display: grid;
+  gap: 6px;
+  min-width: 200px;
+  flex: 1 1 220px;
 }
 
-.admin-repayment-decision-buttons .is-locked-state {
-  border-color: rgba(16, 185, 129, 0.2);
-  background: rgba(209, 250, 229, 0.92);
-  color: #0f766e;
-  opacity: 1;
+.admin-repayment-hardcopy-update .filter-select {
+  min-height: 44px;
+}
+
+.admin-repayment-hardcopy-current {
+  font-size: 0.88rem;
+  color: #5f7591;
+  padding: 10px 0;
 }
 
 .admin-repayment-modal__footer {

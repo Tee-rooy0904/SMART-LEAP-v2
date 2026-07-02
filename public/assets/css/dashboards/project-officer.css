@@ -6055,10 +6055,10 @@ body.po-repayment-modal-open {
   overflow-wrap: anywhere;
 }
 
-.po-repayment-decision-actions .po-decision-rail__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.po-repayment-decision-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
 .po-repayment-decision-actions .po-decision-rail__actions > * {

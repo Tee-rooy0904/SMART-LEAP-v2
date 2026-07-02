@@ -48,7 +48,7 @@ class TrainingController extends Controller
         ]);
     }
 
-    public function show(): never
+    public function show(): never   
     {
         $programId = (int) ($_GET['id'] ?? 0);
         $service = new TrainingService();

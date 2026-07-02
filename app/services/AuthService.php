@@ -365,9 +365,9 @@ class AuthService
         return 'portal';
     }
 
-    public function currentUserFromSession(): ?array
+    public function currentUserFromSession(?string $entryPoint = null): ?array
     {
-        return auth_user();
+        return auth_user($entryPoint);
     }
 
     private function registerPublicCoMaker(array $input, array $files): array

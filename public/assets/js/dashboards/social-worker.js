@@ -707,8 +707,9 @@
       try {
         await fetch(routeUrl('auth/logout'), {
           method: 'POST',
-          headers: { Accept: 'application/json' },
+          headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           credentials: 'same-origin',
+          body: new URLSearchParams({ entryPoint: 'staff' }).toString(),
         });
       } catch (error) {
         console.warn('Social worker logout failed', error);
@@ -854,6 +855,11 @@
 
     const search = String(document.getElementById('swValidationSearch')?.value || '').toLowerCase();
     const activeTab = ['pending', 'selected', 'saved'].includes(state.validationTab) ? state.validationTab : 'pending';
+    const tabLabels = {
+      pending: 'Pending',
+      selected: 'Selected',
+      saved: 'Saved',
+    };
     document.querySelectorAll('[data-sw-validation-tab]').forEach((button) => {
       const active = button.getAttribute('data-sw-validation-tab') === activeTab;
       button.classList.toggle('is-active', active);
@@ -873,6 +879,13 @@
 
     const count = document.querySelector('[data-sw-validation-count]');
     if (count) count.textContent = `${filtered.length} ${activeTab}`;
+    const activeLabel = document.querySelector('[data-sw-validation-active-label]');
+    if (activeLabel) activeLabel.textContent = tabLabels[activeTab] || 'Pending';
+    const meta = document.querySelector('[data-sw-validation-meta]');
+    if (meta) {
+      const searchNote = search ? ` filtered by "${search}"` : '';
+      meta.textContent = `${filtered.length} record${filtered.length === 1 ? '' : 's'} shown in the ${tabLabels[activeTab] || 'Pending'} queue${searchNote}.`;
+    }
     const badge = document.querySelector('[data-section-badge="validation"]');
     if (badge) {
       const pendingCount = safeNumber(overview.validationSummary?.pending);
@@ -880,19 +893,19 @@
     }
 
     if (!filtered.length) {
-      body.innerHTML = '<tr><td colspan="7">No validation records matched the current filters.</td></tr>';
+      body.innerHTML = `<tr><td colspan="7">No ${escapeHtml((tabLabels[activeTab] || 'pending').toLowerCase())} validation records matched the current filters.</td></tr>`;
       return;
     }
 
     body.innerHTML = filtered.map((record) => `
       <tr>
-        <td><div class="sw-applicant-cell"><strong>${escapeHtml(record.fullName || 'Unnamed applicant')}</strong><span>${escapeHtml(record.referenceCode || '')}</span></div></td>
-        <td>${escapeHtml(record.email || '--')}</td>
-        <td>${escapeHtml(record.contactNumber || '--')}</td>
-        <td>${escapeHtml(record.completeAddress || '--')}</td>
+        <td><div class="sw-applicant-cell"><strong>${escapeHtml(record.fullName || 'Unnamed applicant')}</strong><span>${escapeHtml(record.referenceCode || 'No reference code')}</span></div></td>
+        <td><div class="sw-validation-detail-cell"><strong>${escapeHtml(record.email || '--')}</strong><span>${escapeHtml(record.barangay || '--')}</span></div></td>
+        <td><div class="sw-validation-detail-cell"><strong>${escapeHtml(record.contactNumber || '--')}</strong><span>${escapeHtml(record.gender || '--')}</span></div></td>
+        <td><div class="sw-validation-address-cell"><strong>${escapeHtml(record.completeAddress || '--')}</strong></div></td>
         <td><span class="sw-status ${statusClass(record.statusLabel)}">${escapeHtml(record.statusLabel || '--')}</span></td>
         <td>${escapeHtml(formatDate(record.submittedAt))}</td>
-        <td class="actions"><button type="button" class="app-btn-outline" data-open-validation-record="${Number(record.id || 0)}">View</button></td>
+        <td class="actions"><button type="button" class="app-btn-outline" data-open-validation-record="${Number(record.id || 0)}">Open record</button></td>
       </tr>
     `).join('');
   }

@@ -1241,6 +1241,7 @@
         uploadStatus: 'poRepaymentUploadStatus',
         hardCopyStatus: 'poRepaymentHardCopyStatus',
         hardCopyInput: 'poRepaymentHardCopyInput',
+        hardCopyUpdateBtn: 'poRepaymentHardCopyUpdateBtn',
         duplicateWarning: 'poRepaymentDuplicateWarning',
         proofName: 'poRepaymentProofName',
         proofType: 'poRepaymentProofType',
@@ -1251,12 +1252,9 @@
         fullscreenProof: 'poRepaymentFullscreenProof',
         historyBody: 'poRepaymentHistoryBody',
         remarks: 'po-repayment-remarks',
-        verifyPartial: 'poRepaymentVerifyPartial',
-        verifyFull: 'poRepaymentVerifyFull',
-        needsCorrection: 'poRepaymentNeedsCorrection',
-        reject: 'poRepaymentReject',
-        close: 'poRepaymentClose',
+        decisionCards: 'poRepaymentDecisionCards',
         decisionNote: 'poRepaymentDecisionNote',
+        close: 'poRepaymentClose',
       },
       emptyColspan: 12,
       emptyRosterMessage: 'No scoped beneficiaries matched the current filters.',
@@ -4373,7 +4371,12 @@
 
   async function handleLogout() {
     try {
-      await fetch(`${baseUrl}/auth/logout`, { method: 'POST', headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+      await fetch(`${baseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        credentials: 'same-origin',
+        body: new URLSearchParams({ entryPoint: 'staff' }).toString(),
+      });
     } finally {
       window.location.href = `${baseUrl}/login`;
     }

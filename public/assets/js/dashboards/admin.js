@@ -702,8 +702,9 @@
       try {
         await fetch(routeUrl('auth/logout'), {
           method: 'POST',
-          headers: { Accept: 'application/json' },
+          headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           credentials: 'same-origin',
+          body: new URLSearchParams({ entryPoint: 'staff' }).toString(),
         });
       } catch (error) {
         console.warn('Admin logout failed', error);
@@ -1087,13 +1088,11 @@
         uploadStatus: 'adminRepaymentUploadStatus',
         hardCopyStatus: 'adminRepaymentHardCopyStatus',
         hardCopyInput: 'adminRepaymentHardCopyInput',
+        hardCopyUpdateBtn: 'adminRepaymentHardCopyUpdateBtn',
         duplicateWarning: 'adminRepaymentDuplicateWarning',
         remarks: 'adminRepaymentRemarks',
+        decisionCards: 'adminRepaymentDecisionCards',
         decisionNote: 'adminRepaymentDecisionNote',
-        verifyPartial: 'adminRepaymentVerifyPartial',
-        verifyFull: 'adminRepaymentVerifyFull',
-        needsCorrection: 'adminRepaymentNeedsCorrection',
-        reject: 'adminRepaymentReject',
       },
     });
   }

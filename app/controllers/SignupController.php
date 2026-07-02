@@ -53,7 +53,7 @@ class SignupController extends Controller
         }
 
         if (empty($result['requiresVerification']) && isset($result['user']) && is_array($result['user'])) {
-            login_user($result['user']);
+            login_user($result['user'], 'portal');
         }
 
         response_json($result, 201);

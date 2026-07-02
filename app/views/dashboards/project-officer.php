@@ -703,7 +703,6 @@ $initialReportBars = [
                           <article><span>Coverage month(s)</span><strong id="poRepaymentCoverage">--</strong></article>
                           <article><span>Amount</span><strong id="poRepaymentAmount">PHP 0.00</strong></article>
                           <article><span>Uploaded status</span><strong id="poRepaymentUploadStatus">--</strong></article>
-                          <article><span>Hard copy submitted to office</span><strong id="poRepaymentHardCopyStatus">Not tracked</strong></article>
                         </div>
                         <div class="po-blocker-box is-hidden" id="poRepaymentDuplicateWarning"></div>
                       </article>
@@ -724,21 +723,49 @@ $initialReportBars = [
                       </label>
                       <div class="po-repayment-decision-actions">
                         <p class="po-repayment-decision-note" id="poRepaymentDecisionNote">Open a beneficiary repayment record to review proof and apply a decision.</p>
-                        <label class="po-filter-field po-repayment-office-status-group" for="poRepaymentHardCopyInput">
-                          <span>Hard copy office status</span>
-                          <select id="poRepaymentHardCopyInput" class="section-filter">
-                            <option value="not_submitted">Not Submitted</option>
-                            <option value="submitted_to_office">Submitted to Office</option>
-                            <option value="confirmed_by_office">Confirmed by Office</option>
-                          </select>
-                        </label>
-                        <div class="po-decision-rail__actions">
-                          <button type="button" class="app-btn-outline" id="poRepaymentVerifyPartial">Verify Partial</button>
-                          <button type="button" class="app-btn-primary" id="poRepaymentVerifyFull">Verify Fully</button>
-                          <button type="button" class="app-btn-outline" id="poRepaymentNeedsCorrection">Needs Correction</button>
-                          <button type="button" class="app-btn-danger" id="poRepaymentReject">Reject</button>
+                        <div class="po-repayment-decision-cards" id="poRepaymentDecisionCards">
+                          <button type="button" class="repayment-decision-card" data-decision="approved">
+                            <span class="repayment-decision-card__icon">&check;</span>
+                            <span class="repayment-decision-card__label">Approve</span>
+                            <span class="repayment-decision-card__desc">Verify the repayment record</span>
+                          </button>
+                          <button type="button" class="repayment-decision-card" data-decision="approved_with_confirmed">
+                            <span class="repayment-decision-card__icon">&check; &#x1F4CB;</span>
+                            <span class="repayment-decision-card__label">Approve &amp; Confirm Receipt</span>
+                            <span class="repayment-decision-card__desc">Verify + confirm physical OR received</span>
+                          </button>
+                          <button type="button" class="repayment-decision-card" data-decision="needs_correction">
+                            <span class="repayment-decision-card__icon">&equals;</span>
+                            <span class="repayment-decision-card__label">Needs Correction</span>
+                            <span class="repayment-decision-card__desc">Request correction (remarks required)</span>
+                          </button>
+                          <button type="button" class="repayment-decision-card" data-decision="rejected">
+                            <span class="repayment-decision-card__icon">&times;</span>
+                            <span class="repayment-decision-card__label">Reject</span>
+                            <span class="repayment-decision-card__desc">Reject submission (remarks required)</span>
+                          </button>
                         </div>
                       </div>
+                    </div>
+                  </section>
+                  <section class="po-requirement-nav">
+                    <div class="po-review-section__header">
+                      <div>
+                        <span class="po-panel-label">Physical OR</span>
+                        <h6>Hard Copy Receipt Status</h6>
+                      </div>
+                    </div>
+                    <div class="po-repayment-hardcopy-update">
+                      <label class="po-filter-field" for="poRepaymentHardCopyInput">
+                        <span>Receipt status</span>
+                        <select id="poRepaymentHardCopyInput" class="section-filter">
+                          <option value="not_submitted">Not Submitted</option>
+                          <option value="submitted_to_office">Submitted to Office</option>
+                          <option value="confirmed_by_office">Confirmed by Office</option>
+                        </select>
+                      </label>
+                      <button type="button" class="app-btn-outline" id="poRepaymentHardCopyUpdateBtn">Update</button>
+                      <span class="po-repayment-hardcopy-current" id="poRepaymentHardCopyStatus">Not tracked</span>
                     </div>
                   </section>
                 </div>

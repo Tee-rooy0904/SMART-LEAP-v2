@@ -414,6 +414,64 @@ class RepaymentLedgerService
         ];
     }
 
+    public function updateHardCopyOfficeStatus(int $repaymentId, string $hardCopyOfficeStatus, array $actor): array
+    {
+        $normalizedStatus = $this->normalizeHardCopyOfficeStatus($hardCopyOfficeStatus);
+        if ($normalizedStatus === null) {
+            return ['ok' => false, 'message' => 'Unsupported hard copy office status.'];
+        }
+
+        $repayment = $this->findRepaymentForReviewer($repaymentId, $actor);
+        if ($repayment === null) {
+            return ['ok' => false, 'message' => 'Repayment record not found.'];
+        }
+
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        try {
+            $update = $pdo->prepare(
+                'UPDATE repayments
+                 SET hard_copy_office_status = :hard_copy_office_status,
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE id = :id'
+            );
+            $update->execute([
+                'hard_copy_office_status' => $normalizedStatus,
+                'id' => $repaymentId,
+            ]);
+
+            $history = $pdo->prepare(
+                'INSERT INTO repayment_status_history
+                    (repayment_id, changed_by_user_id, from_status, to_status, remarks)
+                 VALUES
+                    (:repayment_id, :changed_by_user_id, :from_status, :to_status, :remarks)'
+            );
+            $history->execute([
+                'repayment_id' => $repaymentId,
+                'changed_by_user_id' => (int) ($actor['id'] ?? 0),
+                'from_status' => $repayment['hard_copy_office_status'] ?? 'not_submitted',
+                'to_status' => $normalizedStatus,
+                'remarks' => 'Hard copy office status updated',
+            ]);
+
+            $pdo->commit();
+        } catch (\Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            log_database_query_failure('repayment.hard_copy_update', $exception, [
+                'repayment_id' => $repaymentId,
+                'actor_id' => (int) ($actor['id'] ?? 0),
+            ]);
+
+            return ['ok' => false, 'message' => 'Unable to update the hard copy status right now.'];
+        }
+
+        return ['ok' => true, 'message' => 'Hard copy office status updated.'];
+    }
+
     private function notifyRepaymentSubmitted(int $beneficiaryProfileId, int $beneficiaryUserId, int $recordCount): void
     {
         $context = $this->repaymentNotificationContext($beneficiaryProfileId);

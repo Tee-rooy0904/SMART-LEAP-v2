@@ -1830,7 +1830,70 @@
 
 /* ── Validation section — maximise space ── */
 #validation-section .sw-page-stack {
-  gap: 0;
+  gap: 14px;
+}
+
+#validation-section .sw-validation-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 22px 24px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 248, 255, 0.96)),
+    radial-gradient(circle at top right, rgba(29, 118, 200, 0.12), transparent 46%);
+}
+
+#validation-section .sw-validation-hero__copy {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+#validation-section .sw-validation-hero__copy h2 {
+  margin: 0;
+  color: #102347;
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  font-weight: 900;
+}
+
+#validation-section .sw-validation-hero__copy p {
+  margin: 0;
+  max-width: 760px;
+  color: #58708c;
+  line-height: 1.6;
+}
+
+#validation-section .sw-validation-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#validation-section .sw-validation-hero__stat {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  min-height: 108px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+#validation-section .sw-validation-hero__stat span {
+  color: #60758f;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#validation-section .sw-validation-hero__stat strong {
+  color: #0f2d52;
+  font-size: 1.15rem;
+  font-weight: 900;
 }
 
 #validation-section .sw-summary-strip--compact {
@@ -1843,18 +1906,41 @@
 }
 
 #validation-section .sw-summary-strip .admin-layout-card {
-  padding: 14px 18px;
+  padding: 16px 18px;
+}
+
+#validation-section .sw-validation-summary-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 132px;
+}
+
+#validation-section .sw-validation-summary-card p {
+  margin: 0;
+  color: #61778f;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+#validation-section .sw-validation-summary-card--pending {
+  border-left: 4px solid #f59e0b;
+}
+
+#validation-section .sw-validation-summary-card--selected {
+  border-left: 4px solid #2563eb;
+}
+
+#validation-section .sw-validation-summary-card--saved {
+  border-left: 4px solid #7c3aed;
 }
 
 #validation-section .sw-admin-filters.sw-admin-filters--single-search {
-  padding: 10px 16px;
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-  border-top: 1px solid rgba(15,23,42,0.07);
-  border-bottom: 1px solid rgba(15,23,42,0.07);
-  box-shadow: none;
-  background: #fafdff;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: var(--shadow-1);
+  background: linear-gradient(180deg, rgba(250, 253, 255, 0.96), rgba(244, 249, 255, 0.92));
 }
 
 #validation-section .sw-validation-tabs {
@@ -1862,14 +1948,40 @@
 }
 
 #validation-section .table-card {
-  border-radius: 0;
-  border: 0;
-  box-shadow: none;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+#validation-section .sw-validation-table-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: linear-gradient(180deg, rgba(250, 253, 255, 0.98), rgba(244, 249, 255, 0.94));
+}
+
+#validation-section .sw-validation-table-head h3 {
+  margin: 6px 0 0;
+  color: #102347;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+#validation-section .sw-validation-table-head__meta {
+  margin: 0;
+  color: #60758f;
+  font-size: 0.9rem;
+  text-align: right;
 }
 
 #validation-section .sw-table-wrapper {
   border-radius: 0;
   border: 0;
+  background: #fff;
 }
 
 #validation-section .admin-data-table thead th:first-child { padding-left: 16px; }
@@ -1878,7 +1990,52 @@
 #validation-section .admin-data-table tbody td:last-child  { padding-right: 16px; }
 
 #validation-section .admin-data-table tbody td {
-  padding: 10px 12px;
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+#validation-section .admin-data-table thead th:nth-child(5),
+#validation-section .admin-data-table thead th:nth-child(6),
+#validation-section .admin-data-table thead th:nth-child(7),
+#validation-section .admin-data-table tbody td:nth-child(5),
+#validation-section .admin-data-table tbody td:nth-child(6),
+#validation-section .admin-data-table tbody td:nth-child(7) {
+  text-align: center;
+}
+
+#validation-section .sw-validation-detail-cell,
+#validation-section .sw-validation-address-cell {
+  display: grid;
+  gap: 4px;
+}
+
+#validation-section .sw-validation-detail-cell strong,
+#validation-section .sw-validation-address-cell strong {
+  color: #102347;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+#validation-section .sw-validation-detail-cell span {
+  color: #6b8097;
+  font-size: 0.82rem;
+}
+
+#validation-section .sw-applicant-cell {
+  gap: 4px;
+}
+
+#validation-section .sw-applicant-cell strong {
+  color: #102347;
+}
+
+#validation-section .sw-applicant-cell span {
+  color: #6b8097;
+  font-size: 0.82rem;
+}
+
+#validation-section .admin-data-table tbody tr:hover {
+  background: linear-gradient(180deg, rgba(247, 251, 255, 0.98), rgba(241, 247, 255, 0.92));
 }
 
 /* ── Co-maker & Repayments tables — centre all except names ── */
@@ -1930,6 +2087,35 @@
 .social-worker-shell .validation-tab.is-active span {
   background: rgba(255,255,255,0.25);
   color: #fff;
+}
+
+@media (max-width: 1100px) {
+  #validation-section .sw-validation-hero {
+    grid-template-columns: 1fr;
+  }
+
+  #validation-section .sw-validation-hero__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #validation-section .sw-validation-table-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  #validation-section .sw-validation-table-head__meta {
+    text-align: left;
+  }
+}
+
+@media (max-width: 720px) {
+  #validation-section .sw-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  #validation-section .sw-validation-hero__stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Modals ── */

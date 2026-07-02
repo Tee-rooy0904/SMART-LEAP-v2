@@ -7,7 +7,6 @@
             </div>
             <div class="validation-header__actions">
                 <!-- Manual refresh for the Stage 1 registrant queues and counters. -->
-                <button type="button" class="app-btn-outline" id="validationHardcopyButton">Encode Hardcopy</button>
                 <button type="button" class="app-btn-outline" id="validationRefreshButton">Refresh</button>
             </div>
         </section>

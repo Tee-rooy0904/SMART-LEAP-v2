@@ -188,11 +188,6 @@
 
   function submissionStatusLabel(record) {
     if (!record) return 'No Upload Yet';
-    if (record.stage === 'verified') {
-      return normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus) === 'confirmed_by_office'
-        ? 'Fully Verified'
-        : 'Partially Verified';
-    }
     return stageLabel(record.stage);
   }
 
@@ -677,10 +672,6 @@
       return normalizeHardCopyOfficeStatus(byId(ids.hardCopyInput)?.value);
     }
 
-    function canVerifyFully(record) {
-      return Boolean(record) && selectedHardCopyOfficeStatus() === 'confirmed_by_office';
-    }
-
     function remarksDirty() {
       const field = byId(ids.remarks);
       if (!field) return false;
@@ -891,77 +882,38 @@
       historyScrollContainer()?.scrollTo({ left: 0, top: 0 });
     }
 
-    // Enable or lock review buttons depending on verification progress and hard-copy office confirmation.
     function renderDecisionState(beneficiary, record) {
       const remarksField = byId(ids.remarks);
-      const hardCopyInput = byId(ids.hardCopyInput);
-      const verifyPartialButton = byId(ids.verifyPartial);
-      const verifyFullButton = byId(ids.verifyFull);
-      const correctionButton = byId(ids.needsCorrection);
-      const rejectButton = byId(ids.reject);
+      const decisionCards = byId(ids.decisionCards);
       const noteNode = byId(ids.decisionNote);
-      const actionContainer =
-        verifyPartialButton?.parentElement
-        || verifyFullButton?.parentElement
-        || correctionButton?.parentElement
-        || rejectButton?.parentElement
-        || null;
-      const isVerified = Boolean(record && record.stage === 'verified');
-      const isFullyLocked = isVerified && normalizeHardCopyOfficeStatus(record?.hardCopyOfficeStatus) === 'confirmed_by_office';
-      const isPartiallyVerified = isVerified && !isFullyLocked;
       const hasRecord = Boolean(record);
-      const hardCopyStatus = hasRecord ? selectedHardCopyOfficeStatus() : 'not_submitted';
-
-      if (verifyPartialButton) {
-        verifyPartialButton.textContent = 'Verify Partial';
-        verifyPartialButton.classList.remove('is-locked-state');
-        verifyPartialButton.hidden = false;
-      }
-      if (verifyFullButton) {
-        verifyFullButton.textContent = 'Verify Fully';
-        verifyFullButton.hidden = false;
-      }
-      if (correctionButton) correctionButton.hidden = false;
-      if (rejectButton) rejectButton.hidden = false;
+      const isVerified = Boolean(record && record.stage === 'verified');
+      const isConfirmed = isVerified && normalizeHardCopyOfficeStatus(record?.hardCopyOfficeStatus) === 'confirmed_by_office';
+      const isLocked = isConfirmed;
 
       if (remarksField) {
         const value = record ? text(record.notes) : '';
         remarksField.value = value;
-        remarksField.readOnly = !hasRecord || isVerified;
-        remarksField.disabled = !hasRecord || isVerified;
+        remarksField.readOnly = !hasRecord || isLocked;
+        remarksField.disabled = !hasRecord || isLocked;
         state.remarksSnapshot = value;
       }
 
+      if (decisionCards) {
+        decisionCards.hidden = !hasRecord || isLocked;
+        const cards = decisionCards.querySelectorAll('[data-decision]');
+        cards.forEach(function(card) {
+          card.disabled = !hasRecord || isLocked;
+          card.classList.remove('is-active');
+          const decision = card.getAttribute('data-decision');
+          if (isVerified && decision === 'approved') card.classList.add('is-active');
+          if (isConfirmed && decision === 'approved_with_confirmed') card.classList.add('is-active');
+        });
+      }
+
+      const hardCopyInput = byId(ids.hardCopyInput);
       if (hardCopyInput) {
-        hardCopyInput.disabled = !hasRecord || isFullyLocked;
-      }
-
-      const disableAll = !hasRecord || isFullyLocked;
-      const disableVerifyFull = !hasRecord || !canVerifyFully(record) || isFullyLocked;
-
-      if (verifyPartialButton) verifyPartialButton.disabled = disableAll || isPartiallyVerified;
-      if (verifyFullButton) verifyFullButton.disabled = disableVerifyFull;
-      if (correctionButton) correctionButton.disabled = disableAll;
-      if (rejectButton) rejectButton.disabled = disableAll;
-
-      if (actionContainer) {
-        actionContainer.hidden = !hasRecord;
-      }
-
-      if (isPartiallyVerified) {
-        if (verifyPartialButton) {
-          verifyPartialButton.textContent = 'Partially Verified';
-          verifyPartialButton.disabled = true;
-          verifyPartialButton.classList.add('is-locked-state');
-        }
-      }
-
-      if (isFullyLocked) {
-        if (verifyPartialButton) {
-          verifyPartialButton.textContent = 'Fully Verified';
-          verifyPartialButton.disabled = true;
-          verifyPartialButton.classList.add('is-locked-state');
-        }
+        hardCopyInput.disabled = !hasRecord || isLocked;
       }
 
       if (!noteNode) return;
@@ -969,31 +921,15 @@
         noteNode.textContent = 'No uploaded repayment submission is available for review yet.';
         return;
       }
-      if (isFullyLocked) {
-        noteNode.textContent = 'This submission is already fully verified and locked.';
+      if (isLocked) {
+        noteNode.textContent = 'This submission is verified with confirmed OR — no further changes available.';
         return;
       }
-      if (isPartiallyVerified) {
-        if (hardCopyStatus === 'confirmed_by_office') {
-          noteNode.textContent = 'Office receipt confirmed. You can now use Verify Fully.';
-          return;
-        }
-        if (hardCopyStatus === 'submitted_to_office') {
-          noteNode.textContent = 'Already partially verified. Confirm the office receipt to unlock Verify Fully.';
-          return;
-        }
-        noteNode.textContent = 'Already partially verified. Update the office receipt status when the physical OR is received.';
+      if (isVerified) {
+        noteNode.textContent = 'Already verified. Use "Approve & Confirm Receipt" if the physical OR is now received.';
         return;
       }
-      if (hardCopyStatus === 'confirmed_by_office') {
-        noteNode.textContent = 'Office receipt confirmed. Verify Fully is available.';
-        return;
-      }
-      if (hardCopyStatus === 'submitted_to_office') {
-        noteNode.textContent = 'Office receipt submitted but not yet confirmed. Use Verify Partial for now.';
-        return;
-      }
-      noteNode.textContent = 'No office receipt yet. Use Verify Partial while this remains upload-only.';
+      noteNode.textContent = 'Select a decision below to apply to this repayment submission.';
     }
 
     // Sync every repayment modal panel from the selected beneficiary and the currently focused upload record.
@@ -1040,10 +976,10 @@
       setText(ids.coverage, deriveCoverageLabel(record));
       setText(ids.amount, formatCurrency(record?.amount || 0));
       setText(ids.uploadStatus, record ? submissionStatusLabel(record) : 'No Upload Yet');
+      setText(ids.hardCopyStatus, hardCopyOfficeStatusLabel(record?.hardCopyOfficeStatus));
       if (byId(ids.hardCopyInput)) {
         byId(ids.hardCopyInput).value = normalizeHardCopyOfficeStatus(record?.hardCopyOfficeStatus);
       }
-      setText(ids.hardCopyStatus, hardCopyOfficeStatusLabel(byId(ids.hardCopyInput)?.value || record?.hardCopyOfficeStatus));
 
       const warningNode = byId(ids.duplicateWarning);
       if (warningNode) {
@@ -1096,23 +1032,34 @@
       }
 
       const remarks = text(byId(ids.remarks)?.value);
-      const hardCopyOfficeStatus = selectedHardCopyOfficeStatus();
       if (['needs_correction', 'rejected'].includes(decisionKey) && !remarks) {
         notify('Remarks are required for correction and rejection decisions.', 'warning');
         return;
       }
-      if (decisionKey === 'verified_full' && hardCopyOfficeStatus !== 'confirmed_by_office') {
-        notify('Verify Fully requires the hard copy receipt to be confirmed by office first.', 'warning');
-        return;
-      }
-      if (decisionKey === 'verified_partial' && hardCopyOfficeStatus === 'confirmed_by_office') {
-        notify('Use Verify Fully when the hard copy receipt is already confirmed by office.', 'warning');
-        return;
-      }
 
-      const status = decisionKey === 'verified_partial' || decisionKey === 'verified_full'
-        ? 'verified'
-        : decisionKey;
+      let status;
+      let hardCopyOfficeStatus;
+      let successMessage;
+
+      if (decisionKey === 'approved') {
+        status = 'verified';
+        hardCopyOfficeStatus = normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus);
+        successMessage = 'Repayment submission approved.';
+      } else if (decisionKey === 'approved_with_confirmed') {
+        status = 'verified';
+        hardCopyOfficeStatus = 'confirmed_by_office';
+        successMessage = 'Repayment submission approved with confirmed OR receipt.';
+      } else if (decisionKey === 'needs_correction') {
+        status = 'needs_correction';
+        hardCopyOfficeStatus = normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus);
+        successMessage = 'Repayment submission marked for correction.';
+      } else if (decisionKey === 'rejected') {
+        status = 'rejected';
+        hardCopyOfficeStatus = normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus);
+        successMessage = 'Repayment submission rejected.';
+      } else {
+        return;
+      }
 
       try {
         await fetchJson(`${window.SMARTLEAP_BASE_URL || ''}/api/repayments/review`, {
@@ -1126,18 +1073,33 @@
           }),
         });
         await refresh();
-        notify(
-          decisionKey === 'verified_full'
-            ? 'Repayment submission fully verified for the current account standing.'
-            : decisionKey === 'verified_partial'
-              ? 'Repayment submission partially verified.'
-              : decisionKey === 'needs_correction'
-                ? 'Repayment submission marked for correction.'
-                : 'Repayment submission rejected.',
-          'success'
-        );
+        notify(successMessage, 'success');
       } catch (error) {
         notify(error.message || 'Unable to save the repayment review.', 'warning');
+      }
+    }
+
+    async function applyHardCopyUpdate() {
+      const beneficiary = selectedBeneficiary();
+      const record = activeRecord(beneficiary);
+      if (!record) {
+        notify('No repayment record selected.', 'warning');
+        return;
+      }
+      const selectedStatus = selectedHardCopyOfficeStatus();
+      try {
+        await fetchJson(`${window.SMARTLEAP_BASE_URL || ''}/api/repayments/update-hard-copy-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+          body: JSON.stringify({
+            repaymentId: record.id,
+            hardCopyOfficeStatus: selectedStatus,
+          }),
+        });
+        await refresh();
+        notify('Hard copy office status updated.', 'success');
+      } catch (error) {
+        notify(error.message || 'Unable to update hard copy status.', 'warning');
       }
     }
 
@@ -1276,15 +1238,13 @@
       byId(ids.downloadProof)?.addEventListener('click', () => openFile(text(byId(ids.proofPreview)?.dataset.proof), true));
       byId(ids.fullscreenProof)?.addEventListener('click', () => requestFullscreen(byId(ids.proofPreview)));
       byId(ids.hardCopyInput)?.addEventListener('change', () => {
-        const beneficiary = selectedBeneficiary();
-        const record = activeRecord(beneficiary);
         setText(ids.hardCopyStatus, hardCopyOfficeStatusLabel(selectedHardCopyOfficeStatus()));
-        renderDecisionState(beneficiary, record);
       });
-      byId(ids.verifyPartial)?.addEventListener('click', () => applyDecision('verified_partial'));
-      byId(ids.verifyFull)?.addEventListener('click', () => applyDecision('verified_full'));
-      byId(ids.needsCorrection)?.addEventListener('click', () => applyDecision('needs_correction'));
-      byId(ids.reject)?.addEventListener('click', () => applyDecision('rejected'));
+      byId(ids.decisionCards)?.addEventListener('click', (event) => {
+        const card = event.target.closest('[data-decision]');
+        if (card) applyDecision(card.getAttribute('data-decision'));
+      });
+      byId(ids.hardCopyUpdateBtn)?.addEventListener('click', applyHardCopyUpdate);
       byId(ids.close)?.addEventListener('click', () => closeModal());
 
       document.addEventListener('keydown', (event) => {

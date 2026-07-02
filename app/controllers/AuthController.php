@@ -11,7 +11,7 @@ class AuthController extends Controller
     public function showLogin(): never
     {
         $service = new AuthService();
-        $currentUser = $service->currentUserFromSession();
+        $currentUser = $service->currentUserFromSession('staff');
         if ($currentUser !== null) {
             $this->redirectTo($service->redirectPathFor($currentUser));
         }
@@ -22,7 +22,7 @@ class AuthController extends Controller
     public function showPortalLogin(): never
     {
         $service = new AuthService();
-        $currentUser = $service->currentUserFromSession();
+        $currentUser = $service->currentUserFromSession('portal');
         if ($currentUser !== null) {
             $this->redirectTo($service->redirectPathFor($currentUser));
         }
@@ -48,7 +48,7 @@ class AuthController extends Controller
 
         ensure_session_started();
         session_regenerate_id(true);
-        login_user($result['user']);
+        login_user($result['user'], $entryPoint);
 
         response_json($result);
     }
@@ -80,11 +80,12 @@ class AuthController extends Controller
     public function verifyAccount(): never
     {
         $service = new AuthService();
+        $entryPoint = (string) ($_POST['entryPoint'] ?? 'portal');
         $result = $service->verifyChallenge(
             (string) ($_POST['email'] ?? ''),
             (string) ($_POST['code'] ?? ''),
             (string) ($_POST['mode'] ?? 'activation'),
-            (string) ($_POST['entryPoint'] ?? 'portal')
+            $entryPoint
         );
 
         if (!$result['ok']) {
@@ -93,7 +94,7 @@ class AuthController extends Controller
 
         ensure_session_started();
         session_regenerate_id(true);
-        login_user($result['user']);
+        login_user($result['user'], $entryPoint);
 
         response_json($result);
     }
@@ -200,17 +201,16 @@ class AuthController extends Controller
     public function logout(): never
     {
         $service = new AuthService();
-        $currentUser = $service->currentUserFromSession();
         $entryPoint = strtolower(trim((string) ($_POST['entryPoint'] ?? $_GET['entryPoint'] ?? '')));
+        $currentUser = $service->currentUserFromSession($entryPoint ?: null);
         $redirect = $this->logoutRedirectPathFor($currentUser, $entryPoint);
 
-        ensure_session_started();
-        $_SESSION = [];
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+        if ($entryPoint === '' && $currentUser !== null) {
+            $role = strtolower((string) ($currentUser['role'] ?? ''));
+            $entryPoint = (str_contains($role, 'applicant') || str_contains($role, 'beneficiary')) ? 'portal' : 'staff';
         }
-        session_destroy();
+
+        logout_user($entryPoint !== '' ? $entryPoint : null);
 
         $expectsJson = str_contains(strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? '')), 'application/json')
             || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';

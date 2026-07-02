@@ -3,16 +3,13 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Services\PortalService;
-
 class PortalController extends Controller
 {
     public function show(): never
     {
-        $portalService = new PortalService();
         $this->view('public/portal', [
-            'authUser' => auth_user(),
-            'quickView' => $portalService->quickViewForUser(auth_user()),
+            'authUser' => null,
+            'quickView' => null,
         ]);
     }
 
@@ -23,7 +20,7 @@ class PortalController extends Controller
 
     public function showGuide(): never
     {
-        $this->view('public/about-smart-leap');
+        $this->view('public/guide');
     }
 
     public function showRequirements(): never
@@ -44,7 +41,7 @@ class PortalController extends Controller
 
     public function showHowItWorks(): never
     {
-        $this->view('public/how-to-apply');
+        $this->view('public/how-it-works');
     }
 
     public function showBeneficiaryGuide(): never
@@ -59,7 +56,7 @@ class PortalController extends Controller
 
     public function showHelp(): never
     {
-        $this->view('public/help-center');
+        $this->view('public/help');
     }
 
     public function trackStatus(): never

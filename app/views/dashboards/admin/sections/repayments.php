@@ -234,7 +234,6 @@
                                             <div><span>Coverage month(s)</span><strong id="adminRepaymentCoverage">--</strong></div>
                                             <div><span>Amount</span><strong id="adminRepaymentAmount">PHP 0.00</strong></div>
                                             <div><span>Uploaded status</span><strong id="adminRepaymentUploadStatus">--</strong></div>
-                                            <div><span>Hard copy submitted to office</span><strong id="adminRepaymentHardCopyStatus">Not tracked</strong></div>
                                         </div>
                                         <div class="admin-repayment-warning is-hidden" id="adminRepaymentDuplicateWarning"></div>
                                     </article>
@@ -255,21 +254,49 @@
                                     </label>
                                     <div class="admin-repayment-decision-actions">
                                         <p class="admin-repayment-decision-note" id="adminRepaymentDecisionNote">Open a beneficiary repayment record to review proof and apply a decision.</p>
-                                        <label class="filter-group admin-repayment-office-status-group" for="adminRepaymentHardCopyInput">
-                                            <span class="filter-label">Hard copy office status</span>
-                                            <select class="filter-select" id="adminRepaymentHardCopyInput">
-                                                <option value="not_submitted">Not Submitted</option>
-                                                <option value="submitted_to_office">Submitted to Office</option>
-                                                <option value="confirmed_by_office">Confirmed by Office</option>
-                                            </select>
-                                        </label>
-                                        <div class="admin-repayment-decision-buttons">
-                                            <button type="button" class="app-btn-outline" id="adminRepaymentVerifyPartial">Verify Partial</button>
-                                            <button type="button" class="app-btn-primary" id="adminRepaymentVerifyFull">Verify Fully</button>
-                                            <button type="button" class="app-btn-outline" id="adminRepaymentNeedsCorrection">Needs Correction</button>
-                                            <button type="button" class="app-btn-danger" id="adminRepaymentReject">Reject</button>
+                                        <div class="admin-repayment-decision-cards" id="adminRepaymentDecisionCards">
+                                            <button type="button" class="repayment-decision-card" data-decision="approved">
+                                                <span class="repayment-decision-card__icon">&check;</span>
+                                                <span class="repayment-decision-card__label">Approve</span>
+                                                <span class="repayment-decision-card__desc">Verify the repayment record</span>
+                                            </button>
+                                            <button type="button" class="repayment-decision-card" data-decision="approved_with_confirmed">
+                                                <span class="repayment-decision-card__icon">&check; &#x1F4CB;</span>
+                                                <span class="repayment-decision-card__label">Approve &amp; Confirm Receipt</span>
+                                                <span class="repayment-decision-card__desc">Verify + confirm physical OR received</span>
+                                            </button>
+                                            <button type="button" class="repayment-decision-card" data-decision="needs_correction">
+                                                <span class="repayment-decision-card__icon">&equals;</span>
+                                                <span class="repayment-decision-card__label">Needs Correction</span>
+                                                <span class="repayment-decision-card__desc">Request correction (remarks required)</span>
+                                            </button>
+                                            <button type="button" class="repayment-decision-card" data-decision="rejected">
+                                                <span class="repayment-decision-card__icon">&times;</span>
+                                                <span class="repayment-decision-card__label">Reject</span>
+                                                <span class="repayment-decision-card__desc">Reject submission (remarks required)</span>
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
+                            </section>
+                            <section class="admin-repayment-panel">
+                                <header class="admin-repayment-panel__header">
+                                    <div>
+                                        <span class="admin-section-label">Physical OR</span>
+                                        <h4>Hard Copy Receipt Status</h4>
+                                    </div>
+                                </header>
+                                <div class="admin-repayment-hardcopy-update">
+                                    <label class="filter-group" for="adminRepaymentHardCopyInput">
+                                        <span class="filter-label">Receipt status</span>
+                                        <select class="filter-select" id="adminRepaymentHardCopyInput">
+                                            <option value="not_submitted">Not Submitted</option>
+                                            <option value="submitted_to_office">Submitted to Office</option>
+                                            <option value="confirmed_by_office">Confirmed by Office</option>
+                                        </select>
+                                    </label>
+                                    <button type="button" class="app-btn-outline" id="adminRepaymentHardCopyUpdateBtn">Update</button>
+                                    <span class="admin-repayment-hardcopy-current" id="adminRepaymentHardCopyStatus">Not tracked</span>
                                 </div>
                             </section>
                         </div>

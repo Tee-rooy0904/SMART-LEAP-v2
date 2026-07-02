@@ -91,6 +91,22 @@ class RepaymentController extends Controller
         response_json($result);
     }
 
+    public function updateHardCopyStatus(): never
+    {
+        $actor = $this->authorizeReviewer();
+        $payload = $this->decodeJsonRequest();
+        $result = $this->repaymentService()->updateHardCopyOfficeStatus(
+            (int) ($payload['repaymentId'] ?? 0),
+            (string) ($payload['hardCopyOfficeStatus'] ?? ''),
+            $actor
+        );
+        if (!$result['ok']) {
+            response_json($result, 422);
+        }
+
+        response_json($result);
+    }
+
     public function review(): never
     {
         $actor = $this->authorizeReviewer();

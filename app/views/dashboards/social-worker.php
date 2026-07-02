@@ -212,16 +212,16 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
         <section id="validation-section" class="admin-section" data-role-section hidden>
           <div class="sw-page-stack">
             <section class="sw-summary-strip sw-summary-strip--compact" aria-label="Validation overview">
-              <article class="admin-layout-card">
-                <span class="admin-section-eyebrow">Pending</span>
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--pending">
+                <span class="admin-section-eyebrow">Pending Queue</span>
                 <strong class="metric-card__value" data-sw-validation-pending><?= (int) ($validationSummary['pending'] ?? 0) ?></strong>
               </article>
-              <article class="admin-layout-card">
-                <span class="admin-section-eyebrow">Selected</span>
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--selected">
+                <span class="admin-section-eyebrow">Selected Queue</span>
                 <strong class="metric-card__value" data-sw-validation-selected><?= (int) ($validationSummary['selected'] ?? 0) ?></strong>
               </article>
-              <article class="admin-layout-card">
-                <span class="admin-section-eyebrow">Saved</span>
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--saved">
+                <span class="admin-section-eyebrow">Saved Queue</span>
                 <strong class="metric-card__value" data-sw-validation-saved><?= (int) ($validationSummary['saved'] ?? 0) ?></strong>
               </article>
             </section>
@@ -243,6 +243,12 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
             </section>
 
             <section class="table-card">
+              <div class="sw-validation-table-head">
+                <div>
+                  <span class="admin-section-eyebrow">Queue List</span>
+                  <h3>Applicant validation records</h3>
+                </div>
+              </div>
               <div class="table-wrapper sw-table-wrapper">
                 <table class="admin-data-table">
                   <thead>
