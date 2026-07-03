@@ -1,0 +1,1 @@
+-- Migration scaffold: 004_create_staff_profiles_table.sql

@@ -1,0 +1,1 @@
+-- Migration scaffold: 003_create_barangays_table.sql

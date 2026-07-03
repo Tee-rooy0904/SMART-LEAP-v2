@@ -1,0 +1,1 @@
+-- Migration scaffold: 025_create_audit_logs_table.sql

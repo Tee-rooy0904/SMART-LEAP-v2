@@ -1,0 +1,1 @@
+-- Migration scaffold: 001_create_roles_table.sql

@@ -1,0 +1,1 @@
+-- Migration scaffold: 024_create_email_logs_table.sql

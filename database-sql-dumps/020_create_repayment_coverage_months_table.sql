@@ -1,0 +1,1 @@
+-- Migration scaffold: 020_create_repayment_coverage_months_table.sql

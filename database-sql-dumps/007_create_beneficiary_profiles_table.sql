@@ -1,0 +1,1 @@
+-- Migration scaffold: 007_create_beneficiary_profiles_table.sql

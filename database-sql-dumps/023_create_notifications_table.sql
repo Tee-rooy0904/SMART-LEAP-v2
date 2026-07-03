@@ -1,0 +1,1 @@
+-- Migration scaffold: 023_create_notifications_table.sql
