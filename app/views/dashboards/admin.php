@@ -154,7 +154,7 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
 
             <main class="content-main">
                 <!-- Each required partial below owns one admin workspace and is hydrated by its matching JS module. -->
-                <?php require __DIR__ . '/admin/sections/dashboard.php.lmao'; ?>
+                <?php require __DIR__ . '/admin/sections/dashboardlmao.php'; ?>
                 <?php require __DIR__ . '/admin/sections/validation.php'; ?>    
                 <?php require __DIR__ . '/admin/sections/applications.php'; ?>
                 <?php require __DIR__. '/admin/sections/training.php'; ?>
