@@ -8,7 +8,7 @@
   const baseUrl = String(window.SMARTLEAP_BASE_URL || '').replace(/\/+$/, '');
   // Training status vocabulary used by the PDO training pipeline views.
   const trainingStatuses = ['Not Scheduled', 'Scheduled', 'Notified', 'Attended', 'Excused', 'Missed'];
-  const livelihoodCategories = ['Establishment', 'Livestock', 'Buy & Sell', 'Food and Beverages', 'Services'];
+  const livelihoodCategories = ['Establishment', 'Buy and Sell', 'Homemade', 'Livestock', 'Services'];
   const TOTAL_REPAYMENT_MONTHS = 24;
   const TOTAL_REPAYMENT_AMOUNT = 625 * TOTAL_REPAYMENT_MONTHS;
   // Color maps keep dashboard charts and status chips consistent with workflow meaning.
@@ -734,7 +734,8 @@
   }
 
   function collectPoReportFiltersFromControls() {
-    state.reports.period = reportControlValue('poReportsPeriod', state.reports.period || 'monthly') || 'monthly';
+    const selectedPeriod = reportControlValue('poReportsPeriod', state.reports.period || 'monthly') || 'monthly';
+    state.reports.period = ['monthly', 'quarterly', 'yearly'].includes(selectedPeriod) ? selectedPeriod : 'monthly';
     state.reports.month = reportControlValue('poReportsMonth', state.reports.month || defaultCycleMonth) || defaultCycleMonth;
     state.reports.quarter = reportControlValue('poReportsQuarter', state.reports.quarter || '1') || '1';
     state.reports.year = reportControlValue('poReportsYear', state.reports.year || currentReportYear) || currentReportYear;
@@ -852,6 +853,17 @@
 
   function buildPoReportSummary(records) {
     const safeRecords = Array.isArray(records) ? records : [];
+    const normalizeServiceCategory = (value) => {
+      const text = String(value || '').trim().toLowerCase();
+      if (!text) return 'Unclassified';
+      if (text.includes('buy') || text.includes('sell')) return 'Buy and Sell';
+      if (text.includes('food') || text.includes('beverage') || text.includes('balut') || text.includes('snack') || text.includes('eatery') || text.includes('carinderia') || text.includes('restaurant')) return 'Homemade';
+      if (text.includes('livestock') || text.includes('animal') || text.includes('poultry') || text.includes('hog')) return 'Livestock';
+      if (text.includes('service') || text.includes('repair') || text.includes('salon')) return 'Services';
+      if (text.includes('home') || text.includes('production') || text.includes('homemade') || text.includes('processing')) return 'Homemade';
+      if (text.includes('establishment') || text.includes('store') || text.includes('shop')) return 'Establishment';
+      return 'Establishment';
+    };
     const countBy = (resolver) => {
       const map = new Map();
       safeRecords.forEach((record) => {
@@ -868,7 +880,7 @@
       beneficiaryCount: safeRecords.filter((record) => !!record.isBeneficiary).length,
       pipelineOnlyCount: safeRecords.filter((record) => !record.isBeneficiary).length,
       genderDistribution: countBy((record) => record.gender),
-      serviceTypeDistribution: countBy((record) => record.serviceType || record.businessType),
+      serviceTypeDistribution: countBy((record) => normalizeServiceCategory(record.serviceType || record.businessType)),
       sectorDistribution: countBy((record) => record.sector),
     };
   }
@@ -1878,14 +1890,15 @@
     const search = document.getElementById('poReportsSearch');
     const serviceType = document.getElementById('poReportsServiceType');
     const gender = document.getElementById('poReportsGender');
-    const activePeriod = state.reports.period || 'monthly';
+    const activePeriod = ['monthly', 'quarterly', 'yearly'].includes(String(state.reports.period || ''))
+      ? state.reports.period
+      : 'monthly';
+    state.reports.period = activePeriod;
     const fieldVisibility = {
       month: activePeriod === 'monthly',
       quarter: activePeriod === 'quarterly',
-      repaymentYear: activePeriod !== 'custom',
-      year: activePeriod !== 'custom',
-      from: activePeriod === 'custom',
-      to: activePeriod === 'custom',
+      repaymentYear: true,
+      year: true,
     };
     if (period) period.value = state.reports.period || 'monthly';
     if (month) {
@@ -1923,7 +1936,10 @@
 
   function handleReportFilterChange(event) {
     const id = String(event.target?.id || '');
-    if (id === 'poReportsPeriod') state.reports.period = String(event.target.value || 'monthly');
+    if (id === 'poReportsPeriod') {
+      const nextPeriod = String(event.target.value || 'monthly');
+      state.reports.period = ['monthly', 'quarterly', 'yearly'].includes(nextPeriod) ? nextPeriod : 'monthly';
+    }
     if (id === 'poReportsMonth') state.reports.month = String(event.target.value || defaultCycleMonth);
     if (id === 'poReportsQuarter') state.reports.quarter = String(event.target.value || '1');
     if (id === 'poReportsYear') state.reports.year = String(event.target.value || currentReportYear);

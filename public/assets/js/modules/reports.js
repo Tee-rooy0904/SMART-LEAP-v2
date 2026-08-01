@@ -213,12 +213,24 @@
     return Array.from(map.entries()).map(([label, count]) => ({ label, count }));
   };
 
+  const normalizeServiceCategory = (value) => {
+    const text = String(value || '').trim().toLowerCase();
+    if (!text) return 'Unclassified';
+    if (text.includes('buy') || text.includes('sell')) return 'Buy and Sell';
+    if (text.includes('food') || text.includes('beverage') || text.includes('balut') || text.includes('snack') || text.includes('eatery') || text.includes('carinderia') || text.includes('restaurant')) return 'Homemade';
+    if (text.includes('livestock') || text.includes('animal') || text.includes('poultry') || text.includes('hog')) return 'Livestock';
+    if (text.includes('service') || text.includes('repair') || text.includes('salon')) return 'Services';
+    if (text.includes('home') || text.includes('production') || text.includes('homemade') || text.includes('processing')) return 'Homemade';
+    if (text.includes('establishment') || text.includes('store') || text.includes('shop')) return 'Establishment';
+    return 'Establishment';
+  };
+
   const currentSummary = (items) => ({
     totalPeople: items.length,
     beneficiaryCount: items.filter((record) => !!record.isBeneficiary).length,
     pipelineOnlyCount: items.filter((record) => !record.isBeneficiary).length,
     genderDistribution: countBy(items, (record) => record.gender),
-    serviceTypeDistribution: countBy(items, (record) => record.serviceType || record.businessType),
+    serviceTypeDistribution: countBy(items, (record) => normalizeServiceCategory(record.serviceType || record.businessType)),
     sectorDistribution: countBy(items, (record) => record.sector),
     barangayDistribution: countBy(items, (record) => record.barangay),
   });
@@ -226,25 +238,17 @@
   const buildToolbar = () => {
     const filters = state.filters.reports;
     const options = reportData?.options || {};
-    const period = filters.period || 'monthly';
+    const period = ['monthly', 'quarterly', 'yearly'].includes(String(filters.period || ''))
+      ? filters.period
+      : 'monthly';
+    filters.period = period;
     const years = optionList(options.years).length ? optionList(options.years) : [currentYear];
     const repaymentYear = String(filters.repaymentYear || '1');
     const cycleBaseYear = String((Number.parseInt(filters.year || currentYear, 10) || Number.parseInt(currentYear, 10)) + (repaymentYear === '2' ? 1 : 0));
     const cycleMonths = buildRepaymentCycleMonths(cycleBaseYear);
     const selectedMonth = cycleMonths.includes(filters.month) ? filters.month : cycleMonths[0];
 
-    const periodControls = period === 'custom'
-      ? `
-            <div class="reports-field">
-              <span class="reports-label">From</span>
-              <input type="date" id="reports-from" value="${escapeHtml(filters.from)}">
-            </div>
-            <div class="reports-field">
-              <span class="reports-label">To</span>
-              <input type="date" id="reports-to" value="${escapeHtml(filters.to)}">
-            </div>
-          `
-      : `
+    const periodControls = `
         <div class="reports-field">
           <span class="reports-label">Year</span>
           <select id="reports-year">
@@ -290,7 +294,6 @@
               <option value="monthly" ${selectedAttr(period, 'monthly')}>Monthly</option>
               <option value="quarterly" ${selectedAttr(period, 'quarterly')}>Quarterly</option>
               <option value="yearly" ${selectedAttr(period, 'yearly')}>Yearly</option>
-              <option value="custom" ${selectedAttr(period, 'custom')}>Custom Range</option>
             </select>
           </div>
           ${periodControls}

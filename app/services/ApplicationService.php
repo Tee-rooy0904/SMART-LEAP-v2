@@ -3357,12 +3357,10 @@ class ApplicationService
 
         $allowed = [
             'Establishment',
+            'Buy and Sell',
+            'Homemade',
             'Livestock',
-            'Buy & Sell',
-            'Agriculture',
-            'Food and Beverages',
             'Services',
-            'Other',
         ];
 
         foreach ($allowed as $option) {
@@ -3373,7 +3371,7 @@ class ApplicationService
 
         $normalized = strtolower($value);
         if (str_contains($normalized, 'buy') || str_contains($normalized, 'sell')) {
-            return 'Buy & Sell';
+            return 'Buy and Sell';
         }
         if (
             str_contains($normalized, 'food')
@@ -3382,8 +3380,13 @@ class ApplicationService
             || str_contains($normalized, 'snack')
             || str_contains($normalized, 'eatery')
             || str_contains($normalized, 'carinderia')
+            || str_contains($normalized, 'restaurant')
+            || str_contains($normalized, 'home')
+            || str_contains($normalized, 'production')
+            || str_contains($normalized, 'homemade')
+            || str_contains($normalized, 'processing')
         ) {
-            return 'Food and Beverages';
+            return 'Homemade';
         }
         if (
             str_contains($normalized, 'livestock')
@@ -3411,16 +3414,8 @@ class ApplicationService
         ) {
             return 'Establishment';
         }
-        if (
-            str_contains($normalized, 'home')
-            || str_contains($normalized, 'production')
-            || str_contains($normalized, 'homemade')
-            || str_contains($normalized, 'processing')
-        ) {
-            return 'Establishment';
-        }
         if (str_contains($normalized, 'agri') || str_contains($normalized, 'farm') || str_contains($normalized, 'crop')) {
-            return 'Agriculture';
+            return 'Establishment';
         }
 
         return $value;
@@ -3435,12 +3430,10 @@ class ApplicationService
 
         $allowed = [
             'Establishment',
+            'Buy and Sell',
+            'Homemade',
             'Livestock',
-            'Buy & Sell',
-            'Agriculture',
-            'Food and Beverages',
             'Services',
-            'Other',
         ];
 
         return in_array($normalized, $allowed, true)

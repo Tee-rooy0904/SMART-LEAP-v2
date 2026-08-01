@@ -15,7 +15,7 @@
     activePreviewOwnerId: null,
     assistanceReceivedSelection: false,
   };
-  const livelihoodCategories = ['Establishment', 'Livestock', 'Buy & Sell', 'Agriculture', 'Food and Beverages', 'Other'];
+  const livelihoodCategories = ['Establishment', 'Buy and Sell', 'Homemade', 'Livestock', 'Services'];
 
   const baseUrl = (window.SMARTLEAP_BASE_URL || '').replace(/\/+$/, '');
 
@@ -404,9 +404,9 @@
                   <span>General category</span>
                   <select id="admin-app-modal-livelihood-category-input" class="section-filter">
                     <option value="">Select category</option>
-                    <option value="Establishment" ${application.livelihoodCategory === 'Establishment' ? 'selected' : ''}>Establishments</option>
-                    <option value="Buy &amp; Sell" ${application.livelihoodCategory === 'Buy & Sell' ? 'selected' : ''}>Buy &amp; Sell</option>
-                    <option value="Food and Beverages" ${application.livelihoodCategory === 'Food and Beverages' ? 'selected' : ''}>Food and Beverages</option>
+                    <option value="Establishment" ${application.livelihoodCategory === 'Establishment' ? 'selected' : ''}>Establishment</option>
+                    <option value="Buy and Sell" ${application.livelihoodCategory === 'Buy and Sell' ? 'selected' : ''}>Buy and Sell</option>
+                    <option value="Homemade" ${application.livelihoodCategory === 'Homemade' ? 'selected' : ''}>Homemade</option>
                     <option value="Livestock" ${application.livelihoodCategory === 'Livestock' ? 'selected' : ''}>Livestock</option>
                     <option value="Services" ${application.livelihoodCategory === 'Services' ? 'selected' : ''}>Services</option>
                   </select>

@@ -135,10 +135,40 @@
     height: 44px;
     min-width: 44px;
     padding: 0;
-    background: transparent;
-    box-shadow: none;
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        linear-gradient(135deg, rgba(79, 209, 197, 0.94), rgba(51, 103, 214, 0.94));
+    background-position: center;
+    background-size: cover;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.18);
     border-radius: 999px;
+    cursor: pointer;
     touch-action: manipulation;
+}
+
+.beneficiary-contextbar .mobile-topbar__avatar.has-photo {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+}
+
+.beneficiary-contextbar .mobile-topbar__avatar-initial {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.beneficiary-contextbar .mobile-topbar__avatar.has-photo .mobile-topbar__avatar-initial {
+    opacity: 0;
 }
 
 .beneficiary-contextbar__name {
@@ -3300,6 +3330,9 @@
 
 .beneficiary-contextbar .smart-notification-toggle,
 .beneficiary-contextbar .mobile-topbar__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
     z-index: 681;
     pointer-events: auto;

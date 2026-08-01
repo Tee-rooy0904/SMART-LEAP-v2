@@ -58,6 +58,13 @@
     return Number.isFinite(number) ? number : 0;
   }
 
+  function formatRepaymentRate(value) {
+    return `${safeNumber(value).toLocaleString('en-PH', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}%`;
+  }
+
   function firstError(errors) {
     if (!errors || typeof errors !== 'object') return '';
     for (const value of Object.values(errors)) {
@@ -259,6 +266,7 @@
             <div class="admin-beneficiary-stack admin-beneficiary-stack--repayment">
               <strong>${escapeHtml(repaymentLabel)}</strong>
               <small>${safeNumber(repayment.uploadedReceipts)} receipt${safeNumber(repayment.uploadedReceipts) === 1 ? '' : 's'}</small>
+              <small>Rate: ${escapeHtml(formatRepaymentRate(repayment.repaymentRate))}</small>
             </div>
           </td>
           <td>${escapeHtml(formatActivityTime(beneficiary.lastActivity))}</td>
@@ -386,6 +394,7 @@
             <article class="admin-record-sheet__field"><span>Uploaded Receipts</span><strong>${safeNumber(repayment.uploadedReceipts)}</strong></article>
             <article class="admin-record-sheet__field"><span>Verified Amount</span><strong>${escapeHtml(`PHP ${Number(repayment.paidAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)}</strong></article>
             <article class="admin-record-sheet__field"><span>Verified Installments</span><strong>${escapeHtml(`${safeNumber(repayment.verifiedInstallments)} / ${safeNumber(repayment.totalDueInstallments)}`)}</strong></article>
+            <article class="admin-record-sheet__field"><span>Repayment Rate</span><strong>${escapeHtml(formatRepaymentRate(repayment.repaymentRate))}</strong></article>
           </div>
         </section>
         ${beneficiaryStatusKey === 'deceased'
@@ -480,7 +489,7 @@
 
   function exportCsv() {
     const rows = filteredBeneficiaries();
-    const headers = ['Name', 'Email', 'Business', 'Barangay', 'Assigned PDO', 'Program Status', 'Repayment', 'Last Activity'];
+    const headers = ['Name', 'Email', 'Business', 'Barangay', 'Assigned PDO', 'Program Status', 'Repayment', 'Repayment Rate', 'Last Activity'];
     const csvRows = [
       headers,
       ...rows.map((beneficiary) => [
@@ -491,6 +500,7 @@
         beneficiary.assignedPdo || '',
         beneficiary.programStatus || '',
         beneficiary.repayment?.label || '',
+        formatRepaymentRate(beneficiary.repayment?.repaymentRate),
         beneficiary.lastActivity || '',
       ]),
     ];

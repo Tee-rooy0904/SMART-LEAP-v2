@@ -2221,20 +2221,28 @@
         const button = document.getElementById('mobileAccountToggle');
         const badge = document.getElementById('mobileAccountAvatar');
         if (photo) {
-            button?.classList.add('has-photo');
+            if (button) {
+                button.classList.add('has-photo');
+                button.style.backgroundImage = `url("${photo}")`;
+            }
             if (badge) {
-                badge.textContent = fallbackInitial;
-                badge.style.backgroundImage = `url("${photo}")`;
-                badge.classList.add('has-photo');
+                badge.textContent = '';
+                badge.style.backgroundImage = '';
+                badge.classList.remove('has-photo');
+                badge.setAttribute('aria-hidden', 'true');
             }
             return;
         }
 
-        button?.classList.remove('has-photo');
+        if (button) {
+            button.classList.remove('has-photo');
+            button.style.backgroundImage = '';
+        }
         if (badge) {
             badge.style.backgroundImage = '';
             badge.classList.remove('has-photo');
             badge.textContent = fallbackInitial;
+            badge.setAttribute('aria-hidden', 'true');
         }
     }
 
@@ -3003,7 +3011,6 @@
         return div.innerHTML;
     }
 })();
-
 
 
 

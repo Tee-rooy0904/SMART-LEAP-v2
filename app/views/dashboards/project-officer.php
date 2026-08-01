@@ -346,10 +346,10 @@ $initialReportBars = [
                     <span>Livelihood Category</span>
                     <select id="po-app-livelihood-filter" class="section-filter">
                       <option value="">All categories</option>
-                      <option value="Establishment">Establishments</option>
+                      <option value="Establishment">Establishment</option>
+                      <option value="Buy and Sell">Buy and Sell</option>
+                      <option value="Homemade">Homemade</option>
                       <option value="Livestock">Livestock</option>
-                      <option value="Buy &amp; Sell">Buy &amp; Sell</option>
-                      <option value="Food and Beverages">Food and Beverages</option>
                       <option value="Services">Services</option>
                     </select>
                   </label>
@@ -837,7 +837,6 @@ $initialReportBars = [
                       <option value="monthly">Monthly</option>
                       <option value="quarterly">Quarterly</option>
                       <option value="yearly">Yearly</option>
-                      <option value="custom">Custom Range</option>
                     </select>
                   </label>
                   <label class="reports-field po-reports-filter-field" data-po-report-filter-field="year">
@@ -860,14 +859,6 @@ $initialReportBars = [
                   <label class="reports-field po-reports-filter-field" data-po-report-filter-field="quarter" hidden>
                     <span class="reports-label">Repayment Quarter</span>
                     <select class="filter-select" id="poReportsQuarter"></select>
-                  </label>
-                  <label class="reports-field po-reports-filter-field" data-po-report-filter-field="from" hidden>
-                    <span class="reports-label">From date</span>
-                    <input type="date" class="filter-select" id="poReportsFrom">
-                  </label>
-                  <label class="reports-field po-reports-filter-field" data-po-report-filter-field="to" hidden>
-                    <span class="reports-label">To date</span>
-                    <input type="date" class="filter-select" id="poReportsTo">
                   </label>
                   <label class="reports-field po-reports-filter-field">
                     <span class="reports-label">Service Type</span>
@@ -1024,9 +1015,9 @@ $initialReportBars = [
                 <span>General category</span>
                 <select id="po-app-modal-livelihood-category-input" class="section-filter">
                   <option value="">Select category</option>
-                  <option value="Establishment">Establishments</option>
-                  <option value="Buy &amp; Sell">Buy &amp; Sell</option>
-                  <option value="Food and Beverages">Food and Beverages</option>
+                  <option value="Establishment">Establishment</option>
+                  <option value="Buy and Sell">Buy and Sell</option>
+                  <option value="Homemade">Homemade</option>
                   <option value="Livestock">Livestock</option>
                   <option value="Services">Services</option>
                 </select>

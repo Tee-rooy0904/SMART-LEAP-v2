@@ -286,8 +286,8 @@
           ${round.isComplete
             ? 'All three groups are already notified for this yearly session.'
             : (round.isUnlocked
-              ? 'Prepare one group schedule, notify that group, then continue with the remaining groups.'
-              : `Finish Session ${round.roundNumber - 1} first to unlock this round.`)}
+              ? 'Prepare any group schedule for this session, then notify each group when its roster reaches capacity.'
+              : 'This session is currently locked.')}
         </p>
         <div class="training-round-card__groups">
           ${slots.map((slot) => buildGroupButton(round, slot)).join('')}
@@ -335,7 +335,7 @@
     const isLocked = Boolean(program.isLocked);
     const allRoundGroupsDone = Boolean(round?.isComplete);
     const groupSize = Number(program.yearlyBatch?.yearlyGroupSize || state.data.summary?.yearlyBatch?.yearlyGroupSize || 85);
-    const groupIsFull = invitees.length === groupSize;
+    const groupHasParticipants = invitees.length > 0;
 
     setHTML(root, `
       <section class="po-training-session-shell training-workspace-shell">
@@ -365,7 +365,7 @@
         </section>
         ${isLocked
           ? `<div class="po-training-validation-banner">This group slot is locked because notices were already sent. Use the remaining available groups in this round, or move to the next round once all three groups are notified.</div>`
-          : `<div class="po-training-validation-banner">Save the group schedule first. Notice sending unlocks only when this capacity group has exactly ${groupSize} participants.</div>`}
+          : `<div class="po-training-validation-banner">Save the group schedule first. For defense/testing, notice sending is enabled as soon as this group has at least one assigned participant.</div>`}
         <form id="training-round-form" class="po-training-session-form">
           <input type="hidden" name="programId" value="${escapeHtml(String(program.id || ''))}">
           <input type="hidden" name="roundNumber" value="${escapeHtml(String(program.roundNumber || 1))}">
@@ -408,7 +408,7 @@
           <div class="po-training-summary-rail">
             ${miniMetric('Group', `Group ${program.targetGroupNumber}`)}
             ${miniMetric('Participants', `${invitees.length}/${groupSize}`)}
-            ${miniMetric('Notice Status', isLocked ? 'Locked' : (groupIsFull ? 'Ready' : `Waiting for ${groupSize}`))}
+            ${miniMetric('Notice Status', isLocked ? 'Locked' : (groupHasParticipants ? 'Ready' : 'No participants'))}
             ${miniMetric('Round Complete', allRoundGroupsDone ? 'Yes' : 'No')}
           </div>
           <div class="po-training-announcement__preview training-notice-preview">
@@ -420,7 +420,7 @@
             </div>
           </div>
           <div class="po-training-row-actions">
-            <button type="button" class="action-button po-case-action" data-training-notify-group ${(!program.id || isLocked || !groupIsFull || state.loading.notices) ? 'disabled' : ''}>${state.loading.notices ? 'Sending...' : `Notify Group ${program.targetGroupNumber}`}</button>
+            <button type="button" class="action-button po-case-action" data-training-notify-group ${(!program.id || isLocked || !groupHasParticipants || state.loading.notices) ? 'disabled' : ''}>${state.loading.notices ? 'Sending...' : `Notify Group ${program.targetGroupNumber}`}</button>
           </div>
           <div class="table-card po-training-work-block">
             <div class="table-wrapper">

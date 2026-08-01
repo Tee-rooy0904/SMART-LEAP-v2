@@ -503,11 +503,6 @@ class TeamService
                 ['value' => 'inactive', 'label' => 'Inactive'],
                 ['value' => 'disabled', 'label' => 'Disabled'],
             ],
-            'trainingGroups' => [
-                ['value' => 1, 'label' => 'Group 1'],
-                ['value' => 2, 'label' => 'Group 2'],
-                ['value' => 3, 'label' => 'Group 3'],
-            ],
             'districts' => $catalog->districtOptions(),
             'barangays' => $barangays,
         ];
@@ -605,7 +600,7 @@ class TeamService
             'contactNumber' => trim((string) ($payload['contactNumber'] ?? '')),
             'positionTitle' => trim((string) ($payload['positionTitle'] ?? '')),
             'password' => (string) ($payload['password'] ?? ''),
-            'trainingGroupNumber' => (int) ($payload['trainingGroupNumber'] ?? 0),
+            'trainingGroupNumber' => null,
         ];
 
         $errors = [];
@@ -627,14 +622,6 @@ class TeamService
         if (!$isCreate && $data['password'] !== '' && strlen($data['password']) < 8) {
             $errors['password'] = 'Password must be at least 8 characters.';
         }
-        if ($data['role'] === 'pdo') {
-            if ($data['trainingGroupNumber'] < 1 || $data['trainingGroupNumber'] > TRAINING_BATCH_GROUP_COUNT) {
-                $errors['trainingGroupNumber'] = 'Assign this PDO to Group 1, Group 2, or Group 3.';
-            }
-        } else {
-            $data['trainingGroupNumber'] = null;
-        }
-
         return ['data' => $data, 'errors' => $errors];
     }
 
@@ -829,7 +816,7 @@ class TeamService
                 'user_id' => $userId,
                 'position_title' => $roleName,
                 'status' => 'active',
-                'training_group_number' => $roleName === ROLE_PROJECT_OFFICER ? 1 : null,
+                'training_group_number' => null,
             ]);
         } catch (PDOException $exception) {
             log_database_query_failure('team.ensure_staff_profile', $exception, ['user_id' => $userId]);

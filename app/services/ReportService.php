@@ -241,7 +241,7 @@ class ReportService
         $currentYear = (int) $now->format('Y');
         $availableYears = $this->reportYearOptions();
         $period = strtolower(trim((string) ($filters['period'] ?? 'monthly')));
-        if (!in_array($period, ['monthly', 'quarterly', 'yearly', 'custom'], true)) {
+        if (!in_array($period, ['monthly', 'quarterly', 'yearly'], true)) {
             $period = 'monthly';
         }
 
@@ -1001,7 +1001,7 @@ class ReportService
             return '';
         }
 
-        if ($period === 'monthly' || $period === 'custom') {
+        if ($period === 'monthly') {
             return $dueMonth;
         }
 
@@ -1459,14 +1459,6 @@ class ReportService
             return 12;
         }
 
-        if ($period === 'custom') {
-            $effectiveFrom = substr((string) ($filters['effectiveFrom'] ?? ($filters['from'] ?? '')), 0, 7);
-            $effectiveTo = substr((string) ($filters['effectiveTo'] ?? ($filters['to'] ?? '')), 0, 7);
-            if (preg_match('/^\d{4}-\d{2}$/', $effectiveFrom) && preg_match('/^\d{4}-\d{2}$/', $effectiveTo)) {
-                return max($this->countMonthsInclusive($effectiveFrom, $effectiveTo), 1);
-            }
-        }
-
         if ($periodKey !== null && preg_match('/^\d{4}-\d{2}$/', $periodKey)) {
             return 1;
         }
@@ -1715,8 +1707,8 @@ class ReportService
         if (str_contains($text, 'buy') || str_contains($text, 'sell')) {
             return 'Buy and Sell';
         }
-        if (str_contains($text, 'food') || str_contains($text, 'beverage') || str_contains($text, 'balut') || str_contains($text, 'snack') || str_contains($text, 'eatery') || str_contains($text, 'carinderia')) {
-            return 'Food and Beverages';
+        if (str_contains($text, 'food') || str_contains($text, 'beverage') || str_contains($text, 'balut') || str_contains($text, 'snack') || str_contains($text, 'eatery') || str_contains($text, 'carinderia') || str_contains($text, 'restaurant')) {
+            return 'Homemade';
         }
         if (str_contains($text, 'livestock') || str_contains($text, 'animal') || str_contains($text, 'poultry') || str_contains($text, 'hog')) {
             return 'Livestock';
@@ -1736,15 +1728,19 @@ class ReportService
             || str_contains($text, 'establishment')
             || str_contains($text, 'store')
             || str_contains($text, 'shop')
-            || str_contains($text, 'home')
+        ) {
+            return 'Establishment';
+        }
+        if (
+            str_contains($text, 'home')
             || str_contains($text, 'production')
             || str_contains($text, 'homemade')
             || str_contains($text, 'processing')
         ) {
-            return 'Establishment';
+            return 'Homemade';
         }
 
-        return ucwords($text);
+        return 'Establishment';
     }
 
     private function resolveSectorLabel(string $sector, string $otherSectorSpecify): string

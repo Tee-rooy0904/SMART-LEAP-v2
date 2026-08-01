@@ -535,7 +535,7 @@ class TrainingService
             ? $invitees
             : array_values(array_filter($invitees, static fn (array $invitee): bool => in_array((int) $invitee['id'], $ids, true)));
 
-        $groupNumber = (int) ($options['groupNumber'] ?? 0);
+        $groupNumber = (int) ($options['groupNumber'] ?? ($program['targetGroupNumber'] ?? 0));
         if ($groupNumber > 0) {
             $selected = array_values(array_filter($selected, static fn (array $invitee): bool => (int) ($invitee['batchGroupNumber'] ?? 0) === $groupNumber));
         }
@@ -543,11 +543,6 @@ class TrainingService
         if ($selected === []) {
             return ['ok' => false, 'errors' => ['invitees' => 'No eligible training participants were found for notice sending.']];
         }
-        $requiredGroupSize = $this->currentTrainingGroupSize();
-        if ($groupNumber > 0 && count($selected) !== $requiredGroupSize) {
-            return ['ok' => false, 'errors' => ['invitees' => sprintf('Group %d must have exactly %d participants before notices can be sent.', $groupNumber, $requiredGroupSize)]];
-        }
-
         $notificationService = new NotificationService();
         $sentCount = 0;
 
@@ -1159,21 +1154,6 @@ class TrainingService
             return ['errors' => ['targetGroupNumber' => sprintf('Group %d is already scheduled for Session %d.', $groupNumber, $roundNumber)]];
         }
 
-        if ($roundNumber > 1) {
-            $previousRound = $grouped[$roundNumber - 1] ?? [];
-            $lockedPrevious = array_filter($previousRound, static fn (array $slot): bool => (bool) ($slot['isLocked'] ?? false));
-            if (count($lockedPrevious) < TRAINING_BATCH_GROUP_COUNT) {
-                return ['errors' => ['roundNumber' => sprintf('Finish notifying all three groups in Session %d before starting Session %d.', $roundNumber - 1, $roundNumber)]];
-            }
-        }
-
-        $currentRound = $grouped[$roundNumber] ?? [];
-        $draftSlots = array_values(array_filter($currentRound, static fn (array $slot): bool => !($slot['isLocked'] ?? false)));
-        if ($programId === null && $draftSlots !== []) {
-            $draftGroup = (int) ($draftSlots[0]['targetGroupNumber'] ?? 0);
-            return ['errors' => ['targetGroupNumber' => sprintf('Finish notifying Group %d in Session %d before preparing another group schedule.', $draftGroup, $roundNumber)]];
-        }
-
         return ['errors' => []];
     }
 
@@ -1780,7 +1760,6 @@ class TrainingService
         }
 
         $rounds = [];
-        $previousComplete = true;
         for ($roundNumber = 1; $roundNumber <= TRAINING_SESSIONS_PER_YEAR; $roundNumber++) {
             $roundPrograms = $grouped[$roundNumber] ?? [];
             $slots = [];
@@ -1808,16 +1787,12 @@ class TrainingService
                 ];
             }
 
-            $isUnlocked = $roundNumber === 1 ? true : $previousComplete;
+            $isUnlocked = true;
             $availableGroups = [];
             if ($isUnlocked) {
-                if ($draftGroups !== []) {
-                    $availableGroups = [$draftGroups[0]];
-                } else {
-                    foreach ([1, 2, 3] as $groupNumber) {
-                        if (!in_array($groupNumber, $notifiedGroups, true)) {
-                            $availableGroups[] = $groupNumber;
-                        }
+                foreach ([1, 2, 3] as $groupNumber) {
+                    if (!in_array($groupNumber, $notifiedGroups, true)) {
+                        $availableGroups[] = $groupNumber;
                     }
                 }
             }
@@ -1838,7 +1813,6 @@ class TrainingService
                 'availableGroups' => $availableGroups,
                 'slots' => $slots,
             ];
-            $previousComplete = $isComplete;
         }
 
         return $rounds;
@@ -1952,102 +1926,6 @@ class TrainingService
         return $roster;
     }
 
-    private function normalizePdoGroupAssignments(array $preferredPdoGroups, array $roster): array
-    {
-        $normalized = [];
-        foreach ($preferredPdoGroups as $pdoUserId => $groupNumber) {
-            $pdoKey = (string) ((int) $pdoUserId);
-            $group = (int) $groupNumber;
-            if ($pdoKey === '0' || $group < 1 || $group > TRAINING_BATCH_GROUP_COUNT) {
-                continue;
-            }
-            $normalized[$pdoKey] = $group;
-        }
-
-        $storedPdoGroups = $this->fetchStoredPdoTrainingGroupAssignments(array_values(array_unique(array_filter(array_map(
-            static fn (array $entry): int => (int) ($entry['assignedPdoUserId'] ?? 0),
-            $roster
-        )))));
-        foreach ($storedPdoGroups as $pdoUserId => $groupNumber) {
-            $pdoKey = (string) ((int) $pdoUserId);
-            if (!isset($normalized[$pdoKey])) {
-                $normalized[$pdoKey] = (int) $groupNumber;
-            }
-        }
-
-        foreach ($roster as $entry) {
-            $pdoUserId = (int) ($entry['assignedPdoUserId'] ?? 0);
-            $groupNumber = (int) ($entry['batchGroupNumber'] ?? 0);
-            $pdoKey = (string) $pdoUserId;
-            if ($pdoUserId <= 0 || isset($normalized[$pdoKey])) {
-                continue;
-            }
-            if ($groupNumber >= 1 && $groupNumber <= TRAINING_BATCH_GROUP_COUNT) {
-                $normalized[$pdoKey] = $groupNumber;
-            }
-        }
-
-        return $normalized;
-    }
-
-    private function fetchStoredPdoTrainingGroupAssignments(array $pdoUserIds): array
-    {
-        $pdoUserIds = array_values(array_unique(array_filter(array_map('intval', $pdoUserIds))));
-        if ($pdoUserIds === []) {
-            return [];
-        }
-
-        $this->ensureStaffTrainingGroupColumn();
-        $placeholders = implode(',', array_fill(0, count($pdoUserIds), '?'));
-        $statement = db()->prepare(
-            "SELECT user_id, training_group_number
-             FROM staff_profiles
-             WHERE user_id IN ($placeholders)
-               AND training_group_number IS NOT NULL"
-        );
-        foreach ($pdoUserIds as $index => $pdoUserId) {
-            $statement->bindValue($index + 1, $pdoUserId, PDO::PARAM_INT);
-        }
-        $statement->execute();
-        $rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-        $map = [];
-        foreach ($rows as $row) {
-            $groupNumber = (int) ($row['training_group_number'] ?? 0);
-            if ($groupNumber < 1 || $groupNumber > TRAINING_BATCH_GROUP_COUNT) {
-                continue;
-            }
-            $map[(string) ((int) ($row['user_id'] ?? 0))] = $groupNumber;
-        }
-
-        return $map;
-    }
-
-    private function ensureStaffTrainingGroupColumn(): void
-    {
-        static $ensured = false;
-        if ($ensured) {
-            return;
-        }
-
-        $statement = db()->prepare(
-            'SELECT COUNT(*) FROM information_schema.columns
-             WHERE table_schema = DATABASE()
-               AND table_name = :table_name
-               AND column_name = :column_name'
-        );
-        $statement->execute([
-            'table_name' => 'staff_profiles',
-            'column_name' => 'training_group_number',
-        ]);
-
-        if ((int) $statement->fetchColumn() === 0) {
-            db()->exec('ALTER TABLE staff_profiles ADD COLUMN training_group_number TINYINT UNSIGNED NULL AFTER status');
-        }
-
-        $ensured = true;
-    }
-
     private function syncYearlyBatchAssignmentsForYear(int $year, int $actorUserId, ?PDO $pdo = null, array $preferredPdoGroups = []): void
     {
         $connection = $pdo ?? db();
@@ -2123,172 +2001,6 @@ class TrainingService
             $item['batchGroupNumber'] = $groupNumber;
             $item['capacitySequence'] = ($index % $groupSize) + 1;
             $groupRosters['group' . $groupNumber][] = $item;
-        }
-
-        return [
-            'errors' => [],
-            'groups' => $groupMap,
-            'groupRosters' => $groupRosters,
-        ];
-    }
-
-    private function buildPdoGroupAssignments(array $roster, int $groupSize, array $preferredPdoGroups = []): array
-    {
-        $groupBuckets = [];
-        foreach ($roster as $entry) {
-            $applicantProfileId = (int) ($entry['applicantProfileId'] ?? 0);
-            if ($applicantProfileId <= 0) {
-                continue;
-            }
-
-            $pdoUserId = (int) ($entry['assignedPdoUserId'] ?? 0);
-            $pdoName = trim((string) ($entry['assignedPdoName'] ?? ''));
-            if ($pdoUserId <= 0 || $pdoName === '') {
-                return [
-                    'errors' => ['invitees' => 'All training participants must have an assigned PDO before grouping.'],
-                    'groups' => [],
-                    'groupRosters' => [
-                        'group1' => [],
-                        'group2' => [],
-                        'group3' => [],
-                    ],
-                ];
-            }
-
-            $bucketKey = (string) $pdoUserId;
-            if (!isset($groupBuckets[$bucketKey])) {
-                $groupBuckets[$bucketKey] = [
-                    'pdoUserId' => $pdoUserId,
-                    'pdoName' => $pdoName,
-                    'items' => [],
-                ];
-            }
-            $groupBuckets[$bucketKey]['items'][] = $entry;
-        }
-
-        $groupBuckets = array_values($groupBuckets);
-        usort($groupBuckets, static function (array $left, array $right): int {
-            $sizeCompare = count($right['items'] ?? []) <=> count($left['items'] ?? []);
-            if ($sizeCompare !== 0) {
-                return $sizeCompare;
-            }
-            return strcasecmp((string) ($left['pdoName'] ?? ''), (string) ($right['pdoName'] ?? ''));
-        });
-
-        $groupMap = [];
-        $groupRosters = [
-            'group1' => [],
-            'group2' => [],
-            'group3' => [],
-        ];
-        $groupLoads = [
-            1 => 0,
-            2 => 0,
-            3 => 0,
-        ];
-
-        $explicitBuckets = [];
-        $automaticBuckets = [];
-        foreach ($groupBuckets as $bucket) {
-            $preferredGroup = (int) ($preferredPdoGroups[(string) ((int) ($bucket['pdoUserId'] ?? 0))] ?? 0);
-            if ($preferredGroup >= 1 && $preferredGroup <= TRAINING_BATCH_GROUP_COUNT) {
-                $bucket['preferredGroup'] = $preferredGroup;
-                $explicitBuckets[] = $bucket;
-                continue;
-            }
-            $automaticBuckets[] = $bucket;
-        }
-
-        $placeBucket = function (array $bucket, int $forcedGroup = 0) use (&$groupLoads, &$groupMap, &$groupRosters, $groupSize): ?array {
-            $items = array_values($bucket['items'] ?? []);
-            usort($items, fn (array $left, array $right): int => $this->compareApplicantRosterRows($left, $right));
-            if (count($items) > $groupSize) {
-                return [
-                    'errors' => [
-                        'invitees' => sprintf(
-                            '%s exceeds the PDO-based training group limit of %d participants.',
-                            (string) ($bucket['pdoName'] ?? 'Assigned PDO'),
-                            $groupSize
-                        ),
-                    ],
-                    'groups' => [],
-                        'groupRosters' => $groupRosters,
-                    ];
-            }
-
-            $candidateGroups = [];
-            if ($forcedGroup >= 1 && $forcedGroup <= TRAINING_BATCH_GROUP_COUNT) {
-                if (($groupLoads[$forcedGroup] + count($items)) <= $groupSize) {
-                    $candidateGroups[] = $forcedGroup;
-                }
-            } else {
-                foreach ([1, 2, 3] as $candidateGroupNumber) {
-                    if (($groupLoads[$candidateGroupNumber] + count($items)) <= $groupSize) {
-                        $candidateGroups[] = $candidateGroupNumber;
-                    }
-                }
-            }
-
-            if ($candidateGroups === []) {
-                return [
-                    'errors' => [
-                        'invitees' => $forcedGroup >= 1 && $forcedGroup <= TRAINING_BATCH_GROUP_COUNT
-                            ? sprintf(
-                                '%s cannot fit in Group %d without exceeding %d participants.',
-                                (string) ($bucket['pdoName'] ?? 'Assigned PDO'),
-                                $forcedGroup,
-                                $groupSize
-                            )
-                            : sprintf(
-                                'Assigned participants cannot fit within the current %d-group training limit of %d participants per group.',
-                                TRAINING_BATCH_GROUP_COUNT,
-                                $groupSize
-                            ),
-                    ],
-                    'groups' => [],
-                    'groupRosters' => $groupRosters,
-                ];
-            }
-
-            if ($forcedGroup < 1 || $forcedGroup > TRAINING_BATCH_GROUP_COUNT) {
-                usort($candidateGroups, static function (int $left, int $right) use ($groupLoads): int {
-                    $sizeCompare = $groupLoads[$left] <=> $groupLoads[$right];
-                    if ($sizeCompare !== 0) {
-                        return $sizeCompare;
-                    }
-                    return $left <=> $right;
-                });
-            }
-            $groupNumber = $candidateGroups[0];
-
-            foreach ($items as $itemIndex => $item) {
-                $applicantProfileId = (int) ($item['applicantProfileId'] ?? 0);
-                if ($applicantProfileId <= 0) {
-                    continue;
-                }
-
-                $groupMap[$applicantProfileId] = $groupNumber;
-                $item['batchGroupNumber'] = $groupNumber;
-                $item['assignedPdoName'] = (string) ($bucket['pdoName'] ?? '');
-                $item['pdoSequence'] = $itemIndex + 1;
-                $groupRosters['group' . $groupNumber][] = $item;
-            }
-            $groupLoads[$groupNumber] += count($items);
-            return null;
-        };
-
-        foreach ($explicitBuckets as $bucket) {
-            $result = $placeBucket($bucket, (int) ($bucket['preferredGroup'] ?? 0));
-            if (is_array($result)) {
-                return $result;
-            }
-        }
-
-        foreach ($automaticBuckets as $bucket) {
-            $result = $placeBucket($bucket, 0);
-            if (is_array($result)) {
-                return $result;
-            }
         }
 
         return [

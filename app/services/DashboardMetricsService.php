@@ -1146,30 +1146,40 @@ class DashboardMetricsService
         if (str_contains($text, 'buy') || str_contains($text, 'sell')) {
             return 'Buy and Sell';
         }
-        if (str_contains($text, 'food') || str_contains($text, 'beverage') || str_contains($text, 'balut') || str_contains($text, 'snack') || str_contains($text, 'eatery') || str_contains($text, 'carinderia')) {
-            return 'Food and Beverages';
+        if (str_contains($text, 'food') || str_contains($text, 'beverage') || str_contains($text, 'balut') || str_contains($text, 'snack') || str_contains($text, 'eatery') || str_contains($text, 'carinderia') || str_contains($text, 'restaurant')) {
+            return 'Homemade';
         }
         if (str_contains($text, 'livestock') || str_contains($text, 'animal') || str_contains($text, 'poultry') || str_contains($text, 'hog')) {
             return 'Livestock';
+        }
+        if (
+            str_contains($text, 'service')
+            || str_contains($text, 'repair')
+            || str_contains($text, 'salon')
+        ) {
+            return 'Services';
         }
         if (
             str_contains($text, 'paluwagan')
             || str_contains($text, 'microenterprise')
             || str_contains($text, 'micro enterprise')
             || str_contains($text, 'micro-enterprise')
-            || str_contains($text, 'service')
             || str_contains($text, 'establishment')
             || str_contains($text, 'store')
             || str_contains($text, 'shop')
-            || str_contains($text, 'home')
+        ) {
+            return 'Establishment';
+        }
+        if (
+            str_contains($text, 'home')
             || str_contains($text, 'production')
             || str_contains($text, 'homemade')
             || str_contains($text, 'processing')
         ) {
-            return 'Establishment';
+            return 'Homemade';
         }
 
-        return ucwords($text);
+        return 'Establishment';
     }
 
     private function normalizeApplicationStatus(string $status): string
