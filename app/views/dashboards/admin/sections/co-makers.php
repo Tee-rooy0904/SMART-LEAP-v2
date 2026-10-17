@@ -5,9 +5,10 @@
         <div class="filters-row admin-beneficiaries-filters">
             <label class="filter-group filter-group--search">
                 <span class="filter-label">Search</span>
-                <div class="filter-search">
+                <div class="filter-search" style="position: relative; display: flex; align-items: center;">
                     <i class="fas fa-search"></i>
-                    <input type="search" id="adminCoMakerSearch" placeholder="Co-maker, primary beneficiary, barangay">
+                    <input type="search" id="adminCoMakerSearch" placeholder="Co-maker, primary beneficiary, barangay" style="padding-right: 32px;">
+                    <button type="button" id="adminCoMakerSearchClear" class="team-search-clear" title="Clear search" style="display:none;">✕</button>
                 </div>
             </label>
             <label class="filter-group">

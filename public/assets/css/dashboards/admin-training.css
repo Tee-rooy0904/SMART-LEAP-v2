@@ -869,34 +869,52 @@
 }
 
 #training-section .training-status-pill--blue {
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(37, 99, 235, 0.14);
   color: #1d4ed8;
-  border-color: rgba(37, 99, 235, 0.18);
+  border-color: rgba(37, 99, 235, 0.28);
 }
 
 #training-section .training-status-pill--teal,
 #training-section .training-status-pill--emerald {
-  background: rgba(5, 150, 105, 0.1);
-  color: #047857;
-  border-color: rgba(5, 150, 105, 0.18);
+  background: rgba(16, 185, 129, 0.16);
+  color: #065f46;
+  border-color: rgba(16, 185, 129, 0.32);
 }
 
 #training-section .training-status-pill--amber {
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
-  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.16);
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.32);
 }
 
 #training-section .training-status-pill--rose {
-  background: rgba(225, 29, 72, 0.1);
-  color: #be123c;
-  border-color: rgba(225, 29, 72, 0.16);
+  background: rgba(225, 29, 72, 0.14);
+  color: #9f1239;
+  border-color: rgba(225, 29, 72, 0.28);
 }
 
 #training-section .training-status-pill--slate {
-  background: rgba(100, 116, 139, 0.1);
-  color: #475569;
-  border-color: rgba(100, 116, 139, 0.18);
+  background: rgba(100, 116, 139, 0.12);
+  color: #334155;
+  border-color: rgba(100, 116, 139, 0.24);
+}
+
+#training-section .training-attendance-button[data-value="present"].is-active {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+#training-section .training-attendance-button[data-value="absent"].is-active {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+#training-section .training-attendance-button[data-value="excused"].is-active {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
 }
 
 #training-section .training-session-table th {
@@ -1131,3 +1149,167 @@
     justify-content: flex-start;
   }
 }
+
+/* --------------------------------------------------------------------------
+   DARK MODE OVERRIDES (ADMIN TRAINING)
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] #training-section,
+[data-theme="dark"] #training-section .po-section-shell {
+  background: #0a1120 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .admin-training-summary-card {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .admin-training-summary-card p {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .admin-training-summary-card small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] #training-section .po-training-workspace,
+[data-theme="dark"] #training-section .po-training-session-shell,
+[data-theme="dark"] #training-section .po-training-work-block,
+[data-theme="dark"] #training-section .training-round-card,
+[data-theme="dark"] #training-section .po-training-subnav,
+[data-theme="dark"] #training-section .po-training-summary-rail {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .po-training-session-hero h3,
+[data-theme="dark"] #training-section .po-training-work-block__header h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-session-table thead th {
+  background: #0c1628 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] #training-section .training-session-table td {
+  background: #111d33 !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] #training-section .training-session-table td strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-session-modal__card {
+  background: #111d33 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] #training-section .training-session-modal__body {
+  background: #0d1527 !important;
+}
+
+[data-theme="dark"] #training-section .training-session-modal__footer {
+  background: #111d33 !important;
+}
+
+
+[data-theme="dark"] #training-section .training-session-filter-status {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] #training-section .training-session-filter-status__summary strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-session-filter-status__summary span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] #training-section .summary-chip {
+  background: #162540 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] #training-section .po-training-workspace,
+[data-theme="dark"] #training-section .po-training-work-block {
+  background: #111d33 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Training Attendance Pills & Buttons Dark Mode */
+[data-theme="dark"] #training-section .training-status-pill--blue,
+[data-theme="dark"] .training-status-pill--blue {
+  background: rgba(56, 182, 255, 0.2) !important;
+  color: #38b6ff !important;
+  border-color: rgba(56, 182, 255, 0.38) !important;
+}
+
+[data-theme="dark"] #training-section .training-status-pill--teal,
+[data-theme="dark"] #training-section .training-status-pill--emerald,
+[data-theme="dark"] .training-status-pill--emerald {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.38) !important;
+}
+
+[data-theme="dark"] #training-section .training-status-pill--amber,
+[data-theme="dark"] .training-status-pill--amber {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.38) !important;
+}
+
+[data-theme="dark"] #training-section .training-status-pill--rose,
+[data-theme="dark"] .training-status-pill--rose {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.38) !important;
+}
+
+[data-theme="dark"] #training-section .training-status-pill--slate,
+[data-theme="dark"] .training-status-pill--slate {
+  background: rgba(148, 163, 184, 0.16) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+}
+
+[data-theme="dark"] #training-section .training-attendance-button {
+  background: #162540 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] #training-section .training-attendance-button:hover:not(:disabled) {
+  background: #1e3256 !important;
+  border-color: #38b6ff !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-attendance-button[data-value="present"].is-active {
+  background: linear-gradient(135deg, #059669, #10b981) !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-attendance-button[data-value="absent"].is-active {
+  background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+  border-color: #f87171 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-attendance-button[data-value="excused"].is-active {
+  background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+  border-color: #fbbf24 !important;
+  color: #ffffff !important;
+}
+

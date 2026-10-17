@@ -3,6 +3,8 @@
 $portalUser = isset($authUser) && is_array($authUser) ? $authUser : null;
 $portalQuickView = isset($quickView) && is_array($quickView) ? $quickView : null;
 $portalJsVersion = @filemtime(base_path('public/assets/js/public/portal.js')) ?: time();
+$transitionsCssVersion = @filemtime(base_path('public/assets/css/shared/transitions.css')) ?: time();
+$uiInteractiveJsVersion = @filemtime(base_path('public/assets/js/shared/ui-interactive.js')) ?: time();
 $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 $isCoMakerQuickView = $portalQuickView !== null && (string) ($portalQuickView['type'] ?? '') === 'co-maker';
 $primaryActionHref = $portalQuickView
@@ -36,6 +38,7 @@ $heroFactLine = $portalQuickView
     <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) (@filemtime(base_path('public/assets/css/public/portal.css')) ?: time())) ?>">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/shared/transitions.css?v=<?= urlencode((string) $transitionsCssVersion) ?>">
 </head>
 <body class="portal-page portal-page--home">
     <div class="portal-backdrop" aria-hidden="true">
@@ -202,5 +205,6 @@ $heroFactLine = $portalQuickView
     </div>
 
     <script src="<?= $baseUrl ?>/assets/js/public/portal.js?v=<?= urlencode((string) $portalJsVersion) ?>" defer></script>
+    <script src="<?= $baseUrl ?>/assets/js/shared/ui-interactive.js?v=<?= urlencode((string) $uiInteractiveJsVersion) ?>" defer></script>
 </body>
 </html>

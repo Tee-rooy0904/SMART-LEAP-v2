@@ -548,6 +548,16 @@
   min-width: 0;
 }
 
+#repayments-section .sw-admin-filters .filter-group--action {
+  align-items: start;
+  justify-self: start;
+}
+
+#repayments-section .sw-admin-filters .filter-group--action .app-btn-outline {
+  width: auto;
+  min-width: 148px;
+}
+
 .sw-table-wrapper {
   overflow-x: auto;
   border-radius: 18px;
@@ -903,6 +913,67 @@
   margin: 0;
   font-size: 0.78rem;
   color: #7a94b0;
+}
+
+.sw-ticket-statusbar {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  min-width: min(320px, 100%);
+}
+
+.sw-ticket-statusbar__form {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sw-ticket-statusbar__field {
+  display: grid;
+  gap: 6px;
+}
+
+.sw-ticket-statusbar__field span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7a94b0;
+}
+
+.sw-ticket-statusbar__field select {
+  min-width: 210px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(15,23,42,0.14);
+  background: #fff;
+  color: #0c2d52;
+}
+
+.sw-ticket-statusbar__submit {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.sw-ticket-statusbar__meta,
+.sw-ticket-statusbar__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #5b7a96;
+  text-align: right;
+}
+
+.sw-ticket-statusbar__hint {
+  color: #0f766e;
+}
+
+.sw-ticket-statusbar__error {
+  margin: 0;
+  text-align: right;
 }
 
 .sw-ticket-thread {
@@ -1435,9 +1506,24 @@
   .sw-hero-card,
   .section-header,
   .sw-ticket-card__top,
-  .sw-ticket-card__meta {
+  .sw-ticket-card__meta,
+  .sw-chat-header,
+  .sw-ticket-statusbar__form {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .sw-ticket-statusbar,
+  .sw-ticket-statusbar__meta,
+  .sw-ticket-statusbar__hint,
+  .sw-ticket-statusbar__error {
+    justify-items: stretch;
+    text-align: left;
+  }
+
+  .sw-ticket-statusbar__field select,
+  .sw-ticket-statusbar__submit {
+    width: 100%;
   }
 
   .sw-summary-strip,
@@ -2049,6 +2135,15 @@
   text-align: center;
 }
 
+#repayments-section .sw-repayment-table th:nth-child(9),
+#repayments-section .sw-repayment-table td:nth-child(9),
+#repayments-section .sw-repayment-table th:nth-child(10),
+#repayments-section .sw-repayment-table td:nth-child(10),
+#repayments-section .sw-repayment-table th:nth-child(11),
+#repayments-section .sw-repayment-table td:nth-child(11) {
+  text-align: center !important;
+}
+
 /* ── Validation tabs ── */
 .social-worker-shell .validation-tab {
   border-radius: 10px 10px 0 0;
@@ -2210,3 +2305,43 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Dark theme explicit overrides for Social Worker workspace */
+[data-theme="dark"] .social-worker-shell .content-area,
+[data-theme="dark"] .social-worker-shell .content-main,
+[data-theme="dark"] .social-worker-shell .admin-section {
+  background: #0a1120 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .social-worker-shell .content-header.admin-topbar {
+  background: #0d1527 !important;
+  background-image: none !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .social-worker-shell .admin-layout-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .social-worker-shell .admin-layout-card h2,
+[data-theme="dark"] .social-worker-shell .admin-layout-card h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .social-worker-shell .admin-data-table tbody tr:hover,
+[data-theme="dark"] .social-worker-shell #validation-section .admin-data-table tbody tr:hover {
+  background: #182744 !important;
+  background-image: none !important;
+}
+
+[data-theme="dark"] .social-worker-shell .admin-data-table tbody tr:hover td,
+[data-theme="dark"] .social-worker-shell #validation-section .admin-data-table tbody tr:hover td {
+  background: #182744 !important;
+  background-image: none !important;
+  color: #f1f5f9 !important;
+}

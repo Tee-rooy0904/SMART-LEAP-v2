@@ -140,6 +140,21 @@
         startSupportChatPolling();
         renderJourney();
         renderAlerts();
+        toggleHistoricalCoMakerView();
+    }
+
+    function isHistoricalCoMakerView() {
+        return state.dashboard?.historicalSource?.mode === 'co_maker_historical_view';
+    }
+
+    function toggleHistoricalCoMakerView() {
+        const historical = isHistoricalCoMakerView();
+        document.body.classList.toggle('is-historical-co-maker-view', historical);
+
+        const applicationActionBar = document.querySelector('.application-action-bar');
+        if (applicationActionBar) {
+            applicationActionBar.hidden = historical;
+        }
     }
 
     function handleProfileStateSync(event) {
@@ -291,6 +306,7 @@
 
     // Render uploaded requirement cards, review states, and any correction or resubmission guidance.
     function renderRequirements() {
+        const historical = isHistoricalCoMakerView();
         const requirements = state.dashboard.requirements || [];
         const list = document.getElementById('requirementsList');
         const uploadedCount = requirements.filter((item) => item.file && item.file.path).length;
@@ -326,11 +342,18 @@
             const statusClass = requirementStatusClass(item.status);
             const statusText = normalizeRequirementStatusSimple(item);
             const fileName = item.file?.name ? escapeHtml(item.file.name) : 'No file uploaded yet';
-            const fileMeta = item.updatedAt ? `Last update: ${formatDate(item.updatedAt)}` : 'You can upload this in the Application page.';
+            const fileMeta = item.updatedAt
+                ? `Last update: ${formatDate(item.updatedAt)}`
+                : (historical ? 'Historical application record only.' : 'You can upload this in the Application page.');
             const reviewerNote = item.reviewerRemarks || item.remarks || item.note || '';
             const actionHref = item.file?.url ? escapeAttribute(item.file.url) : '#application-page';
-            const actionLabel = item.file?.url ? 'View file' : 'Go to uploads';
-            const actionAttrs = item.file?.url ? 'target="_blank" rel="noopener"' : 'data-open-application-workspace';
+            const actionLabel = item.file?.url ? 'View file' : (historical ? 'Historical record only' : 'Go to uploads');
+            const actionAttrs = item.file?.url ? 'target="_blank" rel="noopener"' : (historical ? '' : 'data-open-application-workspace');
+            const actionMarkup = item.file?.url
+                ? `<a class="btn-outline small requirement-action-link" href="${actionHref}" ${actionAttrs}>${actionLabel}</a>`
+                : historical
+                    ? '<span class="btn-outline small requirement-action-link" aria-disabled="true">Historical record only</span>'
+                    : `<a class="btn-outline small requirement-action-link" href="${actionHref}" ${actionAttrs}>${actionLabel}</a>`;
 
             return `
                 <li class="requirement-card">
@@ -345,7 +368,7 @@
                         ${reviewerNote ? `<p class="requirement-card__note"><strong>Reviewer note:</strong> ${escapeHtml(truncateText(reviewerNote, 120))}</p>` : ''}
                     </div>
                     <div class="requirement-actions">
-                        <a class="btn-outline small requirement-action-link" href="${actionHref}" ${actionAttrs}>${actionLabel}</a>
+                        ${actionMarkup}
                     </div>
                 </li>
             `;
@@ -353,6 +376,7 @@
     }
 
     function renderFormRequirements() {
+        const historical = isHistoricalCoMakerView();
         const root = document.getElementById('applicationFormCards');
         if (!root) {
             return;
@@ -385,14 +409,19 @@
             const onlineUrl = directFormFiles[definition.code]
                 ? routeUrl(directFormFiles[definition.code])
                 : routeUrl(`application-form-file?code=${encodeURIComponent(definition.code)}`);
-            const canOpenOnline = Boolean(task?.interactive)
+            const canOpenOnline = !historical
+                && Boolean(task?.interactive)
                 && String(task?.status || '').toLowerCase() !== 'locked';
             const fileMeta = file
                 ? `Hardcopy upload: ${file.name || 'Uploaded form'}${file.size ? ` | ${formatFileSize(file.size)}` : ''}${file.type ? ` | ${file.type}` : ''}`
+                : historical
+                    ? 'Historical training form record for the previous beneficiary.'
                 : (definition.finalRequirement
                     ? (canOpenOnline ? 'Upload the proof that assistance was received.' : 'This final proof opens after earlier requirements are verified.')
                     : (canOpenOnline ? 'Online form opened for your training session.' : 'Waiting for Admin to open this form in a training session.'));
-            const helperText = buildFormRequirementHelper(task, definition);
+            const helperText = historical
+                ? 'Read-only historical view for the previous beneficiary.'
+                : buildFormRequirementHelper(task, definition);
             const reviewerNote = task?.reviewerRemarks || '';
             const onlineLabel = onlineFormActionLabel(task);
             const sessionMeta = sessionInfo.meta
@@ -419,7 +448,7 @@
                     <div class="doc-actions">
                         ${canOpenOnline
                             ? `<a class="btn-primary application-form-card__link" href="${escapeAttribute(onlineUrl)}" data-online-form-link="${escapeAttribute(onlineUrl)}">${escapeHtml(onlineLabel)}</a>`
-                            : '<span class="btn-outline application-form-card__disabled" aria-disabled="true">Online form locked</span>'}
+                            : `<span class="btn-outline application-form-card__disabled" aria-disabled="true">${historical ? 'Historical online form unavailable' : 'Online form locked'}</span>`}
                         ${file?.url
                             ? `<a class="btn-outline" href="${escapeAttribute(file.url)}" target="_blank" rel="noopener">View PDO/Admin upload</a>`
                             : '<span class="btn-outline application-form-card__disabled" aria-disabled="true">No hardcopy upload</span>'}
@@ -533,6 +562,7 @@
 
     // Render the applicant's seminar schedule, attendance progress, and training-related notices.
     function renderTraining() {
+        const historical = isHistoricalCoMakerView();
         const training = state.dashboard.training || {};
         const summary = training.summary || {};
         const invitees = training.invitees || [];
@@ -545,7 +575,9 @@
         setText('trainingPercent', `${progressPercent}%`);
         setText(
             'trainingSummaryNote',
-            invitees.length === 0
+            historical
+                ? 'Historical training assignments linked to the previous beneficiary.'
+                : invitees.length === 0
                 ? 'No training assignment recorded yet.'
                 : `${invitees.length} training assignment${invitees.length === 1 ? '' : 's'} recorded for your applicant profile.`
         );
@@ -761,15 +793,6 @@
             });
         }
 
-        const certificate = state.dashboard.certificate || {};
-        if (certificate.eligible) {
-            alerts.push({
-                label: 'Certificate',
-                title: 'Certificate ready',
-                copy: 'Your certificate is ready to download from the Training page.',
-            });
-        }
-
         if (alerts.length === 0) {
             list.innerHTML = '<li class="attention-list__empty">Important updates will appear here while your application moves forward.</li>';
             return;
@@ -835,6 +858,15 @@
     }
 
     function trainingProofMarkup(invitee) {
+        if (isHistoricalCoMakerView()) {
+            const proof = invitee?.proofAttachment || null;
+            if (proof?.filePath) {
+                return `<a class="action-link" href="${escapeHtml(routeUrl(proof.filePath))}" target="_blank" rel="noopener">${escapeHtml(proof.originalName || 'View proof')}</a>`;
+            }
+
+            return 'Historical record only';
+        }
+
         const proof = invitee?.proofAttachment || null;
         if (proof?.filePath) {
             return `<a class="action-link" href="${escapeHtml(routeUrl(proof.filePath))}" target="_blank" rel="noopener">${escapeHtml(proof.originalName || 'View proof')}</a>`;

@@ -14,9 +14,10 @@
         <div class="filters-row admin-beneficiaries-filters">
             <label class="filter-group filter-group--search">
                 <span class="filter-label">Search</span>
-                <div class="filter-search">
+                <div class="filter-search" style="position: relative; display: flex; align-items: center;">
                     <i class="fas fa-search"></i>
-                    <input type="search" id="adminBeneficiarySearch" placeholder="Name, business, email, barangay">
+                    <input type="search" id="adminBeneficiarySearch" placeholder="Name, business, email, barangay" style="padding-right: 32px;">
+                    <button type="button" id="adminBeneficiarySearchClear" class="team-search-clear" title="Clear search" style="display:none;">✕</button>
                 </div>
             </label>
             <label class="filter-group">
@@ -40,6 +41,12 @@
                     <option value="needs_follow_up">Needs Follow-up</option>
                     <option value="partial_paid">Partial Paid</option>
                     <option value="fully_paid">Fully Paid</option>
+                </select>
+            </label>
+            <label class="filter-group">
+                <span class="filter-label">Batch</span>
+                <select class="filter-select" id="adminBeneficiaryBatchFilter">
+                    <option value="">All batches</option>
                 </select>
             </label>
         </div>

@@ -1198,7 +1198,8 @@ $demographicChunks = $demographicRows === [] ? [[]] : array_chunk($demographicRo
                 ];
                 const rawMax = Math.max(...rows.flatMap((row) => series.map((item) => Number(row[item.key] || 0))), 1);
                 const step = niceAxisStep(rawMax);
-                const maxValue = Math.max(step, Math.ceil(rawMax / step) * step);
+                const baseMaxValue = Math.max(step, Math.ceil(rawMax / step) * step);
+                const maxValue = rawMax > 0 ? (baseMaxValue + step) : baseMaxValue;
                 const formatBarValue = (value) => {
                     const amount = Number(value || 0);
                     if (!Number.isFinite(amount)) return '0';
@@ -1281,9 +1282,11 @@ $demographicChunks = $demographicRows === [] ? [[]] : array_chunk($demographicRo
                                 : (seriesIndex === 0 ? 42 : seriesIndex === 1 ? 24 : 42);
                             const labelFontSize = isMonthly ? '8' : (period === 'yearly' ? '8.5' : '9');
                             const showLabel = value > 0;
+                            const minimumLabelY = plotTop + (isMonthly ? 12 : 10);
+                            const labelY = Math.max(y - labelLift, minimumLabelY);
                             return `
                                 <rect x="${x}" y="${y}" width="${barWidth}" height="${Math.max(height, value > 0 ? 2 : 0)}" rx="6" ry="6" fill="${item.color}" />
-                                ${showLabel ? `<text x="${x + (barWidth / 2) + labelXOffset}" y="${Math.max(y - labelLift, plotTop + 4)}" text-anchor="middle" font-size="${labelFontSize}" font-weight="800" fill="#102347">${escapeHtml(formatBarValue(value))}</text>` : ''}
+                                ${showLabel ? `<text x="${x + (barWidth / 2) + labelXOffset}" y="${labelY}" text-anchor="middle" font-size="${labelFontSize}" font-weight="800" fill="#102347">${escapeHtml(formatBarValue(value))}</text>` : ''}
                             `;
                         }).join('');
 
@@ -1299,8 +1302,8 @@ $demographicChunks = $demographicRows === [] ? [[]] : array_chunk($demographicRo
                 if (period === 'monthly' && rows.length >= 7) {
                     const firstHalf = rows.slice(0, 6);
                     const secondHalf = rows.slice(6, 12);
-                    const topPlot = buildPlot(firstHalf, { top: 28, height: 132 });
-                    const bottomPlot = buildPlot(secondHalf, { top: 292, height: 132 });
+                    const topPlot = buildPlot(firstHalf, { top: 38, height: 122 });
+                    const bottomPlot = buildPlot(secondHalf, { top: 302, height: 122 });
 
                     root.innerHTML = `
                         <div class="reports-svg-chart" role="img" aria-label="${escapeHtml(`Repayment performance by ${xAxisTitle.toLowerCase()}`)}">
@@ -1321,7 +1324,7 @@ $demographicChunks = $demographicRows === [] ? [[]] : array_chunk($demographicRo
                     return;
                 }
 
-                const singlePlot = buildPlot(rows, { top: period === 'monthly' ? 24 : 42, height: period === 'monthly' ? 255 : 228 });
+                const singlePlot = buildPlot(rows, { top: period === 'monthly' ? 34 : 42, height: period === 'monthly' ? 245 : 228 });
                 root.innerHTML = `
                     <div class="reports-svg-chart" role="img" aria-label="${escapeHtml(`Repayment performance by ${xAxisTitle.toLowerCase()}`)}">
                         <svg viewBox="0 0 980 360" aria-hidden="true">

@@ -22,9 +22,6 @@ class PostApprovalReviewController extends Controller
 
         $taskId = (int) ($_GET['task_id'] ?? 0);
         $embedded = ($_GET['embed'] ?? '') === '1';
-        if (!$embedded && $taskId <= 0) {
-            redirect('project-officer');
-        }
 
         if (!$embedded && $taskId > 0) {
             $this->view('dashboards/post-approval-form', [

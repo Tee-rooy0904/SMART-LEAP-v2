@@ -401,9 +401,44 @@
       render();
     });
 
-    qs('adminCoMakerSearch')?.addEventListener('input', (event) => {
+    const coMakerSearch = qs('adminCoMakerSearch');
+    const coMakerSearchClear = qs('adminCoMakerSearchClear');
+    const updateCoMakerClear = () => {
+      if (coMakerSearchClear) {
+        coMakerSearchClear.style.display = coMakerSearch?.value ? 'inline-flex' : 'none';
+        coMakerSearchClear.classList.toggle('is-visible', !!coMakerSearch?.value);
+      }
+    };
+    let coMakerSearchTimer = null;
+    coMakerSearch?.addEventListener('input', (event) => {
       state.filters.search = String(event.target.value || '');
+      updateCoMakerClear();
+      clearTimeout(coMakerSearchTimer);
+      coMakerSearchTimer = setTimeout(() => {
+        renderTable();
+      }, 200);
+    });
+
+    coMakerSearch?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && state.filters.search) {
+        state.filters.search = '';
+        if (coMakerSearch) coMakerSearch.value = '';
+        updateCoMakerClear();
+        clearTimeout(coMakerSearchTimer);
+        renderTable();
+      } else if (event.key === 'Enter') {
+        clearTimeout(coMakerSearchTimer);
+        renderTable();
+      }
+    });
+
+    coMakerSearchClear?.addEventListener('click', () => {
+      state.filters.search = '';
+      if (coMakerSearch) coMakerSearch.value = '';
+      updateCoMakerClear();
+      clearTimeout(coMakerSearchTimer);
       renderTable();
+      coMakerSearch?.focus();
     });
     qs('adminCoMakerStatusFilter')?.addEventListener('change', (event) => {
       state.filters.status = normalize(event.target.value || '');

@@ -99,6 +99,64 @@
   min-width: 0;
 }
 
+.applications-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.applications-search-box__icon {
+  position: absolute;
+  left: 12px;
+  color: #64748b;
+  font-size: 0.88rem;
+  pointer-events: none;
+  z-index: 2;
+  transition: color 0.2s ease;
+}
+
+.applications-search-box:focus-within .applications-search-box__icon {
+  color: #1a73e8;
+}
+
+.applications-search-box__input {
+  width: 100%;
+  min-height: 42px;
+  padding-left: 36px !important;
+  padding-right: 36px !important;
+}
+
+.applications-search-box__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.applications-search-box__clear {
+  position: absolute;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(148, 163, 184, 0.2);
+  color: #64748b;
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.applications-search-box__clear:hover {
+  background: rgba(148, 163, 184, 0.35);
+  color: #1e293b;
+  transform: scale(1.08);
+}
+
 .applications-toolbar__actions {
   display: flex;
   align-items: end;
@@ -394,3 +452,254 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --------------------------------------------------------------------------
+   DARK MODE OVERRIDES (ADMIN APPLICATIONS)
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .applications-review-shell,
+[data-theme="dark"] .applications-table-shell {
+  background: #0a1120 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-application-toolbar--admin {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .po-application-toolbar__summary .po-snapshot-card {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-application-toolbar__summary .po-snapshot-card__eyebrow {
+  background: rgba(56, 182, 255, 0.16) !important;
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .po-application-toolbar__summary .po-snapshot-card__body strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-application-toolbar__summary .po-snapshot-card__body span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-filter-field span,
+[data-theme="dark"] .po-progress-cell span,
+[data-theme="dark"] .po-location-cell span,
+[data-theme="dark"] .po-date-cell span,
+[data-theme="dark"] .table-tertiary {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-application-identity .table-primary,
+[data-theme="dark"] .po-location-cell strong,
+[data-theme="dark"] .po-progress-cell strong,
+[data-theme="dark"] .po-date-cell strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-application-identity .table-secondary {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-batch-pill {
+  background: rgba(56, 182, 255, 0.16) !important;
+  border-color: rgba(56, 182, 255, 0.28) !important;
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .application-review-modal .modal-body {
+  background: #0d1527 !important;
+}
+
+[data-theme="dark"] .application-review-modal .modal-footer {
+  background: #111d33 !important;
+  background-image: none !important;
+}
+
+[data-theme="dark"] .applications-table-shell .data-table thead th {
+  background: #0c1628 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .applications-table-shell .data-table tbody td {
+  background: #111d33 !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .applications-table-shell .data-table tbody tr:hover td {
+  background: #182744 !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Open Review Modal Dark Mode (Admin Shell)
+   ========================================================================== */
+[data-theme="dark"] .po-review-modal,
+[data-theme="dark"] .application-review-modal .modal-content,
+[data-theme="dark"] .application-review-modal__card {
+  background: #0e182b !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .po-review-modal .modal-header,
+[data-theme="dark"] .application-review-modal .modal-header {
+  background: #111d33 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-review-modal .modal-body,
+[data-theme="dark"] .application-review-modal .modal-body {
+  background: #0a1120 !important;
+}
+
+[data-theme="dark"] .po-review-modal .modal-footer,
+[data-theme="dark"] .application-review-modal .modal-footer {
+  background: #111d33 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-modal-title-block .modal-title,
+[data-theme="dark"] .application-review-modal .modal-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-modal-subtitle,
+[data-theme="dark"] .po-modal-subtitle span,
+[data-theme="dark"] .application-review-modal small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-readiness-panel,
+[data-theme="dark"] .po-readiness-card,
+[data-theme="dark"] .po-requirement-nav,
+[data-theme="dark"] .po-preview-panel,
+[data-theme="dark"] .po-review-inspector,
+[data-theme="dark"] .po-decision-rail {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-readiness-card strong,
+[data-theme="dark"] .po-requirement-card strong,
+[data-theme="dark"] .po-inspector-summary strong,
+[data-theme="dark"] .po-decision-rail__summary strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-readiness-card span,
+[data-theme="dark"] .po-requirement-card span,
+[data-theme="dark"] .po-inspector-summary small,
+[data-theme="dark"] .po-decision-rail__summary small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-blocker-box {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border: 1px solid rgba(220, 38, 38, 0.28) !important;
+}
+
+[data-theme="dark"] .po-blocker-box .po-panel-label {
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .po-blocker-list li,
+[data-theme="dark"] .po-blocker-item {
+  background: #1c2237 !important;
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .po-requirement-card {
+  background: #1a2a46 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-requirement-card:hover {
+  background: #223659 !important;
+  border-color: rgba(56, 182, 255, 0.4) !important;
+}
+
+[data-theme="dark"] .po-requirement-card.is-active {
+  background: #23385d !important;
+  border-color: #38b6ff !important;
+  box-shadow: 0 0 0 1px #38b6ff !important;
+}
+
+[data-theme="dark"] .po-preview-surface {
+  background: #0d1627 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-inspector-summary,
+[data-theme="dark"] .po-toggle-field {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .po-toggle-field span strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-toggle-field span small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-assisted-status-box {
+  background: rgba(34, 197, 94, 0.1) !important;
+  background-image: none !important;
+  border: 1px solid rgba(34, 197, 94, 0.28) !important;
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .po-assisted-status-box strong {
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .po-assisted-status-box small {
+  color: #cbd5e1 !important;
+}
+
+/* Applications Toolbar & Search Box Dark Mode */
+[data-theme="dark"] .po-filter-field select,
+[data-theme="dark"] .po-filter-field input {
+  background: #0c1527 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-filter-field select:focus,
+[data-theme="dark"] .po-filter-field input:focus {
+  border-color: #38b6ff !important;
+  box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] .applications-search-box:focus-within .applications-search-box__icon {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .applications-search-box__clear {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .applications-search-box__clear:hover {
+  background: rgba(56, 182, 255, 0.25) !important;
+  color: #38b6ff !important;
+}
+

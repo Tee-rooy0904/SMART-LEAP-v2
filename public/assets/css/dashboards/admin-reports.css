@@ -1476,8 +1476,7 @@
 }
 
 .content-main #reports-section .reports-filter-group,
-.content-main #reports-section .reports-field,
-.content-main #reports-section .reports-search {
+.content-main #reports-section .reports-field {
   display: grid;
   gap: 7px;
   min-width: 0;
@@ -1504,20 +1503,83 @@
   font: inherit;
 }
 
-.content-main #reports-section .reports-search {
+.content-main #reports-section .reports-search-box {
   position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.content-main #reports-section .reports-search i {
+.content-main #reports-section .reports-search-box:focus-within {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.16);
+}
+
+.content-main #reports-section .reports-search-box .reports-search-icon {
+  color: #64748b;
+  font-size: 0.88rem;
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.content-main #reports-section .reports-search-box:focus-within .reports-search-icon {
+  color: #1a73e8;
+}
+
+.content-main #reports-section .reports-search-box .reports-search-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 28px 0 0;
+  border: none;
+  background: transparent;
+  color: #102347;
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  box-shadow: none;
+}
+
+.content-main #reports-section .reports-search-box .reports-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.content-main #reports-section .reports-search-clear {
   position: absolute;
-  z-index: 1;
-  left: 12px;
-  bottom: 13px;
-  color: #185b83;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.2);
+  color: #64748b;
+  font-size: 0.72rem;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
-.content-main #reports-section .reports-search input {
-  padding-left: 38px;
+.content-main #reports-section .reports-search-clear.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.content-main #reports-section .reports-search-clear:hover {
+  background: rgba(148, 163, 184, 0.35);
+  color: #1e293b;
+  transform: scale(1.08);
 }
 
 .content-main #reports-section .reports-chips,
@@ -2200,7 +2262,9 @@
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1.25;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reports-donut__legend-count,
@@ -2599,23 +2663,87 @@
   gap: 10px;
 }
 
-.reports-training-attendance-summary__chips span {
+.reports-training-attendance-summary__chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 34px;
+  padding: 0 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(37, 99, 235, 0.1);
-  color: #42607c;
   font-size: 0.82rem;
   font-weight: 700;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.reports-training-attendance-summary__chips strong {
-  color: #0b2e55;
+.reports-training-attendance-summary__chip:hover {
+  transform: translateY(-1px);
+}
+
+.reports-training-attendance-summary__chip strong {
   font-size: 0.92rem;
+  font-weight: 900;
+  margin-left: 2px;
+}
+
+.reports-training-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Present - Emerald */
+.reports-training-attendance-summary__chip--present {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #065f46;
+}
+.reports-training-attendance-summary__chip--present .reports-training-chip-dot {
+  background: #10b981;
+}
+.reports-training-attendance-summary__chip--present strong {
+  color: #047857;
+}
+
+/* Absent - Rose */
+.reports-training-attendance-summary__chip--absent {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #991b1b;
+}
+.reports-training-attendance-summary__chip--absent .reports-training-chip-dot {
+  background: #ef4444;
+}
+.reports-training-attendance-summary__chip--absent strong {
+  color: #b91c1c;
+}
+
+/* Excused - Amber */
+.reports-training-attendance-summary__chip--excused {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #92400e;
+}
+.reports-training-attendance-summary__chip--excused .reports-training-chip-dot {
+  background: #f59e0b;
+}
+.reports-training-attendance-summary__chip--excused strong {
+  color: #b45309;
+}
+
+/* Completed - Blue */
+.reports-training-attendance-summary__chip--completed {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.28);
+  color: #075985;
+}
+.reports-training-attendance-summary__chip--completed .reports-training-chip-dot {
+  background: #0ea5e9;
+}
+.reports-training-attendance-summary__chip--completed strong {
+  color: #0284c7;
 }
 
 .reports-training-attendance-breakdown {
@@ -2634,8 +2762,9 @@
   text-align: center;
 }
 
-.reports-training-attendance-breakdown__card span {
-  color: #5d7591;
+.reports-training-attendance-breakdown__card span,
+.reports-training-attendance-breakdown__session {
+  color: #0284c7;
   font-size: 0.74rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -2644,12 +2773,27 @@
 
 .reports-training-attendance-breakdown__card strong {
   color: #102347;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 
-.reports-training-attendance-breakdown__card small {
+.reports-training-attendance-breakdown__card small,
+.reports-training-attendance-breakdown__meta {
   color: #607893;
   line-height: 1.45;
+  font-size: 0.8rem;
+}
+
+.breakdown-tag {
+  font-weight: 700;
+}
+.breakdown-tag--present {
+  color: #059669;
+}
+.breakdown-tag--absent {
+  color: #dc2626;
+}
+.breakdown-tag--excused {
+  color: #d97706;
 }
 
 .reports-training-attendance-table thead th,
@@ -2696,6 +2840,12 @@
   background: rgba(245, 158, 11, 0.1);
   color: #b45309;
   border-color: rgba(245, 158, 11, 0.2);
+}
+
+.reports-training-attendance-chip--blue {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+  border-color: rgba(14, 165, 233, 0.25);
 }
 
 .reports-training-attendance-chip--slate {
@@ -2778,3 +2928,485 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ==========================================================================
+   Admin Reports Dark Mode Overrides (R-LIFE Benchmark Specification)
+   Ensures ALL containers, cards, tables, charts, tabs, and toolbars turn dark,
+   and all typography is crisp, light, and 100% readable.
+   ========================================================================== */
+[data-theme="dark"] #reports-section,
+[data-theme="dark"] .content-main #reports-section,
+[data-theme="dark"] .content-main #reports-section.content-card {
+  background: #0a1120 !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* Tabs container and pills at top of Reports */
+[data-theme="dark"] .content-main #reports-section .reports-report-tabs {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-report-chip {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-report-chip:hover {
+  background: #1c2e4f !important;
+  border-color: rgba(56, 182, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-report-chip.is-active {
+  background: linear-gradient(135deg, #2563eb, #14b8a6) !important;
+  border-color: rgba(20, 184, 166, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35) !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-report-chip span {
+  color: inherit !important;
+}
+
+/* Filter Toolbar */
+[data-theme="dark"] .content-main #reports-section .reports-toolbar,
+[data-theme="dark"] .content-main #reports-section .reports-filter-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-label {
+  color: #38b6ff !important;
+  font-weight: 800 !important;
+}
+
+/* Search bar in Reports */
+[data-theme="dark"] .content-main #reports-section .reports-search-box {
+  background: #0c1527 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-search-box:focus-within {
+  border-color: #38b6ff !important;
+  box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-search-box .reports-search-icon {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-search-box .reports-search-input,
+[data-theme="dark"] #reports-search {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-search-box .reports-search-input::placeholder,
+[data-theme="dark"] #reports-search::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-search-clear {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-search-clear:hover {
+  background: rgba(56, 182, 255, 0.25) !important;
+  color: #38b6ff !important;
+}
+
+/* Filter selects */
+[data-theme="dark"] .content-main #reports-section select {
+  background: #0c1527 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section select option {
+  background: #0c1527 !important;
+  color: #ffffff !important;
+}
+
+/* Action buttons in toolbar */
+[data-theme="dark"] .content-main #reports-section #reports-refresh,
+[data-theme="dark"] .content-main #reports-section #reports-export-csv,
+[data-theme="dark"] .content-main #reports-section #reports-export-pdf,
+[data-theme="dark"] .content-main #reports-section .reports-export-mini {
+  background: #162540 !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="dark"] .content-main #reports-section #reports-refresh:hover,
+[data-theme="dark"] .content-main #reports-section #reports-export-csv:hover,
+[data-theme="dark"] .content-main #reports-section #reports-export-pdf:hover,
+[data-theme="dark"] .content-main #reports-section .reports-export-mini:hover {
+  background: #1c2e4f !important;
+  border-color: rgba(56, 182, 255, 0.4) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Chart Cards (Repayment Performance, Demographics, Training) */
+[data-theme="dark"] .content-main #reports-section .chart-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .chart-card__header h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .chart-card__header p {
+  color: #94a3b8 !important;
+}
+
+/* Repayment Status KPI Cards (Expected Due, Actual Collected, Gap, ROI) */
+[data-theme="dark"] .reports-repayment-status-kpi {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-left: 4px solid var(--kpi-color) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .reports-repayment-status-kpi span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .reports-repayment-status-kpi strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .reports-repayment-status-kpi small {
+  color: #94a3b8 !important;
+}
+
+/* Monthly Payment Bar Chart Area */
+[data-theme="dark"] .content-main #reports-section .chart-wrap,
+[data-theme="dark"] .content-main #reports-section .reports-monthly-payment-chart-wrap {
+  background: #0d1627 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart h5 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__axis-title {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__axis {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__plot {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__guides i {
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__bar strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__month {
+  color: #cbd5e1 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__x-title {
+  color: #cbd5e1 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .reports-monthly-payment-chart__legend span {
+  color: #cbd5e1 !important;
+}
+
+/* Reports Tables (Payment Participants, Demographic, Training) */
+[data-theme="dark"] .reports-payment-participants-card,
+[data-theme="dark"] .reports-demographic-participants-card,
+[data-theme="dark"] .reports-training-participants-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .reports-payment-participants-summary,
+[data-theme="dark"] .reports-demographic-participants-summary {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 0 !important;
+}
+
+[data-theme="dark"] .reports-payment-participants-summary span,
+[data-theme="dark"] .reports-demographic-participants-summary span {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .reports-payment-participants-summary strong,
+[data-theme="dark"] .reports-demographic-participants-summary strong {
+  color: #ffffff !important;
+}
+
+/* Training Attendance Dark Mode */
+[data-theme="dark"] .reports-training-attendance-summary {
+  background: #14223d !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-summary__title-wrap strong,
+[data-theme="dark"] .reports-training-attendance-summary__header strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-summary__title-wrap span,
+[data-theme="dark"] .reports-training-attendance-summary__header span {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+}
+
+/* Dark Mode Summary Chips with vibrant semantic status colors */
+[data-theme="dark"] .reports-training-attendance-summary__chip--present {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  color: #a7f3d0 !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--present .reports-training-chip-dot {
+  background: #34d399 !important;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5) !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--present strong {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-summary__chip--absent {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  color: #fecaca !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--absent .reports-training-chip-dot {
+  background: #f87171 !important;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5) !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--absent strong {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-summary__chip--excused {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+  color: #fde68a !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--excused .reports-training-chip-dot {
+  background: #fbbf24 !important;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.5) !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--excused strong {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-summary__chip--completed {
+  background: rgba(14, 165, 233, 0.18) !important;
+  border: 1px solid rgba(56, 182, 255, 0.35) !important;
+  color: #bae6fd !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--completed .reports-training-chip-dot {
+  background: #38b6ff !important;
+  box-shadow: 0 0 6px rgba(56, 182, 255, 0.5) !important;
+}
+[data-theme="dark"] .reports-training-attendance-summary__chip--completed strong {
+  color: #38b6ff !important;
+}
+
+/* Dark Mode Breakdown Cards */
+[data-theme="dark"] .reports-training-attendance-breakdown__card {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-breakdown__card span,
+[data-theme="dark"] .reports-training-attendance-breakdown__session {
+  background: transparent !important;
+  border: none !important;
+  color: #38b6ff !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-breakdown__card strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .breakdown-tag--present {
+  color: #34d399 !important;
+}
+[data-theme="dark"] .breakdown-tag--absent {
+  color: #f87171 !important;
+}
+[data-theme="dark"] .breakdown-tag--excused {
+  color: #fbbf24 !important;
+}
+
+/* Dark Mode Table Chips */
+[data-theme="dark"] .reports-training-attendance-chip--emerald {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-chip--rose {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-chip--amber {
+  background: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-chip--blue {
+  background: rgba(14, 165, 233, 0.18) !important;
+  color: #38b6ff !important;
+  border-color: rgba(56, 182, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .reports-training-attendance-chip--slate {
+  background: rgba(148, 163, 184, 0.14) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+[data-theme="dark"] .reports-payment-participants-table thead th,
+[data-theme="dark"] .reports-demographic-participants-table thead th,
+[data-theme="dark"] .reports-training-participants-table thead th {
+  background: #0e182b !important;
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .reports-payment-participants-table tbody td,
+[data-theme="dark"] .reports-demographic-participants-table tbody td,
+[data-theme="dark"] .reports-training-participants-table tbody td {
+  background: #111d33 !important;
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .reports-payment-participants-table tbody tr:hover td,
+[data-theme="dark"] .reports-demographic-participants-table tbody tr:hover td,
+[data-theme="dark"] .reports-training-participants-table tbody tr:hover td {
+  background: #182744 !important;
+  color: #ffffff !important;
+}
+
+/* Donut graphs & legends */
+[data-theme="dark"] .reports-donut__legend-row {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-label {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-count {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-percent {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-swatch {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .reports-donut__track {
+  stroke: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .reports-donut__center strong,
+[data-theme="dark"] .reports-donut-center h5 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .reports-donut__center span,
+[data-theme="dark"] .reports-donut-center small {
+  color: #94a3b8 !important;
+}
+
+/* Summary lists & launcher cards */
+[data-theme="dark"] .content-main #reports-section .summary-list li {
+  background: #162540 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .summary-list strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-launch-card {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-launch-card span {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-launch-card strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-main #reports-section .reports-launch-card small {
+  color: #94a3b8 !important;
+}
+
+/* Reports Modals */
+[data-theme="dark"] .content-main #reports-section .reports-modal__dialog {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 30px 76px rgba(0, 0, 0, 0.5) !important;
+}

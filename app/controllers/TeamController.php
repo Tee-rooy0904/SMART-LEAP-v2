@@ -28,6 +28,8 @@ class TeamController extends Controller
         response_json([
             'ok' => true,
             'staff' => $service->listStaff(),
+            'createdStaffId' => $result['createdStaffId'] ?? null,
+            'credentials' => $result['credentials'] ?? null,
         ], 201);
     }
 
@@ -42,6 +44,7 @@ class TeamController extends Controller
         response_json([
             'ok' => true,
             'staff' => $service->listStaff(),
+            'credentials' => $result['credentials'] ?? null,
         ]);
     }
 

@@ -386,6 +386,88 @@
       modalRoot.querySelector('[data-admin-profile-overlay]')?.addEventListener('click', (event) => {
         if (event.target.hasAttribute('data-admin-profile-overlay')) closeModal();
       });
+
+      modalRoot.querySelector('#adminProfilePhotoInput')?.addEventListener('change', async (event) => {
+        const input = event.currentTarget;
+        const file = input?.files?.[0];
+        if (!file || photoBusy) return;
+        if (file.size > 5 * 1024 * 1024) {
+          input.value = '';
+          currentError = 'Profile photo must be 5 MB or less.';
+          return renderModal();
+        }
+
+        photoBusy = true;
+        currentError = '';
+        renderModal();
+        const reader = new FileReader();
+        reader.onerror = () => {
+          photoBusy = false;
+          input.value = '';
+          currentError = 'Unable to read the selected photo.';
+          renderModal();
+        };
+        reader.onload = async () => {
+          const response = await fetch(routeUrl('account/profile-photo'), {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json;charset=UTF-8',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ photoDataUrl: String(reader.result || '') }),
+          }).then(parseJson).catch(() => ({ ok: false, message: 'Unable to reach the server right now.' }));
+
+          photoBusy = false;
+          input.value = '';
+          if (!response.ok) {
+            currentError = response.message || 'Unable to save the profile photo.';
+            return renderModal();
+          }
+
+          currentStaff = { ...(currentStaff || {}), ...(response.data?.user || {}), photo: response.data?.user?.photo || currentStaff?.photo || null };
+          if (authUser) {
+            authUser.photo = currentStaff.photo || authUser.photo || null;
+          }
+          currentError = '';
+          showToast(response.message || 'Profile photo updated.', 'success');
+          renderModal();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      modalRoot.querySelector('#adminProfileForm')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (isSaving || photoBusy) return;
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+        const payload = {
+          firstName: formData.get('firstName') || '',
+          middleName: formData.get('middleName') || '',
+          lastName: formData.get('lastName') || '',
+          email: formData.get('email') || '',
+          contactNumber: formData.get('contactNumber') || '',
+        };
+
+        isSaving = true;
+        currentError = '';
+        renderModal();
+        const response = await apiPost('api/team/self', payload);
+        isSaving = false;
+        if (!response.ok) {
+          currentError = firstError(response.errors) || response.message || 'Unable to save your profile.';
+          return renderModal();
+        }
+
+        currentStaff = response.staff || { ...currentStaff, ...payload, name: composeFullName(payload) };
+        if (authUser) {
+          authUser.name = currentStaff.name || composeFullName(payload);
+          authUser.email = currentStaff.email || payload.email;
+        }
+        currentError = '';
+        showToast(response.message || 'Profile updated.', 'success');
+        renderModal();
+      });
     };
 
     currentStaff = {
@@ -1087,11 +1169,12 @@
         amount: 'adminRepaymentAmount',
         uploadStatus: 'adminRepaymentUploadStatus',
         hardCopyStatus: 'adminRepaymentHardCopyStatus',
-        hardCopyInput: 'adminRepaymentHardCopyInput',
-        hardCopyUpdateBtn: 'adminRepaymentHardCopyUpdateBtn',
         duplicateWarning: 'adminRepaymentDuplicateWarning',
+        decisionGrid: 'adminRepaymentDecisionGrid',
+        remarksGroup: 'adminRepaymentRemarksGroup',
         remarks: 'adminRepaymentRemarks',
         decisionCards: 'adminRepaymentDecisionCards',
+        decisionGuide: 'adminRepaymentDecisionGuide',
         decisionNote: 'adminRepaymentDecisionNote',
       },
     });

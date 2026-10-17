@@ -270,30 +270,27 @@ class UploadService
             $detectedMimeType = $this->normalizeMimeType((string) ($finfo->file((string) $file['tmp_name']) ?: ''));
         }
 
-        $clientMimeType = $this->normalizeMimeType((string) ($file['type'] ?? ''));
+        $dangerousMimes = [
+            'text/x-php', 'application/x-php', 'text/html', 'application/xhtml+xml',
+            'application/javascript', 'text/javascript', 'application/x-executable',
+            'application/x-sh', 'text/x-shellscript', 'application/x-bat',
+            'application/x-msdownload', 'application/x-dosexec'
+        ];
+        if (in_array($detectedMimeType, $dangerousMimes, true)) {
+            throw new \RuntimeException('Invalid or dangerous file content detected.');
+        }
+
         $allowedMimeTypes = array_map([$this, 'normalizeMimeType'], config('upload.allowed_mime_types', []));
-        $mimeCandidates = array_filter(array_unique([$detectedMimeType, $clientMimeType]));
 
-        $isAllowed = false;
-        foreach ($mimeCandidates as $candidate) {
-            if (in_array($candidate, $allowedMimeTypes, true)) {
-                $isAllowed = true;
-                break;
-            }
+        if ($detectedMimeType !== '' && in_array($detectedMimeType, $allowedMimeTypes, true)) {
+            return [$extension, $detectedMimeType];
         }
 
-        if (!$isAllowed
-            && in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'heic', 'heif'], true)
-            && in_array($clientMimeType, $allowedMimeTypes, true)
-        ) {
-            $isAllowed = true;
+        if (in_array($extension, ['heic', 'heif'], true) && in_array($detectedMimeType, ['application/octet-stream', 'image/octet-stream', ''], true)) {
+            return [$extension, 'image/heic'];
         }
 
-        if (!$isAllowed) {
-            throw new \RuntimeException('Unsupported file type.');
-        }
-
-        return [$extension, $detectedMimeType !== '' ? $detectedMimeType : $clientMimeType];
+        throw new \RuntimeException('Unsupported file type.');
     }
 
     private function normalizeMimeType(string $mimeType): string

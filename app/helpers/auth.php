@@ -21,11 +21,11 @@ function current_request_path(): string
 
 function detect_entry_point_from_path(string $path): string
 {
-    if (preg_match('#^/(portal(?:/login)?|portal-login|applicant-dashboard|beneficiary-dashboard|signup|profile-completion|post-approval|application-form-file)#i', $path)) {
+    if (preg_match('#^/(portal(?:/login)?|portal-login|applicant-dashboard(?:/|$)|beneficiary-dashboard(?:/|$)|signup(?:/|$)|profile-completion(?:/|$)|post-approval(?:-form)?(?:/|$)|application-form-file(?:/|$)|api/post-approval(?:/|$))#i', $path)) {
         return 'portal';
     }
 
-    if (preg_match('#^/(admin|project-officer|social-worker|pdo|login)$#i', $path)) {
+    if (preg_match('#^/(admin(?:/|$)|project-officer(?:/|$)|social-worker(?:/|$)|pdo(?:/|$)|login(?:/|$)|post-approval-review(?:/|$)|api/post-approval-review(?:/|$))#i', $path)) {
         return 'staff';
     }
 

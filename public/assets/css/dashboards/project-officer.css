@@ -2863,27 +2863,125 @@
   font-weight: 700;
 }
 
-.po-training-status-chip--eligible,
-.po-training-status-chip--notified,
 .po-training-status-chip--attended,
-.po-training-status-chip--completed {
-  background: #eef8f3;
-  border-color: rgba(12, 107, 72, 0.16);
-  color: #0c6b48;
+.po-training-status-chip--present,
+.po-training-status-chip.is-success {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.32);
+  color: #047857;
+}
+
+.po-training-status-chip--completed,
+.po-training-completion-chip.po-training-status-chip--completed {
+  background: rgba(14, 165, 233, 0.14);
+  border-color: rgba(14, 165, 233, 0.32);
+  color: #0369a1;
 }
 
 .po-training-status-chip--excused,
-.po-training-status-chip--warning {
-  background: #fff7e8;
-  border-color: rgba(153, 101, 0, 0.18);
-  color: #996500;
+.po-training-status-chip.is-warning {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.32);
+  color: #b45309;
 }
 
 .po-training-status-chip--missed,
-.po-training-status-chip--danger {
-  background: #fff1f0;
-  border-color: rgba(185, 28, 28, 0.18);
+.po-training-status-chip--absent,
+.po-training-status-chip.is-danger {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.28);
   color: #b91c1c;
+}
+
+.po-training-status-chip--eligible,
+.po-training-status-chip--notified {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.28);
+  color: #4338ca;
+}
+
+.po-training-status-preset[data-training-editor-status$=":Attended"].is-active {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.po-training-status-preset[data-training-editor-status$=":Missed"].is-active {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.po-training-status-preset[data-training-editor-status$=":Excused"].is-active {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--attended,
+[data-theme="dark"] .po-training-status-chip--present,
+[data-theme="dark"] .po-training-status-chip.is-success {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--completed,
+[data-theme="dark"] .po-training-completion-chip.po-training-status-chip--completed {
+  background: rgba(56, 182, 255, 0.22) !important;
+  border-color: rgba(56, 182, 255, 0.4) !important;
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--excused,
+[data-theme="dark"] .po-training-status-chip.is-warning {
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--missed,
+[data-theme="dark"] .po-training-status-chip--absent,
+[data-theme="dark"] .po-training-status-chip.is-danger {
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--eligible,
+[data-theme="dark"] .po-training-status-chip--notified {
+  background: rgba(99, 102, 241, 0.24) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #a5b4fc !important;
+}
+
+[data-theme="dark"] .po-training-status-preset {
+  background: #162540 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .po-training-status-preset:hover:not(:disabled) {
+  background: #1e3256 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-training-status-preset[data-training-editor-status$=":Attended"].is-active {
+  background: linear-gradient(135deg, #059669, #10b981) !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-training-status-preset[data-training-editor-status$=":Missed"].is-active {
+  background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+  border-color: #f87171 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-training-status-preset[data-training-editor-status$=":Excused"].is-active {
+  background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+  border-color: #fbbf24 !important;
+  color: #ffffff !important;
 }
 
 .po-table-state {
@@ -6055,6 +6153,17 @@ body.po-repayment-modal-open {
   overflow-wrap: anywhere;
 }
 
+.po-repayment-decision-guide {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 12px;
+  background: rgba(240, 249, 255, 0.9);
+  color: #31526f;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
 .po-repayment-decision-cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -6297,6 +6406,20 @@ body.po-repayment-modal-open {
   vertical-align: middle;
 }
 
+.po-training-scoped-table .po-training-attendance-table td.po-training-attendance-col--action {
+  padding-inline: 18px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.po-training-scoped-table .po-training-attendance-table td.po-training-attendance-col--action .app-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 156px;
+  margin-inline: auto;
+}
+
 .po-training-scoped-table .po-training-attendance-table tbody tr[data-training-open] {
   cursor: pointer;
 }
@@ -6501,7 +6624,7 @@ body.po-repayment-modal-open {
 .atm-chip--absent    { background: rgba(239,68,68,0.18);  color: #fee2e2; border-color: rgba(239,68,68,0.35); }
 .atm-chip--excused   { background: rgba(245,158,11,0.2);  color: #fef3c7; border-color: rgba(245,158,11,0.35); }
 .atm-chip--unmarked  { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.2); }
-.atm-chip--completed   { background: rgba(16,185,129,0.18); color: #d1fae5; border-color: rgba(16,185,129,0.35); }
+.atm-chip--completed   { background: rgba(56,182,255,0.22); color: #e0f2fe; border-color: rgba(56,182,255,0.45); }
 .atm-chip--incomplete  { background: rgba(255,255,255,0.1);  color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.18); }
 .atm-chip--notified    { background: rgba(99,102,241,0.22);  color: #e0e7ff; border-color: rgba(99,102,241,0.4); }
 .atm-chip--scheduled   { background: rgba(255,255,255,0.1);  color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.18); }
@@ -6846,3 +6969,491 @@ body.po-repayment-modal-open {
   .atm-hero__chips { display: none; }
 }
 /* ────────────────────────────────────────────────────────────────────────── */
+
+/* ==========================================================================
+   Project Officer Dark Mode Overrides (R-LIFE Benchmark Specification)
+   Ensures ALL containers, cards, tables, charts, and toolbars turn dark,
+   and all typography is crisp, light, and 100% readable.
+   ========================================================================== */
+[data-theme="dark"] .project-officer-shell,
+[data-theme="dark"] .project-officer-shell .content-area,
+[data-theme="dark"] .project-officer-shell .content-main,
+[data-theme="dark"] .project-officer-shell .content-main > .content-card,
+[data-theme="dark"] .project-officer-shell .po-section-board,
+[data-theme="dark"] .project-officer-shell .po-section-shell,
+[data-theme="dark"] .project-officer-shell .po-home-shell {
+  background: #0a1120 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .content-header {
+  background: #0d1527 !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .content-headline h1,
+[data-theme="dark"] #poHeaderTitle {
+  color: #ffffff !important;
+}
+
+/* Overview KPI Cards */
+[data-theme="dark"] .project-officer-shell .po-kpi-card,
+[data-theme="dark"] .project-officer-shell .po-snapshot-card {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-snapshot-card__eyebrow {
+  background: rgba(56, 182, 255, 0.18) !important;
+  color: #38b6ff !important;
+  border: 1px solid rgba(56, 182, 255, 0.25) !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-kpi-card__value,
+[data-theme="dark"] .project-officer-shell .po-snapshot-card strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-kpi-card__icon {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #38b6ff !important;
+}
+
+/* Charts & Panels */
+[data-theme="dark"] .project-officer-shell .po-overview-card,
+[data-theme="dark"] .project-officer-shell .po-dashboard-chart-card.admin-v1-panel {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .admin-v1-panel__title-row h2 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-dashboard-chart-card .admin-v1-panel__footer {
+  color: #94a3b8 !important;
+}
+
+/* Toolbars & Filters */
+[data-theme="dark"] .project-officer-shell .po-application-toolbar,
+[data-theme="dark"] .project-officer-shell .po-repayment-filters {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-filter-field span,
+[data-theme="dark"] .project-officer-shell .po-panel-label {
+  color: #38b6ff !important;
+  font-weight: 800 !important;
+}
+
+/* Search Bars across PDO */
+[data-theme="dark"] .project-officer-shell .po-filter-field input[type="search"],
+[data-theme="dark"] .project-officer-shell #po-app-search,
+[data-theme="dark"] .project-officer-shell #po-repayment-search,
+[data-theme="dark"] .project-officer-shell .section-filter[type="search"] {
+  background: #0c1527 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) inset !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-filter-field input[type="search"]:focus,
+[data-theme="dark"] .project-officer-shell #po-app-search:focus,
+[data-theme="dark"] .project-officer-shell #po-repayment-search:focus {
+  border-color: #38b6ff !important;
+  box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.25) !important;
+  outline: none !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-filter-field select,
+[data-theme="dark"] .project-officer-shell .po-filter-field input {
+  background: #0c1527 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+}
+
+/* Data Tables */
+[data-theme="dark"] .project-officer-shell .data-table-card,
+[data-theme="dark"] .project-officer-shell .po-repayment-roster {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .project-officer-shell .data-table-card__header h3 {
+  color: #ffffff !important;
+}
+
+/* Reports section in PDO */
+[data-theme="dark"] .project-officer-shell #reports-section .po-reports-performance-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .po-reports-performance-card .chart-card__header h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .po-reports-performance-card .chart-card__header p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-repayment-status-kpi {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-left: 4px solid var(--kpi-color) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-repayment-status-kpi strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-repayment-status-kpi span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-repayment-status-kpi small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart-wrap {
+  background: #0d1627 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart__month,
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart__x-title {
+  color: #cbd5e1 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart__axis {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart__axis-title {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart__legend span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .project-officer-shell #reports-section .reports-monthly-payment-chart__bar strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Modals */
+[data-theme="dark"] .po-review-modal .modal-body > section,
+[data-theme="dark"] .po-summary-modal .modal-body,
+[data-theme="dark"] .po-summary-modal {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+/* Specific PDO Board & Queue Card Overrides */
+[data-theme="dark"] .project-officer-shell .po-section-board,
+[data-theme="dark"] .project-officer-shell .content-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-repayment-roster-grid .staff-queue-item {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-repayment-roster-grid .staff-queue-item__head strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-repayment-roster-grid .staff-queue-item__head span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-repayment-roster-grid .staff-queue-item__meta span {
+  background: #0c1527 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .project-officer-shell .po-repayment-roster-grid .staff-queue-item__open {
+  background: #111d33 !important;
+  color: #38b6ff !important;
+  border-color: rgba(56, 182, 255, 0.28) !important;
+}
+
+[data-theme="dark"] .po-repayment-modal .modal-content,
+[data-theme="dark"] .po-repayment-modal {
+  background: #111d33 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+
+[data-theme="dark"] .po-summary-hero,
+[data-theme="dark"] .po-summary-section,
+[data-theme="dark"] .po-summary-section--decision,
+[data-theme="dark"] .po-case-identity__block,
+[data-theme="dark"] .po-summary-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .po-summary-hero__copy h6,
+[data-theme="dark"] .po-summary-section__header h6,
+[data-theme="dark"] .po-case-identity__block > strong,
+[data-theme="dark"] .po-case-identity__row strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .po-summary-hero__copy p,
+[data-theme="dark"] .po-summary-checklist__intro {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .po-case-identity__row span {
+  color: #38b6ff !important;
+}
+
+/* ==========================================================================
+   Open Review Modal Dark Mode
+   ========================================================================== */
+[data-theme="dark"] .po-review-modal,
+[data-theme="dark"] .application-review-modal .modal-content,
+[data-theme="dark"] .application-review-modal__card {
+  background: #0e182b !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .po-review-modal .modal-header,
+[data-theme="dark"] .application-review-modal .modal-header {
+  background: #111d33 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-review-modal .modal-body,
+[data-theme="dark"] .application-review-modal .modal-body {
+  background: #0a1120 !important;
+}
+
+[data-theme="dark"] .po-review-modal .modal-footer,
+[data-theme="dark"] .application-review-modal .modal-footer {
+  background: #111d33 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-modal-title-block .modal-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-modal-subtitle,
+[data-theme="dark"] .po-modal-subtitle span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-readiness-panel {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-readiness-panel__header h6 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-readiness-card {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme="dark"] .po-readiness-card span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-readiness-card strong {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .po-blocker-box {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border: 1px solid rgba(220, 38, 38, 0.28) !important;
+}
+
+[data-theme="dark"] .po-blocker-box .po-panel-label {
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .po-blocker-list li,
+[data-theme="dark"] .po-blocker-item {
+  background: #1c2237 !important;
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .po-blocker-item small {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .po-requirement-nav,
+[data-theme="dark"] .po-preview-panel,
+[data-theme="dark"] .po-review-inspector {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .po-review-section__header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-review-section__header h6 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-review-section__header .po-panel-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-requirement-card {
+  background: #1a2a46 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-requirement-card:hover {
+  background: #223659 !important;
+  border-color: rgba(56, 182, 255, 0.4) !important;
+}
+
+[data-theme="dark"] .po-requirement-card.is-active {
+  background: #23385d !important;
+  border-color: #38b6ff !important;
+  box-shadow: 0 0 0 1px #38b6ff !important;
+}
+
+[data-theme="dark"] .po-requirement-card strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-requirement-card span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-preview-surface {
+  background: #0d1627 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-preview-empty {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-review-inspector__body {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-inspector-summary {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .po-inspector-summary strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-inspector-summary small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-inspector-field {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .po-inspector-field__label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-inspector-field__value {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-toggle-field {
+  background: #162540 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .po-toggle-field span strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-toggle-field span small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-assisted-status-box {
+  background: rgba(34, 197, 94, 0.1) !important;
+  background-image: none !important;
+  border: 1px solid rgba(34, 197, 94, 0.28) !important;
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .po-assisted-status-box strong {
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .po-assisted-status-box small {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .po-decision-rail {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .po-decision-rail__summary strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-decision-rail__summary small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .po-decision-rail__summary .po-panel-label {
+  color: #38b6ff !important;
+}

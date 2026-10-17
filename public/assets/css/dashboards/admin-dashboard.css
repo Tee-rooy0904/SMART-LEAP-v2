@@ -570,3 +570,201 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ==========================================================================
+   Admin Dashboard Dark Mode (R-LIFE Benchmark Specification)
+   Cards: #111d33, Headings/Metrics: #ffffff, Subtext/Ticks: #cbd5e1 / #94a3b8
+   ========================================================================== */
+[data-theme="dark"] .admin-v1-kpi-card {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card:hover {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card__value {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .admin-v1-kpi-card__label {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card__meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card--applications {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--applications .admin-v1-kpi-card__eyebrow {
+  color: #60a5fa !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--applications .admin-v1-kpi-card__icon {
+  color: #60a5fa !important;
+  background: rgba(59, 130, 246, 0.18) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card--repayments {
+  border-color: rgba(249, 115, 22, 0.3) !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--repayments .admin-v1-kpi-card__eyebrow {
+  color: #fb923c !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--repayments .admin-v1-kpi-card__icon {
+  color: #fb923c !important;
+  background: rgba(249, 115, 22, 0.18) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card--staff {
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--staff .admin-v1-kpi-card__eyebrow {
+  color: #a78bfa !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--staff .admin-v1-kpi-card__icon {
+  color: #a78bfa !important;
+  background: rgba(139, 92, 246, 0.18) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-card--beneficiaries {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--beneficiaries .admin-v1-kpi-card__eyebrow {
+  color: #34d399 !important;
+}
+[data-theme="dark"] .admin-v1-kpi-card--beneficiaries .admin-v1-kpi-card__icon {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-breakdown {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-breakdown span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .admin-v1-kpi-breakdown strong {
+  color: #ffffff !important;
+}
+
+/* Chart panels */
+[data-theme="dark"] .admin-v1-panel {
+  background: #111d33 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .admin-v1-panel:hover {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+[data-theme="dark"] .admin-v1-panel--graph::after {
+  display: none !important;
+}
+
+[data-theme="dark"] .admin-v1-panel__title-row h2,
+[data-theme="dark"] .admin-v1-panel h2,
+[data-theme="dark"] .admin-v1-panel h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-v1-panel__eyebrow {
+  color: #94a3b8 !important;
+}
+
+/* Column chart ticks, guides & labels */
+[data-theme="dark"] .admin-v1-column-chart__tick {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .admin-v1-column-chart__guide {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .admin-v1-column-chart__guide::after {
+  display: none !important;
+}
+
+[data-theme="dark"] .admin-v1-column-chart__label {
+  color: #f1f5f9 !important;
+}
+
+/* Horizontal bar chart */
+[data-theme="dark"] .admin-v1-bar-chart__row span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .admin-v1-bar-chart__row strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-v1-bar-chart__track {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Chart legend items */
+[data-theme="dark"] .admin-v1-legend__item {
+  background: #162540 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .admin-v1-legend__item strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-v1-legend__item small {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .admin-v1-legend__dot {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .admin-v1-legend__summary,
+[data-theme="dark"] .admin-v1-panel__footer {
+  color: #94a3b8 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Recent activity tables */
+[data-theme="dark"] .admin-v1-activity-table__head {
+  background: #162540 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .admin-v1-activity-row {
+  background: #111d33 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .admin-v1-activity-row strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-v1-activity-row:hover {
+  background: #162540 !important;
+}
+
+[data-theme="dark"] .admin-v1-empty-chart,
+[data-theme="dark"] .admin-v1-empty-inline {
+  background: #0c1527 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+

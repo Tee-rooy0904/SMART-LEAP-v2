@@ -26,7 +26,7 @@ class AuthService
 
         try {
             $user = $this->findUserForLoginEmail(strtolower($email));
-        } catch (PDOException) {
+        } catch (\Throwable) {
             return [
                 'ok' => false,
                 'message' => 'Unable to reach the authentication database.',
@@ -378,12 +378,10 @@ class AuthService
         }
 
         $userId = (int) ($result['user_id'] ?? 0);
-        if ($userId <= 0) {
-            return ['ok' => false, 'errors' => ['general' => 'Co-maker account creation did not return a valid account.']];
+        if ($userId > 0) {
+            $result['user'] = $this->sessionPayloadForUser($userId);
+            unset($result['user_id']);
         }
-
-        $result['user'] = $this->sessionPayloadForUser($userId);
-        unset($result['user_id']);
 
         return $result;
     }

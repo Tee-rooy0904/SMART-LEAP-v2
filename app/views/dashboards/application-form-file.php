@@ -4,7 +4,8 @@
 <?php
 $role = strtolower((string) ($authUser['role'] ?? 'applicant'));
 $isBeneficiary = $role === 'beneficiary';
-$dashboardPath = $isBeneficiary ? $baseUrl . '/applicant-dashboard#repayments' : $baseUrl . '/applicant-dashboard#application-page';
+$dashboardPath = $isBeneficiary ? $baseUrl . '/applicant-dashboard#repayments' : $baseUrl . '/applicant-dashboard#training-page';
+$applicantBackLabel = $isBeneficiary ? 'Back to repayments' : 'Back to training';
 $dashboardLabel = $isBeneficiary ? 'Beneficiary' : 'Applicant';
 $isStandaloneForm = in_array($taskCode, ['availment_form', 'business_plan', 'validation_form', 'buhat_sa_pagpanumpa', 'mungkahing_proyekto'], true);
 $applicantCssVersion = @filemtime(base_path('public/assets/css/dashboards/applicant.css')) ?: time();
@@ -44,7 +45,7 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
                         <div class="post-approval-form__sections" id="postApprovalFormSections"></div>
                         <div class="post-approval-form__staff" id="postApprovalStaffSections" hidden></div>
                         <div class="form-actions post-approval-form__actions post-approval-form__actions--sticky">
-                            <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; Back to application</a>
+                            <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; <?= htmlspecialchars($applicantBackLabel, ENT_QUOTES, 'UTF-8') ?></a>
                             <button type="button" class="btn-outline" id="postApprovalSaveButton">Save progress</button>
                             <button type="submit" class="btn-primary" id="postApprovalSubmitButton">Submit form</button>
                         </div>
@@ -142,7 +143,7 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
                                 <div class="post-approval-form__sections" id="postApprovalFormSections"></div>
                                 <div class="post-approval-form__staff" id="postApprovalStaffSections" hidden></div>
                                 <div class="form-actions post-approval-form__actions post-approval-form__actions--sticky">
-                                    <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; Back to application</a>
+                                    <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; <?= htmlspecialchars($applicantBackLabel, ENT_QUOTES, 'UTF-8') ?></a>
                                     <button type="button" class="btn-outline" id="postApprovalSaveButton">Save progress</button>
                                     <button type="submit" class="btn-primary" id="postApprovalSubmitButton">Submit form</button>
                                 </div>

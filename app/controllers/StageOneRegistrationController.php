@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\BarangayCatalogService;
+use App\Services\RateLimiterService;
 use App\Services\StageOneRegistrationService;
 
 class StageOneRegistrationController extends Controller
@@ -49,6 +50,21 @@ class StageOneRegistrationController extends Controller
 
     public function requestEmailVerification(): never
     {
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        $limiter = new RateLimiterService();
+        $throttleKey = 'otp_request:' . $ip;
+
+        if ($limiter->tooManyAttempts($throttleKey, 5, 600)) {
+            $seconds = $limiter->availableIn($throttleKey, 600);
+            $minutes = max(1, (int) ceil($seconds / 60));
+            response_json([
+                'ok' => false,
+                'message' => "Too many verification code requests. Please wait {$minutes} minute(s) before requesting again.",
+            ], 429);
+        }
+
+        $limiter->hit($throttleKey, 600);
+
         $result = (new StageOneRegistrationService())->requestEmailVerification($_POST);
         if (!$result['ok']) {
             response_json($result, 422);
@@ -59,9 +75,10 @@ class StageOneRegistrationController extends Controller
 
     public function index(): never
     {
+        $batch = isset($_GET['batch']) ? trim((string) $_GET['batch']) : null;
         response_json([
             'ok' => true,
-            'data' => (new StageOneRegistrationService())->validationState(),
+            'data' => (new StageOneRegistrationService())->validationState($batch),
         ]);
     }
 
@@ -134,6 +151,32 @@ class StageOneRegistrationController extends Controller
     {
         $registrationId = (int) ($_POST['registrationId'] ?? 0);
         $result = (new StageOneRegistrationService())->resendSelectionEmail($registrationId, auth_user() ?? []);
+        if (!$result['ok']) {
+            response_json($result, 422);
+        }
+
+        response_json($result);
+    }
+
+    public function batchMetrics(): never
+    {
+        $metrics = (new \App\Services\BatchService())->getBatchMetrics();
+        response_json(['ok' => true, 'data' => $metrics]);
+    }
+
+    public function switchBatch(): never
+    {
+        $actor = auth_user() ?? [];
+        $actorId = (int) ($actor['id'] ?? 0);
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Admin Dashboard';
+
+        $targetBatch = trim((string) ($_POST['targetBatch'] ?? ''));
+        $batchService = new \App\Services\BatchService();
+        $result = $targetBatch !== ''
+            ? $batchService->switchBatchTo($targetBatch, $actorId, $ip, $ua)
+            : $batchService->advanceBatch($actorId, $ip, $ua);
+
         if (!$result['ok']) {
             response_json($result, 422);
         }

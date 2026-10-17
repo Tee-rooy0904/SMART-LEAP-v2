@@ -383,11 +383,11 @@
                     </section>
                     <section class="review-paper-section">
                         <div class="review-paper-paragraph">
-                            Ako si <strong>${renderReviewInlineInput('staff.eligibilityAssessment.residentName', eligibilityResidentName || '', 'text', 'review-paper-fillline-input review-paper-fillline-input--short')}</strong>,
-                            <strong>${renderReviewInlineInput('staff.eligibilityAssessment.age', eligibilityAge || '', 'text', 'review-paper-fillline-input review-paper-fillline-input--short')}</strong> anyos, lumulupyo sa Barangay
-                            <strong>${renderReviewInlineInput('staff.eligibilityAssessment.barangay', eligibilityBarangay || '', 'text', 'review-paper-fillline-input review-paper-fillline-input--medium')}</strong>, Butuan City, Agusan Del Norte.
+                            Ako si <strong>${renderReviewInlineInput('staff.eligibilityAssessment.residentName', eligibilityResidentName || '', 'text', 'review-paper-fillline-input review-paper-fillline-input--short', true)}</strong>,
+                            <strong>${renderReviewInlineInput('staff.eligibilityAssessment.age', eligibilityAge || '', 'text', 'review-paper-fillline-input review-paper-fillline-input--short', true)}</strong> anyos, lumulupyo sa Barangay
+                            <strong>${renderReviewInlineInput('staff.eligibilityAssessment.barangay', eligibilityBarangay || '', 'text', 'review-paper-fillline-input review-paper-fillline-input--medium', true)}</strong>, Butuan City, Agusan Del Norte.
                             Ako nakasabot sa tumong ug proseso niining Livelihood Assistance kung diin ako
-                            <strong>${renderReviewInlineSelect('staff.eligibilityAssessment.eligibilityDecision', eligibility.eligibilityDecision || '', ['ANGAYAN', 'DILI ANGAYAN'], 'review-paper-inline-select')}</strong>
+                            <strong>${renderReviewInlineSelect('staff.eligibilityAssessment.eligibilityDecision', eligibility.eligibilityDecision || '', ['ANGAYAN', 'DILI ANGAYAN'], 'review-paper-inline-select', true)}</strong>
                             (ANGAYAN/DILI ANGAYAN) mamahimong benepisyo sa among program nga gidumala sa SMART LEAP ng City Social Welfare and Development Department (CSWDD).
                         </div>
                     </section>
@@ -2254,13 +2254,13 @@
         `;
     }
 
-    function renderReviewInlineInput(name, value, type = 'text', className = '') {
-        return `<input type="${escapeAttribute(type)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value || '')}" class="${escapeAttribute(className)}">`;
+    function renderReviewInlineInput(name, value, type = 'text', className = '', readOnly = false) {
+        return `<input type="${escapeAttribute(type)}" name="${escapeAttribute(name)}" value="${escapeAttribute(value || '')}" class="${escapeAttribute(className)}" ${readOnly ? 'readonly aria-readonly="true"' : ''}>`;
     }
 
-    function renderReviewInlineSelect(name, value, options, className = '') {
+    function renderReviewInlineSelect(name, value, options, className = '', disabled = false) {
         return `
-            <select name="${escapeAttribute(name)}" class="${escapeAttribute(className)}">
+            <select name="${escapeAttribute(name)}" class="${escapeAttribute(className)}" ${disabled ? 'disabled aria-disabled="true"' : ''}>
                 ${options.map((option) => `
                     <option value="${escapeAttribute(option)}" ${String(option) === String(value) ? 'selected' : ''}>${escapeHtml(option)}</option>
                 `).join('')}
@@ -2423,6 +2423,9 @@
         const data = {};
         form?.querySelectorAll('input[name], select[name], textarea[name]').forEach((field) => {
             if (field.name.startsWith('review.')) {
+                return;
+            }
+            if (field.name.startsWith('staff.eligibilityAssessment.')) {
                 return;
             }
             if (field instanceof HTMLInputElement && field.type === 'file') {
@@ -2715,8 +2718,7 @@
     }
 
     function reviewBuhatAssetUrl(fileName) {
-        const root = String(state.baseUrl || '').replace(/\/public\/?$/, '');
-        return `${root}/denzel-frontend-barbielat/htdocs/CSWD/${String(fileName).replace(/^\/+/, '')}`;
+        return routeUrl(`assets/img/post-approval/${String(fileName).replace(/^\/+/, '')}`);
     }
 
     function setNestedValue(target, path, value) {

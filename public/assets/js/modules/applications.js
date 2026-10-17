@@ -8,8 +8,8 @@
   const { formatDate } = window.App.format;
 
   const state = {
-    filters: { status: '', barangayId: '', assignedPdoId: '', livelihoodCategory: '', search: '' },
-    data: { applications: [], summary: {}, barangays: [], assignedPdos: [] },
+    filters: { status: '', barangayId: '', assignedPdoId: '', livelihoodCategory: '', search: '', batch: '' },
+    data: { applications: [], summary: {}, barangays: [], assignedPdos: [], allBatches: [] },
     activeApplication: null,
     activePreviewToken: '',
     activePreviewOwnerId: null,
@@ -159,13 +159,22 @@
     const root = qs('#applications-filters');
     if (!root) return;
 
+    const activeEl = document.activeElement;
+    const wasSearchFocused = activeEl && activeEl.id === 'applications-search';
+    const selStart = wasSearchFocused ? activeEl.selectionStart : null;
+    const selEnd = wasSearchFocused ? activeEl.selectionEnd : null;
+
     const statuses = ['', 'Submitted', 'Under Review', 'Requirements Verified', 'For Assessment', 'Approved for Training', 'Rejected', 'Needs Documents', 'Needs Correction'];
     setHTML(root, `
       <section class="po-application-toolbar po-application-toolbar--admin">
         <div class="po-application-toolbar__controls po-application-toolbar__controls--admin">
           <label class="po-filter-field po-filter-field--search" for="applications-search">
             <span>Search</span>
-            <input id="applications-search" class="section-filter" type="search" placeholder="Search applicant, barangay, business, or email" value="${escapeHtml(state.filters.search)}">
+            <div class="applications-search-box">
+              <i class="fas fa-search applications-search-box__icon"></i>
+              <input id="applications-search" class="section-filter applications-search-box__input" type="search" placeholder="Search applicant, barangay, business, or email" value="${escapeHtml(state.filters.search)}">
+              ${state.filters.search ? `<button type="button" id="applications-search-clear" class="applications-search-box__clear" title="Clear search">✕</button>` : ''}
+            </div>
           </label>
           <label class="po-filter-field" for="applications-status">
             <span>Status Filter</span>
@@ -194,12 +203,33 @@
               ${(state.data.assignedPdos || []).map((pdo) => `<option value="${pdo.id}" ${String(state.filters.assignedPdoId) === String(pdo.id) ? 'selected' : ''}>${pdo.name}</option>`).join('')}
             </select>
           </label>
+          <label class="po-filter-field" for="applications-batch">
+            <span>Batch Filter</span>
+            <select id="applications-batch" class="section-filter">
+              <option value="">All batches</option>
+              ${(state.data.allBatches && state.data.allBatches.length ? state.data.allBatches : ['Batch 1', 'Batch 2', 'Batch 3']).map((b) => `<option value="${b}" ${state.filters.batch === b ? 'selected' : ''}>${b}</option>`).join('')}
+            </select>
+          </label>
           <div class="applications-toolbar__actions">
             <button class="app-btn-ghost" id="applications-reset">Reset</button>
           </div>
         </div>
       </section>
     `);
+
+    if (wasSearchFocused) {
+      const searchInput = qs('#applications-search');
+      if (searchInput) {
+        searchInput.focus();
+        if (selStart !== null && selEnd !== null) {
+          try {
+            searchInput.setSelectionRange(selStart, selEnd);
+          } catch (e) {
+            // ignore range error
+          }
+        }
+      }
+    }
   };
 
   const renderTable = () => {
@@ -578,7 +608,7 @@
       return;
     }
     const firstForm = (application.formRequirements || []).find((item) => formReviewUrl(item, true));
-    state.activePreviewToken = firstForm ? `form:${String(firstForm.id)}` : '';
+    state.activePreviewToken = firstForm ? `form:${String(formReviewTaskId(firstForm) || firstForm.key || '')}` : '';
   };
 
   const resolvePreviewItem = (token, application = state.activeApplication) => {
@@ -589,7 +619,7 @@
       return item ? { kind, item } : null;
     }
     if (kind === 'form') {
-      const item = (application.formRequirements || []).find((entry) => String(entry.id) === rawId);
+      const item = (application.formRequirements || []).find((entry) => String(formReviewTaskId(entry) || entry.key || '') === rawId);
       return item ? { kind, item } : null;
     }
     return null;
@@ -628,7 +658,7 @@
     if (!application) return [];
     return [
       ...(application.requirements || []).map((item) => ({ token: `upload:${String(item.key)}`, kind: 'upload', item })),
-      ...(application.formRequirements || []).map((item) => ({ token: `form:${String(item.id)}`, kind: 'form', item })),
+      ...(application.formRequirements || []).map((item) => ({ token: `form:${String(formReviewTaskId(item) || item.key || '')}`, kind: 'form', item })),
     ];
   };
 
@@ -642,8 +672,8 @@
     }
     setHTML(root, items.map(({ token, kind, item }) => {
       const selected = state.activePreviewToken === token;
-      const itemKey = String(kind === 'upload' ? item.key : item.id);
-      const formUploadKey = String(kind === 'form' ? item.key || item.id : itemKey);
+      const itemKey = String(kind === 'upload' ? item.key : formReviewTaskId(item) || item.key || '');
+      const formUploadKey = String(kind === 'form' ? item.key || formReviewTaskId(item) || '' : itemKey);
       const uploadedFormFile = kind === 'form' ? formRequirementFile(item) : null;
       const proofLocked = kind === 'form' && isAssistanceProofLocked(item);
       const statusValue = visualRequirementStatus(item);
@@ -751,7 +781,8 @@
     const proofLocked = isFinalAssistanceProof && isAssistanceProofLocked(item);
     const canReviewForm = kind === 'form' && !proofLocked && (item.canReview !== false) && (requirementSubmissionLabel(kind, item) === 'Submitted');
     const canReviewItem = canReviewUpload || canReviewForm;
-    const reviewActions = canReviewItem
+    const showInlineDecisionActions = canReviewUpload;
+    const reviewActions = showInlineDecisionActions
       ? `<div class="po-inspector-actions">
           <button type="button" class="action-button action-button--success" data-review-item="${escapeAttribute(kind)}:${escapeAttribute(itemKey)}:approve">Approve</button>
           <button type="button" class="action-button action-button--warning" data-review-item="${escapeAttribute(kind)}:${escapeAttribute(itemKey)}:needs_correction">Needs Correction</button>
@@ -816,6 +847,7 @@
     }
     if (!response.ok) {
       showNotice(response.message || 'Unable to load applications.', 'danger');
+      renderFilters();
       return;
     }
     state.data = response.data || state.data;
@@ -1037,19 +1069,70 @@
         state.filters.livelihoodCategory = event.target.value;
         load();
       }
-    });
-
-    on(target, 'input', (event) => {
-      if (event.target.id === 'applications-search') {
-        state.filters.search = event.target.value;
+      if (event.target.id === 'applications-batch') {
+        state.filters.batch = event.target.value;
         load();
       }
     });
 
+    let searchDebounceTimer = null;
+    on(target, 'input', (event) => {
+      if (event.target.id === 'applications-search') {
+        state.filters.search = event.target.value;
+        const clearBtn = qs('#applications-search-clear', target);
+        if (event.target.value) {
+          if (!clearBtn) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'applications-search-clear';
+            btn.className = 'applications-search-box__clear';
+            btn.title = 'Clear search';
+            btn.textContent = '✕';
+            event.target.parentElement?.appendChild(btn);
+          }
+        } else if (clearBtn) {
+          clearBtn.remove();
+        }
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          load();
+        }, 250);
+      }
+    });
+
+    on(target, 'keydown', (event) => {
+      if (event.target.id === 'applications-search') {
+        if (event.key === 'Escape') {
+          if (state.filters.search) {
+            state.filters.search = '';
+            event.target.value = '';
+            clearTimeout(searchDebounceTimer);
+            load();
+          }
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          clearTimeout(searchDebounceTimer);
+          load();
+        }
+      }
+    });
+
     on(target, 'click', async (event) => {
+      const clearBtn = event.target.closest('#applications-search-clear');
+      if (clearBtn) {
+        state.filters.search = '';
+        const searchInput = qs('#applications-search', target);
+        if (searchInput) searchInput.value = '';
+        clearTimeout(searchDebounceTimer);
+        await load();
+        qs('#applications-search', target)?.focus();
+        return;
+      }
+
       const reset = event.target.closest('#applications-reset');
       if (reset) {
-        state.filters = { status: '', barangayId: '', assignedPdoId: '', livelihoodCategory: '', search: '' };
+        state.filters = { status: '', barangayId: '', assignedPdoId: '', livelihoodCategory: '', search: '', batch: '' };
+        clearTimeout(searchDebounceTimer);
         await load();
         return;
       }
@@ -1063,6 +1146,7 @@
     on(document, 'click', (event) => {
       const formReviewLink = event.target.closest('[data-open-form-review]');
       if (formReviewLink) {
+        event.preventDefault();
         const url = String(formReviewLink.dataset.openFormReview || '').trim();
         if (url) {
           window.location.href = url;
@@ -1179,12 +1263,26 @@
     return String(value).replace(/"/g, '\\"');
   };
 
+  const formReviewTaskId = (item) => Number(item?.reviewTaskId || item?.taskId || item?.id || 0);
+
   const formReviewUrl = (item, embedded = false) => {
-    const taskId = Number(item?.id || 0);
+    const taskId = formReviewTaskId(item);
     if (taskId > 0) {
       return routeUrl(`post-approval-review?task_id=${encodeURIComponent(String(taskId))}${embedded ? '&embed=1' : ''}`);
     }
-    return String(item?.reviewUrl || '');
+
+    const fallbackUrl = String(item?.reviewUrl || '').trim();
+    if (!fallbackUrl) return '';
+
+    if (embedded) {
+      return fallbackUrl.includes('embed=1')
+        ? fallbackUrl
+        : `${fallbackUrl}${fallbackUrl.includes('?') ? '&' : '?'}embed=1`;
+    }
+
+    return fallbackUrl
+      .replace(/([?&])embed=1(&?)/, (_, prefix, suffix) => (prefix === '?' && suffix ? '?' : suffix ? prefix : ''))
+      .replace(/[?&]$/, '');
   };
 
   const formRequirementFile = (item) => (item && typeof item === 'object' && item.file ? item.file : null);

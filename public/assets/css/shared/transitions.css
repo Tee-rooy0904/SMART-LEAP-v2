@@ -1,1 +1,1346 @@
-/* CSS scaffold: transitions.css */
+/* ==========================================================================
+   SMART LEAP UI/UX Enhancement: Shared Transitions, Micro-Interactions,
+   Elder-Friendly Mode, and Staff Dark Theme
+   Official Butuan CSWDD Colors Preserved: #0b66c3, #1558b0, #135f68, #22c55e, #36c96a
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Universal Micro-Interactions & Tactile Button Dynamics
+   -------------------------------------------------------------------------- */
+button,
+.btn,
+.login-btn,
+.header-action,
+.dash-btn,
+.portal-card-btn,
+.filter-chip,
+.nav-tab-btn,
+.action-pill {
+    transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1),
+                box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1),
+                background-color 0.18s ease,
+                border-color 0.18s ease,
+                filter 0.18s ease;
+    will-change: transform;
+}
+
+button:hover:not(:disabled),
+.btn:hover:not(.disabled),
+.login-btn:hover,
+.header-action:hover,
+.dash-btn:hover:not(:disabled),
+.portal-card-btn:hover {
+    transform: translateY(-2px);
+}
+
+button:active:not(:disabled),
+.btn:active:not(.disabled),
+.login-btn:active,
+.header-action:active,
+.dash-btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Accessible focus ring for all clickable elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #14b8a6 !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.25) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Input Focus Glow & Micro-Interactions (Butuan Blue & Green Accent)
+   -------------------------------------------------------------------------- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+select,
+textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+select:focus,
+textarea:focus {
+    border-color: #38b6ff !important;
+    box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.22),
+                0 0 0 5px rgba(54, 201, 106, 0.12) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Card Hover Elevation & Milestone Pulse
+   -------------------------------------------------------------------------- */
+.dash-card,
+.auth-card,
+.audience-card,
+.kpi-card,
+.stat-card,
+.journey-step,
+.portal-quick-view,
+.application-item {
+    transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1),
+                box-shadow 0.22s cubic-bezier(0.2, 0, 0, 1),
+                border-color 0.22s ease;
+}
+
+.dash-card:hover,
+.kpi-card:hover,
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.09) !important;
+}
+
+/* Milestone Celebration Ripple for Approved/Completed Badges */
+.badge-status-approved,
+.badge-status-verified,
+.badge-status-completed,
+.badge-status-active,
+.badge-success {
+    position: relative;
+    overflow: hidden;
+}
+
+.badge-status-approved::after,
+.badge-status-verified::after,
+.badge-status-completed::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: badgeShine 3.5s infinite;
+}
+
+@keyframes badgeShine {
+    0%, 70% { left: -100%; }
+    100% { left: 160%; }
+}
+
+/* Smooth Fade & Slide for Dashboard Sections */
+.fade-slide-in,
+.dash-section.is-active,
+.tab-pane.active {
+    animation: fadeSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Shake Animation for Invalid Auth Submissions */
+@keyframes shakeX {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+.auth-error-shake {
+    animation: shakeX 0.4s ease-in-out;
+}
+
+/* --------------------------------------------------------------------------
+   4. ELDERLY & EASY-READ ACCESSIBILITY MODE (.easy-read-mode)
+   Tailored for senior beneficiaries & low-vision citizens:
+   - +18% readable typography
+   - Line-height: 1.65 for fatigue-free reading
+   - Min-height: 48px on all click/tap controls
+   - Elevated borders & clear contrast
+   -------------------------------------------------------------------------- */
+body.easy-read-mode {
+    font-size: 118% !important;
+    line-height: 1.65 !important;
+}
+
+body.easy-read-mode p,
+body.easy-read-mode li,
+body.easy-read-mode span:not(.badge):not(.sr-only),
+body.easy-read-mode label,
+body.easy-read-mode td,
+body.easy-read-mode th {
+    font-size: 1.08rem !important;
+    line-height: 1.65 !important;
+}
+
+body.easy-read-mode h1,
+body.easy-read-mode .dash-title,
+body.easy-read-mode .portal-hero__title {
+    font-size: 2.1rem !important;
+    letter-spacing: 0.01em !important;
+}
+
+body.easy-read-mode h2,
+body.easy-read-mode .section-heading,
+body.easy-read-mode h3 {
+    font-size: 1.55rem !important;
+}
+
+/* Generous & forgiving click targets for tremors / arthritis */
+body.easy-read-mode button,
+body.easy-read-mode .btn,
+body.easy-read-mode .dash-btn,
+body.easy-read-mode .header-action,
+body.easy-read-mode input,
+body.easy-read-mode select,
+body.easy-read-mode textarea,
+body.easy-read-mode .nav-tab-btn {
+    min-height: 50px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    font-size: 1.05rem !important;
+}
+
+body.easy-read-mode .field,
+body.easy-read-mode .form-group {
+    margin-bottom: 22px !important;
+}
+
+body.easy-read-mode .dash-card,
+body.easy-read-mode .auth-card,
+body.easy-read-mode .portal-quick-view {
+    border: 2px solid rgba(15, 53, 82, 0.28) !important;
+    box-shadow: 0 10px 24px rgba(15, 37, 58, 0.12) !important;
+}
+
+/* High-contrast focus cue for seniors */
+body.easy-read-mode button:focus-visible,
+body.easy-read-mode a:focus-visible,
+body.easy-read-mode input:focus-visible,
+body.easy-read-mode select:focus-visible {
+    outline: 4px solid #0f766e !important;
+    outline-offset: 4px !important;
+}
+
+/* Easy-Read Mode Active Toggle Pill */
+.easy-read-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #ffffff;
+    border: 2px solid #14b8a6;
+    border-radius: 9999px;
+    color: #0f766e;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(20, 184, 166, 0.15);
+    transition: all 0.2s ease;
+}
+
+.easy-read-toggle-btn:hover {
+    background: #ecfdf5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
+}
+
+.easy-read-toggle-btn.is-active {
+    background: #14b8a6;
+    color: #ffffff;
+    border-color: #0f766e;
+}
+
+/* --------------------------------------------------------------------------
+   5. STAFF DARK MODE (.theme-dark / [data-theme="dark"])
+   For CSWDD Workers (Admin, Project Officers, Social Worker)
+   Preserves Butuan Blue & Green brand accents while soothing eye strain.
+   -------------------------------------------------------------------------- */
+
+/* Global Theme Transition Crossfade */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+    transition: background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease !important;
+}
+
+/* Base Theme Variables */
+html[data-theme="dark"],
+body[data-theme="dark"] {
+    --dark-bg-canvas: #090e1a;
+    --dark-surface: #111d33;
+    --dark-surface-elevated: #162540;
+    --dark-surface-soft: #1c2b48;
+    --dark-surface-card: #111d33;
+    --dark-text-primary: #ffffff;
+    --dark-text-secondary: #cbd5e1;
+    --dark-text-muted: #94a3b8;
+    --dark-border: rgba(255, 255, 255, 0.09);
+    --dark-border-strong: rgba(255, 255, 255, 0.16);
+    --surface-tint: #111d33 !important;
+    --slate-100: #090e1a !important;
+    --slate-900: #ffffff !important;
+    --blue-800: #38b6ff !important;
+    --blue-900: #38b6ff !important;
+    --slate-600: #94a3b8 !important;
+}
+
+/* Base Canvas & Shell */
+[data-theme="dark"] body,
+body[data-theme="dark"],
+[data-theme="dark"] .dashboard-shell,
+[data-theme="dark"] .admin-shell,
+[data-theme="dark"] .project-officer-shell,
+[data-theme="dark"] .social-worker-shell,
+[data-theme="dark"] .content-area,
+[data-theme="dark"] .content-main,
+[data-theme="dark"] .dash-main,
+[data-theme="dark"] .main-content {
+    background: #090e1a !important;
+    background-image: none !important;
+    color: #ffffff !important;
+}
+
+/* Sidebar, Topbar, & Header Shells */
+[data-theme="dark"] .admin-sidebar,
+[data-theme="dark"] .dash-sidebar,
+[data-theme="dark"] .topbar,
+[data-theme="dark"] .admin-topbar,
+[data-theme="dark"] .dash-topbar,
+[data-theme="dark"] .content-header,
+[data-theme="dark"] .site-header,
+[data-theme="dark"] .dash-contextbar {
+    background: #0e172a !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    color: #ffffff !important;
+}
+
+/* Section Containers, Boards, Cards, & Panels:
+   "Everything except for the texts should turn dark, no exception." */
+[data-theme="dark"] .admin-section,
+[data-theme="dark"] .content-card,
+[data-theme="dark"] .admin-layout-card,
+[data-theme="dark"] .data-table-card,
+[data-theme="dark"] .table-card,
+[data-theme="dark"] .panel-card,
+[data-theme="dark"] .dash-card,
+[data-theme="dark"] .kpi-card,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .card,
+[data-theme="dark"] .po-section-board,
+[data-theme="dark"] .po-overview-card,
+[data-theme="dark"] .po-overview-summary-row,
+[data-theme="dark"] .po-dashboard-chart-grid,
+[data-theme="dark"] .sw-summary-strip,
+[data-theme="dark"] .sw-dashboard-chart-grid,
+[data-theme="dark"] .sw-support-grid,
+[data-theme="dark"] .sw-ticket-card,
+[data-theme="dark"] .sw-ticket-feed,
+[data-theme="dark"] .sw-ticket-detail,
+[data-theme="dark"] .admin-v1-panel,
+[data-theme="dark"] .admin-v1-kpi-card,
+[data-theme="dark"] .po-kpi-card,
+[data-theme="dark"] .po-snapshot-card,
+[data-theme="dark"] .sw-dashboard-kpi,
+[data-theme="dark"] .metric-card,
+[data-theme="dark"] .admin-training-summary-card,
+[data-theme="dark"] .team-table-shell,
+[data-theme="dark"] .team-member-card,
+[data-theme="dark"] .team-assignment-card,
+[data-theme="dark"] .admin-repayments-filters-card,
+[data-theme="dark"] .admin-repayments-roster-card,
+[data-theme="dark"] .admin-repayment-panel,
+[data-theme="dark"] .admin-repayments-table-wrapper,
+[data-theme="dark"] .validation-record-card,
+[data-theme="dark"] .validation-upload-card,
+[data-theme="dark"] .validation-table-card,
+[data-theme="dark"] .applications-review-shell,
+[data-theme="dark"] .po-application-toolbar--admin,
+[data-theme="dark"] .po-application-toolbar,
+[data-theme="dark"] .applications-table-shell,
+[data-theme="dark"] .admin-beneficiaries-card,
+[data-theme="dark"] .admin-beneficiary-manage__side,
+[data-theme="dark"] .admin-beneficiary-detail-grid div,
+[data-theme="dark"] .filters-row,
+[data-theme="dark"] .filter-group,
+[data-theme="dark"] .sw-admin-filters,
+[data-theme="dark"] .admin-beneficiaries-filters,
+[data-theme="dark"] .po-repayment-filters,
+[data-theme="dark"] .applications-filters,
+[data-theme="dark"] .table-toolbar,
+[data-theme="dark"] .admin-training-tools,
+[data-theme="dark"] .reports-toolbar,
+[data-theme="dark"] .reports-report-tabs,
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .reports-payment-participants-card,
+[data-theme="dark"] .reports-monthly-payment-chart-wrap,
+[data-theme="dark"] .po-reports-performance-card,
+[data-theme="dark"] .sw-validation-table-head,
+[data-theme="dark"] .admin-beneficiaries-table-head,
+[data-theme="dark"] .reports-donut__legend-row,
+[data-theme="dark"] .validation-dup-warning,
+[data-theme="dark"] .validation-dup-matched,
+[data-theme="dark"] .validation-dup-marked-note {
+    background: #111d33 !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-label {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-count {
+    color: #38b6ff !important;
+}
+
+[data-theme="dark"] .reports-donut__legend-percent {
+    color: #94a3b8 !important;
+}
+
+/* Modals & Dialog Windows */
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .modal-body,
+[data-theme="dark"] .modal-footer,
+[data-theme="dark"] .sw-modal__dialog,
+[data-theme="dark"] .sw-modal__footer,
+[data-theme="dark"] .po-review-modal .modal-body,
+[data-theme="dark"] .po-review-modal .modal-body > section,
+[data-theme="dark"] .po-summary-modal .modal-body,
+[data-theme="dark"] .po-repayment-modal .modal-content,
+[data-theme="dark"] .admin-repayment-modal__dialog,
+[data-theme="dark"] .admin-repayment-modal__footer,
+[data-theme="dark"] .admin-repayment-modal__body,
+[data-theme="dark"] .admin-repayment-modal__summary,
+[data-theme="dark"] .admin-repayment-modal__metric,
+[data-theme="dark"] .admin-beneficiary-modal__panel,
+[data-theme="dark"] .admin-beneficiary-modal__footer,
+[data-theme="dark"] .application-review-modal__card,
+[data-theme="dark"] .application-review-modal .modal-body,
+[data-theme="dark"] .application-review-modal .modal-footer,
+[data-theme="dark"] .validation-review-modal__card,
+[data-theme="dark"] .validation-review-modal__body,
+[data-theme="dark"] .validation-review-modal__footer,
+[data-theme="dark"] .staff-profile-modal__card,
+[data-theme="dark"] .admin-account-menu__panel {
+    background: #111d33 !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+/* ── Typography & Text Contrast Overrides ──
+   "If the texts has blue, grey, black, or dark colors, turn them lighter so that the informations are readable." */
+
+/* Primary Headings, Titles, and Bolds */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] strong,
+[data-theme="dark"] b,
+[data-theme="dark"] .dash-title,
+[data-theme="dark"] .modal-title,
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .table-primary,
+[data-theme="dark"] .po-application-identity .table-primary,
+[data-theme="dark"] .po-location-cell strong,
+[data-theme="dark"] .po-progress-cell strong,
+[data-theme="dark"] .po-date-cell strong,
+[data-theme="dark"] .validation-person-cell strong,
+[data-theme="dark"] .admin-repayment-person strong,
+[data-theme="dark"] .admin-beneficiary-detail-grid strong,
+[data-theme="dark"] .admin-v1-kpi-card__value,
+[data-theme="dark"] .admin-v1-kpi-card__label,
+[data-theme="dark"] .metric-card__value,
+[data-theme="dark"] .po-kpi-card__value {
+    color: #ffffff !important;
+}
+
+/* Body Text, Cells, and Labels */
+[data-theme="dark"] p,
+[data-theme="dark"] td,
+[data-theme="dark"] label,
+[data-theme="dark"] .table-secondary,
+[data-theme="dark"] .table-tertiary,
+[data-theme="dark"] .data-table td,
+[data-theme="dark"] .admin-data-table td,
+[data-theme="dark"] .po-application-toolbar__summary .po-snapshot-card__body span,
+[data-theme="dark"] .admin-repayments-summary-strip .metric-card__meta,
+[data-theme="dark"] .admin-beneficiary-manage__side p,
+[data-theme="dark"] .validation-header__copy p,
+[data-theme="dark"] .validation-table-card__head p,
+[data-theme="dark"] .validation-record-card p,
+[data-theme="dark"] .validation-dup-warning p {
+    color: #cbd5e1 !important;
+}
+
+/* Secondary Meta, Subtitles, and Help Text */
+[data-theme="dark"] small,
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .dash-text-muted,
+[data-theme="dark"] .card-subtitle,
+[data-theme="dark"] .po-modal-subtitle,
+[data-theme="dark"] .sw-validation-table-head__meta,
+[data-theme="dark"] .admin-v1-kpi-card__meta,
+[data-theme="dark"] .admin-v1-panel__footer,
+[data-theme="dark"] .admin-training-summary-card small,
+[data-theme="dark"] .po-filter-field span,
+[data-theme="dark"] .po-progress-cell span,
+[data-theme="dark"] .po-location-cell span,
+[data-theme="dark"] .po-date-cell span {
+    color: #94a3b8 !important;
+}
+
+/* Vibrant Light Accents (Eyebrows, Category Pills, Filter Labels) */
+[data-theme="dark"] .admin-topbar__eyebrow,
+[data-theme="dark"] .admin-v1-kpi-card__eyebrow,
+[data-theme="dark"] .admin-v1-panel__eyebrow,
+[data-theme="dark"] .po-snapshot-card__eyebrow,
+[data-theme="dark"] .metric-card__label,
+[data-theme="dark"] .filter-label,
+[data-theme="dark"] .po-panel-label,
+[data-theme="dark"] .validation-record-card__label,
+[data-theme="dark"] .validation-upload-card__label,
+[data-theme="dark"] .admin-beneficiary-detail-grid span,
+[data-theme="dark"] .admin-repayment-modal__metric span,
+[data-theme="dark"] .admin-repayment-detail-grid span,
+[data-theme="dark"] .validation-hardcopy-field span,
+[data-theme="dark"] .sw-dashboard-kpi__eyebrow,
+[data-theme="dark"] a:not(.btn):not(.nav-link) {
+    color: #38b6ff !important;
+}
+
+/* ── Search Bars across Admin, PDO, and SW ── */
+
+/* Search Input Shells & Wrappers */
+[data-theme="dark"] .filter-search,
+[data-theme="dark"] .sw-admin-filters .filter-search,
+[data-theme="dark"] .social-worker-shell .filter-search,
+[data-theme="dark"] .reports-search-box,
+[data-theme="dark"] .sw-ticket-search {
+    background: #0c1527 !important;
+    background-image: none !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] .filter-search:focus-within,
+[data-theme="dark"] .sw-admin-filters .filter-search:focus-within,
+[data-theme="dark"] .social-worker-shell .filter-search:focus-within,
+[data-theme="dark"] .reports-search-box:focus-within,
+[data-theme="dark"] .sw-ticket-search:focus-within {
+    border-color: #38b6ff !important;
+    box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+/* Magnifying Glass & Search Icons */
+[data-theme="dark"] .filter-search i,
+[data-theme="dark"] .reports-search-box i,
+[data-theme="dark"] .sw-admin-filters .filter-search i,
+[data-theme="dark"] .sw-ticket-search svg,
+[data-theme="dark"] .sw-ticket-search__icon {
+    color: #38b6ff !important;
+    stroke: #38b6ff !important;
+    fill: none !important;
+}
+
+/* All Search Inputs (Standalone & Nested) */
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] .filter-search input,
+[data-theme="dark"] #po-app-search,
+[data-theme="dark"] #po-repayment-search,
+[data-theme="dark"] #poBeneficiarySearch,
+[data-theme="dark"] #swValidationSearch,
+[data-theme="dark"] #swApplicationSearch,
+[data-theme="dark"] #swBeneficiarySearch,
+[data-theme="dark"] #swCoMakerSearch,
+[data-theme="dark"] #swRepaymentSearch,
+[data-theme="dark"] #swSupportSearch,
+[data-theme="dark"] #adminBeneficiarySearch,
+[data-theme="dark"] #adminCoMakerSearch,
+[data-theme="dark"] #adminRepaymentSearch,
+[data-theme="dark"] #applications-search,
+[data-theme="dark"] #repayments-search,
+[data-theme="dark"] #team-assignment-search,
+[data-theme="dark"] .section-filter[data-training-filter="search"] {
+    background: #0c1527 !important;
+    color: #ffffff !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+/* Inside wrapper - remove border/bg to avoid double outlines */
+[data-theme="dark"] .filter-search input,
+[data-theme="dark"] .reports-search-box input,
+[data-theme="dark"] .sw-ticket-search input,
+[data-theme="dark"] #reports-search,
+[data-theme="dark"] #team-filter-search {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Focused standalone search inputs */
+[data-theme="dark"] input[type="search"]:focus,
+[data-theme="dark"] #po-app-search:focus,
+[data-theme="dark"] #po-repayment-search:focus,
+[data-theme="dark"] #adminRepaymentSearch:focus,
+[data-theme="dark"] #applications-search:focus,
+[data-theme="dark"] .section-filter[data-training-filter="search"]:focus {
+    border-color: #38b6ff !important;
+    box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+    outline: none !important;
+}
+
+[data-theme="dark"] input[type="search"]::placeholder,
+[data-theme="dark"] .filter-search input::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+/* ── Select Dropdowns, Forms, & Tables ── */
+[data-theme="dark"] select,
+[data-theme="dark"] .filter-select,
+[data-theme="dark"] .section-filter:not([type="search"]),
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="search"]),
+[data-theme="dark"] textarea {
+    background: #0c1527 !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 12px !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] select option {
+    background: #111d33 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] table,
+[data-theme="dark"] .data-table,
+[data-theme="dark"] .admin-data-table {
+    color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] thead th,
+[data-theme="dark"] th {
+    background: #0c1628 !important;
+    color: #cbd5e1 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] tbody td,
+[data-theme="dark"] td {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Staff Theme Toggle Button in Topbar */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+    background: var(--dark-surface-elevated);
+    border-color: var(--dark-border-strong);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover {
+    background: var(--dark-surface-soft);
+}
+
+/* --------------------------------------------------------------------------
+   6. Motion Sensitivity (Vestibular Accessibility)
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
+
+
+/* ==========================================================================
+   ENHANCED DARK MODE REFINEMENTS: HOVER, STATUSES, MODALS, TRAINING
+   ========================================================================== */
+
+/* 1. Universal Table Row Hover States (Dark Mode) */
+[data-theme="dark"] tr:hover,
+[data-theme="dark"] tbody tr:hover,
+[data-theme="dark"] .data-table tbody tr:hover,
+[data-theme="dark"] .admin-data-table tbody tr:hover,
+[data-theme="dark"] .validation-table tbody tr:hover,
+[data-theme="dark"] .team-roster-table tbody tr:hover,
+[data-theme="dark"] .admin-beneficiaries-table tbody tr:hover,
+[data-theme="dark"] .admin-repayments-table tbody tr:hover,
+[data-theme="dark"] .training-session-table tbody tr:hover,
+[data-theme="dark"] #validation-section .admin-data-table tbody tr:hover,
+[data-theme="dark"] #po-app-table tbody tr:hover {
+    background: #182744 !important;
+    background-image: none !important;
+}
+
+[data-theme="dark"] tr:hover td,
+[data-theme="dark"] tbody tr:hover td,
+[data-theme="dark"] .data-table tbody tr:hover td,
+[data-theme="dark"] .admin-data-table tbody tr:hover td,
+[data-theme="dark"] .validation-table tbody tr:hover td,
+[data-theme="dark"] .team-roster-table tbody tr:hover td,
+[data-theme="dark"] .admin-beneficiaries-table tbody tr:hover td,
+[data-theme="dark"] .admin-repayments-table tbody tr:hover td,
+[data-theme="dark"] .training-session-table tbody tr:hover td {
+    background: #182744 !important;
+    background-image: none !important;
+    color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] tr:hover td strong,
+[data-theme="dark"] tbody tr:hover td strong,
+[data-theme="dark"] .data-table tbody tr:hover td strong {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] tr:hover td span:not(.status-badge):not(.badge):not(.admin-status-chip):not(.po-status-pill):not(.summary-chip),
+[data-theme="dark"] tbody tr:hover td span:not(.status-badge):not(.badge):not(.admin-status-chip):not(.po-status-pill):not(.summary-chip) {
+    color: #94a3b8 !important;
+}
+
+/* 2. Universal Status Badges & Pills (High-Contrast & Luminous in Dark Mode) */
+[data-theme="dark"] .status-badge,
+[data-theme="dark"] .admin-status-chip,
+[data-theme="dark"] .po-status-pill,
+[data-theme="dark"] .badge-status,
+[data-theme="dark"] .admin-inline-pill {
+    opacity: 1 !important;
+    font-weight: 800 !important;
+}
+
+[data-theme="dark"] .status-badge.is-success,
+[data-theme="dark"] .admin-status-chip--success,
+[data-theme="dark"] .admin-status-chip.beneficiary-status--active,
+[data-theme="dark"] .badge-status.present,
+[data-theme="dark"] .po-status-pill.is-success,
+[data-theme="dark"] .admin-inline-pill--success {
+    background: rgba(34, 197, 94, 0.22) !important;
+    background-image: none !important;
+    color: #4ade80 !important;
+    border: 1px solid rgba(74, 222, 128, 0.35) !important;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.15) !important;
+}
+
+[data-theme="dark"] .status-badge.is-warning,
+[data-theme="dark"] .admin-status-chip--warning,
+[data-theme="dark"] .admin-status-chip.beneficiary-status--inactive,
+[data-theme="dark"] .badge-status.pending,
+[data-theme="dark"] .badge-status.late,
+[data-theme="dark"] .badge-status.excused,
+[data-theme="dark"] .po-status-pill.is-warning,
+[data-theme="dark"] .admin-inline-pill--warning {
+    background: rgba(245, 158, 11, 0.22) !important;
+    background-image: none !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(251, 191, 36, 0.35) !important;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.15) !important;
+}
+
+[data-theme="dark"] .status-badge.is-danger,
+[data-theme="dark"] .admin-status-chip--danger,
+[data-theme="dark"] .admin-status-chip.beneficiary-status--deceased,
+[data-theme="dark"] .badge-status.absent,
+[data-theme="dark"] .po-status-pill.is-danger,
+[data-theme="dark"] .admin-inline-pill--danger,
+[data-theme="dark"] .status-badge.is-disabled {
+    background: rgba(239, 68, 68, 0.22) !important;
+    background-image: none !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(248, 113, 113, 0.35) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.15) !important;
+}
+
+[data-theme="dark"] .status-badge.is-info,
+[data-theme="dark"] .admin-status-chip--info,
+[data-theme="dark"] .po-status-pill.is-info,
+[data-theme="dark"] .admin-inline-pill--info,
+[data-theme="dark"] .po-batch-pill {
+    background: rgba(56, 182, 255, 0.22) !important;
+    background-image: none !important;
+    color: #38b6ff !important;
+    border: 1px solid rgba(56, 182, 255, 0.35) !important;
+    box-shadow: 0 0 10px rgba(56, 182, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .status-badge.is-muted,
+[data-theme="dark"] .admin-status-chip--muted {
+    background: rgba(148, 163, 184, 0.18) !important;
+    background-image: none !important;
+    color: #cbd5e1 !important;
+    border: 1px solid rgba(203, 213, 225, 0.25) !important;
+}
+
+/* 3. Training Filter Status & Summary Chips (Dark Mode) */
+[data-theme="dark"] #training-section .training-session-filter-status,
+[data-theme="dark"] .training-session-filter-status {
+    background: #111d33 !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] #training-section .training-session-filter-status__summary strong,
+[data-theme="dark"] .training-session-filter-status__summary strong {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] #training-section .training-session-filter-status__summary span,
+[data-theme="dark"] .training-session-filter-status__summary span {
+    color: #94a3b8 !important;
+}
+
+[data-theme="dark"] #training-section .summary-chip,
+[data-theme="dark"] .summary-chip {
+    background: #162540 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #38b6ff !important;
+}
+
+/* 4. Universal Modals & Internal Panels (Full Contrast in Dark Mode) */
+[data-theme="dark"] .modal-overlay,
+[data-theme="dark"] .team-modal__backdrop,
+[data-theme="dark"] .admin-beneficiary-modal__backdrop,
+[data-theme="dark"] .admin-repayment-modal__backdrop {
+    background: rgba(4, 8, 16, 0.78) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .team-modal__card,
+[data-theme="dark"] .team-modal__dialog,
+[data-theme="dark"] .admin-beneficiary-modal__panel,
+[data-theme="dark"] .admin-repayment-modal__dialog,
+[data-theme="dark"] .admin-repayment-record-modal__dialog,
+[data-theme="dark"] .application-review-modal__card,
+[data-theme="dark"] .validation-review-modal__card,
+[data-theme="dark"] .admin-batch-modal__card,
+[data-theme="dark"] .training-session-modal__card,
+[data-theme="dark"] .po-repayment-modal .modal-content,
+[data-theme="dark"] .po-review-modal .modal-content,
+[data-theme="dark"] .po-summary-modal,
+[data-theme="dark"] .po-attendance-modal__dialog {
+    background: #111d33 !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: 0 25px 65px rgba(0, 0, 0, 0.65) !important;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .team-form-header,
+[data-theme="dark"] .admin-beneficiary-modal__header,
+[data-theme="dark"] .admin-repayment-modal__header,
+[data-theme="dark"] .admin-repayment-record-modal__header,
+[data-theme="dark"] .application-review-modal .modal-header,
+[data-theme="dark"] .training-session-modal__header,
+[data-theme="dark"] .po-attendance-modal__header,
+[data-theme="dark"] .po-summary-modal .modal-header {
+    background: #0e172a !important;
+    background-image: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .modal-body,
+[data-theme="dark"] .team-form-layout,
+[data-theme="dark"] .admin-beneficiary-modal__body,
+[data-theme="dark"] .admin-repayment-modal__body,
+[data-theme="dark"] .admin-repayment-record-modal__body,
+[data-theme="dark"] .application-review-modal .modal-body,
+[data-theme="dark"] .validation-review-modal__body,
+[data-theme="dark"] .training-session-modal__body,
+[data-theme="dark"] .po-attendance-modal__body,
+[data-theme="dark"] .po-summary-modal .modal-body {
+    background: #090e1a !important;
+    background-image: none !important;
+}
+
+[data-theme="dark"] .modal-footer,
+[data-theme="dark"] .team-modal__footer,
+[data-theme="dark"] .admin-beneficiary-modal__footer,
+[data-theme="dark"] .admin-repayment-modal__footer,
+[data-theme="dark"] .admin-repayment-record-modal__footer,
+[data-theme="dark"] .application-review-modal .modal-footer,
+[data-theme="dark"] .validation-review-modal__footer,
+[data-theme="dark"] .training-session-modal__footer,
+[data-theme="dark"] .po-summary-modal .modal-footer {
+    background: #111d33 !important;
+    background-image: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Modal Inner Panels & Cards */
+[data-theme="dark"] .team-form-side__card,
+[data-theme="dark"] .team-form-panel,
+[data-theme="dark"] .team-form-panel--hero,
+[data-theme="dark"] .team-credentials-card,
+[data-theme="dark"] .po-case-identity__block,
+[data-theme="dark"] .po-summary-card,
+[data-theme="dark"] .po-summary-section,
+[data-theme="dark"] .po-summary-section--decision,
+[data-theme="dark"] .po-summary-hero,
+[data-theme="dark"] .validation-record-card,
+[data-theme="dark"] .validation-upload-card,
+[data-theme="dark"] .admin-beneficiary-manage__side,
+[data-theme="dark"] .admin-beneficiary-detail-grid div,
+[data-theme="dark"] .admin-repayment-panel,
+[data-theme="dark"] .admin-repayment-modal__metric {
+    background: #111d33 !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Modal Texts: 100% Opacity & Contrast */
+[data-theme="dark"] .modal-title,
+[data-theme="dark"] .team-form-header h4,
+[data-theme="dark"] .team-form-hero__copy h5,
+[data-theme="dark"] .team-form-hero__meta strong,
+[data-theme="dark"] .team-form-side__card strong,
+[data-theme="dark"] .po-summary-hero__copy h6,
+[data-theme="dark"] .po-summary-section__header h6,
+[data-theme="dark"] .po-case-identity__block > strong,
+[data-theme="dark"] .po-case-identity__row strong,
+[data-theme="dark"] .validation-review-modal__title h3,
+[data-theme="dark"] .admin-repayment-modal__header-copy h3,
+[data-theme="dark"] .admin-beneficiary-modal__header h3 {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+[data-theme="dark"] .modal-header p,
+[data-theme="dark"] .modal-body p,
+[data-theme="dark"] .team-form-header p,
+[data-theme="dark"] .team-form-hero__copy p,
+[data-theme="dark"] .team-form-side__card p,
+[data-theme="dark"] .team-form-panel__note,
+[data-theme="dark"] .po-summary-hero__copy p,
+[data-theme="dark"] .po-summary-checklist__intro,
+[data-theme="dark"] .admin-repayment-modal__header-copy p {
+    color: #cbd5e1 !important;
+    opacity: 1 !important;
+}
+
+[data-theme="dark"] .team-form-kicker,
+[data-theme="dark"] .team-form-panel__eyebrow,
+[data-theme="dark"] .team-form-side__eyebrow,
+[data-theme="dark"] .po-modal-eyebrow,
+[data-theme="dark"] .po-case-identity__row span,
+[data-theme="dark"] .validation-record-card__label,
+[data-theme="dark"] .validation-upload-card__label {
+    color: #38b6ff !important;
+    opacity: 1 !important;
+}
+
+/* Modal Form Inputs */
+[data-theme="dark"] .modal-body input,
+[data-theme="dark"] .modal-body select,
+[data-theme="dark"] .modal-body textarea,
+[data-theme="dark"] .team-form-layout input,
+[data-theme="dark"] .team-form-layout select,
+[data-theme="dark"] .team-form-layout textarea,
+[data-theme="dark"] .team-credential-field input {
+    background: #0c1527 !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* High Contrast Dark Mode Validation Queue Tabs */
+[data-theme="dark"] .validation-tab,
+[data-theme="dark"] .social-worker-shell .validation-tab {
+    background: #162540 !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+[data-theme="dark"] .validation-tab:hover,
+[data-theme="dark"] .social-worker-shell .validation-tab:hover {
+    background: #1e3256 !important;
+    border-color: rgba(56, 182, 255, 0.5) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+[data-theme="dark"] .validation-tab span,
+[data-theme="dark"] .social-worker-shell .validation-tab span {
+    background: rgba(56, 182, 255, 0.16) !important;
+    border: 1px solid rgba(56, 182, 255, 0.3) !important;
+    color: #38b6ff !important;
+    -webkit-text-fill-color: #38b6ff !important;
+}
+
+[data-theme="dark"] .validation-tab.is-active,
+[data-theme="dark"] .social-worker-shell .validation-tab.is-active {
+    background: linear-gradient(135deg, #0d63ce, #1f85dd) !important;
+    border-color: #38b6ff !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    box-shadow: 0 4px 16px rgba(13, 99, 206, 0.45) !important;
+}
+
+[data-theme="dark"] .validation-tab.is-active span,
+[data-theme="dark"] .social-worker-shell .validation-tab.is-active span {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Applications Search Box Shared Styles */
+.applications-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.applications-search-box__icon {
+    position: absolute;
+    left: 12px;
+    color: #64748b;
+    font-size: 0.88rem;
+    pointer-events: none;
+    z-index: 2;
+    transition: color 0.2s ease;
+}
+
+.applications-search-box:focus-within .applications-search-box__icon {
+    color: #1a73e8;
+}
+
+.applications-search-box__input {
+    width: 100%;
+    min-height: 42px;
+    padding-left: 36px !important;
+    padding-right: 36px !important;
+}
+
+.applications-search-box__input::-webkit-search-cancel-button {
+    display: none;
+}
+
+.applications-search-box__clear {
+    position: absolute;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(148, 163, 184, 0.2);
+    color: #64748b;
+    font-size: 0.72rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.applications-search-box__clear:hover {
+    background: rgba(148, 163, 184, 0.35);
+    color: #1e293b;
+    transform: scale(1.08);
+}
+
+[data-theme="dark"] .applications-search-box:focus-within .applications-search-box__icon {
+    color: #38b6ff !important;
+}
+
+[data-theme="dark"] .applications-search-box__clear {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .applications-search-box__clear:hover {
+    background: rgba(56, 182, 255, 0.25) !important;
+    color: #38b6ff !important;
+}
+
+/* Training Attendance Status Pills Dark Mode */
+[data-theme="dark"] .training-status-pill--blue,
+[data-theme="dark"] .badge-status.completed {
+    background: rgba(56, 182, 255, 0.2) !important;
+    color: #38b6ff !important;
+    border-color: rgba(56, 182, 255, 0.38) !important;
+}
+
+[data-theme="dark"] .training-status-pill--teal,
+[data-theme="dark"] .training-status-pill--emerald,
+[data-theme="dark"] .badge-status.present,
+[data-theme="dark"] .atm-chip--present {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+    border-color: rgba(16, 185, 129, 0.38) !important;
+}
+
+[data-theme="dark"] .training-status-pill--amber,
+[data-theme="dark"] .badge-status.excused,
+[data-theme="dark"] .badge-status.late,
+[data-theme="dark"] .atm-chip--excused {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.38) !important;
+}
+
+[data-theme="dark"] .training-status-pill--rose,
+[data-theme="dark"] .badge-status.absent,
+[data-theme="dark"] .atm-chip--absent {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.38) !important;
+}
+
+[data-theme="dark"] .training-status-pill--slate,
+[data-theme="dark"] .badge-status.pending,
+[data-theme="dark"] .atm-chip--scheduled,
+[data-theme="dark"] .atm-chip--unmarked {
+    background: rgba(148, 163, 184, 0.16) !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(148, 163, 184, 0.28) !important;
+}
+
+[data-theme="dark"] .atm-chip--completed {
+    background: rgba(56, 182, 255, 0.22) !important;
+    color: #38b6ff !important;
+    border-color: rgba(56, 182, 255, 0.4) !important;
+}
+
+[data-theme="dark"] .atm-chip--notified {
+    background: rgba(99, 102, 241, 0.24) !important;
+    color: #a5b4fc !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+}
+
+/* PDO Attendance Modal Controls Dark Mode */
+[data-theme="dark"] .atm-action-btn {
+    background: #162540 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .atm-action-btn:hover {
+    background: #1e3256 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-action-btn--present.is-active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.25)) !important;
+    border-color: #34d399 !important;
+    color: #34d399 !important;
+}
+
+[data-theme="dark"] .atm-action-btn--absent.is-active {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.25)) !important;
+    border-color: #f87171 !important;
+    color: #f87171 !important;
+}
+
+[data-theme="dark"] .atm-action-btn--excused.is-active {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.25)) !important;
+    border-color: #fbbf24 !important;
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .atm-selected-chip--present {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(16, 185, 129, 0.38) !important;
+}
+
+[data-theme="dark"] .atm-selected-chip--absent {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(239, 68, 68, 0.38) !important;
+}
+
+[data-theme="dark"] .atm-selected-chip--excused {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(245, 158, 11, 0.38) !important;
+}
+
+[data-theme="dark"] .atm-selected-chip--none {
+    background: rgba(148, 163, 184, 0.16) !important;
+    color: #cbd5e1 !important;
+    border: 1px solid rgba(148, 163, 184, 0.28) !important;
+}
+
+[data-theme="dark"] .atm-hero,
+[data-theme="dark"] .atm-session-strip,
+[data-theme="dark"] .atm-section {
+    background: #111d33 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-hero__name {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-hero__sub,
+[data-theme="dark"] .atm-session-strip__item span {
+    color: #94a3b8 !important;
+}
+
+/* ── Universal Staff Action Buttons & PDO Attendance Dark Mode ── */
+[data-theme="dark"] .po-training-action-trigger,
+[data-theme="dark"] .action-button,
+[data-theme="dark"] .po-case-action,
+[data-theme="dark"] .app-btn-outline,
+[data-theme="dark"] .atm-footer-btn--cancel {
+    background: #162540 !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .po-training-action-trigger:hover,
+[data-theme="dark"] .action-button:hover,
+[data-theme="dark"] .po-case-action:hover,
+[data-theme="dark"] .app-btn-outline:hover,
+[data-theme="dark"] .atm-footer-btn--cancel:hover {
+    background: #1e3256 !important;
+    border-color: rgba(56, 182, 255, 0.5) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-footer {
+    background: #111d33 !important;
+    background-image: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .atm-remarks {
+    background: #090e1a !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-locked-notice {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .atm-proof-uploaded {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.35) !important;
+    color: #34d399 !important;
+}
+
+[data-theme="dark"] .atm-proof-uploaded strong {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-proof-pending {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .atm-proof-pending strong {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .atm-proof-na {
+    background: rgba(148, 163, 184, 0.12) !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+    color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .atm-proof-na strong {
+    color: #ffffff !important;
+}
+
+/* PDO Training Roster Status Chips */
+[data-theme="dark"] .po-training-status-chip--attended,
+[data-theme="dark"] .po-training-status-chip--present,
+[data-theme="dark"] .po-training-status-chip.is-success {
+    background: rgba(16, 185, 129, 0.22) !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+    color: #34d399 !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--completed,
+[data-theme="dark"] .po-training-completion-chip.po-training-status-chip--completed {
+    background: rgba(56, 182, 255, 0.22) !important;
+    border-color: rgba(56, 182, 255, 0.4) !important;
+    color: #38b6ff !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--excused,
+[data-theme="dark"] .po-training-status-chip.is-warning {
+    background: rgba(245, 158, 11, 0.22) !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--missed,
+[data-theme="dark"] .po-training-status-chip--absent,
+[data-theme="dark"] .po-training-status-chip.is-danger {
+    background: rgba(239, 68, 68, 0.22) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #f87171 !important;
+}
+
+[data-theme="dark"] .po-training-status-chip--eligible,
+[data-theme="dark"] .po-training-status-chip--notified {
+    background: rgba(99, 102, 241, 0.24) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    color: #a5b4fc !important;
+}
+
+

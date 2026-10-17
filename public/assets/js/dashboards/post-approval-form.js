@@ -22,6 +22,9 @@
             fieldKey: '',
             label: '',
         },
+        reviewAutoSaveTimer: 0,
+        reviewSaveInFlight: false,
+        reviewSaveQueued: false,
     };
     const MUNGKAHING_SECTOR_DEFINITIONS = [
         { key: 'sexFemale', label: 'Babaye' },
@@ -57,6 +60,7 @@
     document.addEventListener('DOMContentLoaded', init);
 
     async function init() {
+        window.__smartLeapChangeAvailmentPage = (nextPage) => moveAvailmentPage(nextPage);
         bindStaticEvents();
         await loadTask();
     }
@@ -68,10 +72,14 @@
         document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebarMenuOnMobile);
         document.getElementById('postApprovalSaveButton')?.addEventListener('click', handleSave);
         document.getElementById('postApprovalForm')?.addEventListener('submit', handleSubmit);
+        document.getElementById('postApprovalForm')?.addEventListener('input', handleReviewerAutoSaveInput);
+        document.getElementById('postApprovalForm')?.addEventListener('change', handleReviewerAutoSaveChange);
+        document.getElementById('postApprovalBackButton')?.addEventListener('click', handleReviewerBackClick);
         document.getElementById('postApprovalFormSections')?.addEventListener('click', handleRowAction);
         document.getElementById('postApprovalFormSections')?.addEventListener('input', handleBusinessPlanMirrorInput);
         document.getElementById('postApprovalFormSections')?.addEventListener('change', handleApplicantUploadChange);
         document.getElementById('postApprovalFormSections')?.addEventListener('toggle', handleGuidedSectionToggle, true);
+        document.addEventListener('click', handleAvailmentPageClick);
         document.addEventListener('click', handleReviewerDecisionClick);
         document.addEventListener('click', handleSignaturePadAction);
         document.addEventListener('pointerdown', startSignaturePadStroke);
@@ -98,6 +106,151 @@
 
         syncReviewerDecisionButtons(nextValue);
         updateReviewerDecisionNoteUi(nextValue);
+
+        if (!state.reviewerMode) {
+            return;
+        }
+
+        const applicantRemark = document.getElementById('reviewDecisionApplicantRemark');
+        if (nextValue === 'Needs Correction' && !(applicantRemark instanceof HTMLTextAreaElement && applicantRemark.value.trim() !== '')) {
+            if (applicantRemark instanceof HTMLTextAreaElement) {
+                applicantRemark.focus();
+            }
+            showToast('Add a note first before sending this form back.', 'warning');
+            return;
+        }
+
+        queueReviewerAutoSave({
+            immediate: true,
+            silent: false,
+            successMessage: nextValue === 'Verified' ? 'Form approved.' : 'Correction request saved.',
+        });
+    }
+
+    function handleReviewerBackClick(event) {
+        const link = event.currentTarget;
+        if (!(link instanceof HTMLAnchorElement)) {
+            return;
+        }
+        event.preventDefault();
+        window.location.href = link.href;
+    }
+
+    function handleReviewerAutoSaveInput(event) {
+        if (!state.reviewerMode) {
+            return;
+        }
+
+        if (!isReviewerAutoSaveField(event.target)) {
+            return;
+        }
+
+        queueReviewerAutoSave({
+            delay: event.target instanceof HTMLTextAreaElement ? 700 : 450,
+            silent: true,
+        });
+    }
+
+    function handleReviewerAutoSaveChange(event) {
+        if (!state.reviewerMode) {
+            return;
+        }
+
+        if (!isReviewerAutoSaveField(event.target)) {
+            return;
+        }
+
+        queueReviewerAutoSave({
+            immediate: true,
+            silent: true,
+        });
+    }
+
+    function isReviewerAutoSaveField(target) {
+        if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement)) {
+            return false;
+        }
+
+        if (target.type === 'file') {
+            return false;
+        }
+
+        return target.id === 'reviewDecisionApplicantRemark' || target.id === 'reviewDecisionStatus';
+    }
+
+    function queueReviewerAutoSave(options = {}) {
+        if (!state.reviewerMode || !state.task) {
+            return;
+        }
+
+        if (state.reviewAutoSaveTimer) {
+            window.clearTimeout(state.reviewAutoSaveTimer);
+            state.reviewAutoSaveTimer = 0;
+        }
+
+        const runSave = () => {
+            state.reviewAutoSaveTimer = 0;
+            void submitReviewerReview(options);
+        };
+
+        if (options.immediate === true) {
+            runSave();
+            return;
+        }
+
+        state.reviewAutoSaveTimer = window.setTimeout(runSave, Number(options.delay || 600));
+    }
+
+    function moveAvailmentPage(nextPage) {
+        if (state.task?.code !== 'availment_form') {
+            return false;
+        }
+
+        const normalizedPage = Number(nextPage);
+        if (normalizedPage !== 1 && normalizedPage !== 2) {
+            return false;
+        }
+
+        try {
+            const payload = gatherFormData();
+            if (payload) {
+                state.activePayload = payload;
+            }
+        } catch (error) {
+            console.warn('Unable to collect availment page data before switching pages.', error);
+        }
+
+        state.availmentPage = normalizedPage;
+
+        const panels = Array.from(document.querySelectorAll('[data-availment-panel]'));
+        if (panels.length > 0) {
+            panels.forEach((panel) => {
+                const panelPage = Number(panel.getAttribute('data-availment-panel'));
+                const isActive = panelPage === normalizedPage;
+                panel.hidden = !isActive;
+                panel.classList.toggle('is-active', isActive);
+            });
+
+            const submitButton = document.getElementById('postApprovalSubmitButton');
+            if (submitButton instanceof HTMLButtonElement && !state.reviewerMode) {
+                submitButton.hidden = normalizedPage !== 2;
+            }
+        } else {
+            renderTask();
+        }
+
+        document.querySelector('.post-form-page-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+    }
+
+    function handleAvailmentPageClick(event) {
+        const pageButton = event.target instanceof Element ? event.target.closest('[data-availment-page]') : null;
+        if (!(pageButton instanceof HTMLButtonElement)) {
+            return;
+        }
+
+        event.preventDefault();
+        moveAvailmentPage(pageButton.getAttribute('data-availment-page'));
     }
 
     function handleBusinessPlanMirrorInput(event) {
@@ -234,6 +387,13 @@
             return { owner: FIELD_OWNER_APPLICANT, editable: true };
         }
 
+        const applicantEligibilityFields = new Set([
+            'staffReview.eligibilityAssessment.residentName',
+            'staffReview.eligibilityAssessment.age',
+            'staffReview.eligibilityAssessment.barangay',
+            'staffReview.eligibilityAssessment.eligibilityDecision',
+        ]);
+
         const reviewerLockedApplicantFields = new Set([
             'participantSignature.signedName',
             'participantSignature.signatureUpload',
@@ -242,7 +402,18 @@
             'applicantSignature.signatureUpload',
             'coMakerSignature.signedName',
             'coMakerSignature.signatureUpload',
+            'staffReview.eligibilityAssessment.residentName',
+            'staffReview.eligibilityAssessment.age',
+            'staffReview.eligibilityAssessment.barangay',
+            'staffReview.eligibilityAssessment.eligibilityDecision',
         ]);
+
+        if (applicantEligibilityFields.has(fieldRef)) {
+            return {
+                owner: FIELD_OWNER_APPLICANT,
+                editable: !(state.reviewerMode && reviewerLockedApplicantFields.has(fieldRef)),
+            };
+        }
 
         if (fieldRef.startsWith('staffReview.')) {
             return { owner: FIELD_OWNER_STAFF, editable: state.reviewerMode };
@@ -382,8 +553,10 @@
 
         const select = document.getElementById('reviewDecisionStatus');
         const applicantRemark = document.getElementById('reviewDecisionApplicantRemark');
+        const applicantRemarkGroup = document.getElementById('reviewDecisionApplicantRemarkGroup');
         const applicantRemarkLabel = document.getElementById('reviewDecisionApplicantRemarkLabel');
         const applicantRemarkHint = document.getElementById('reviewDecisionApplicantRemarkHint');
+        const reviewDecisionHelp = document.getElementById('reviewDecisionHelp');
         if (select) {
             const normalizedStatus = normalizeReviewerDecisionStatus(task.status);
             select.value = normalizedStatus;
@@ -394,10 +567,16 @@
             applicantRemark.value = String(task.reviewerRemarks || '');
         }
         if (applicantRemarkLabel) {
-            applicantRemarkLabel.textContent = 'Applicant note';
+            applicantRemarkLabel.textContent = 'Note to applicant';
         }
         if (applicantRemarkHint) {
-            applicantRemarkHint.textContent = 'This note appears in the applicant portal as the reviewer note.';
+            applicantRemarkHint.textContent = 'This appears in the applicant portal.';
+        }
+        if (reviewDecisionHelp) {
+            reviewDecisionHelp.textContent = 'Approve or Send Back saves automatically. Use Send Back only when the applicant still needs to correct the form.';
+        }
+        if (applicantRemarkGroup instanceof HTMLElement) {
+            applicantRemarkGroup.hidden = !(select instanceof HTMLInputElement && select.value === 'Needs Correction') && !(applicantRemark && applicantRemark.value.trim() !== '');
         }
     }
 
@@ -421,22 +600,36 @@
 
     function updateReviewerDecisionNoteUi(status) {
         const applicantRemark = document.getElementById('reviewDecisionApplicantRemark');
+        const applicantRemarkGroup = document.getElementById('reviewDecisionApplicantRemarkGroup');
         const applicantRemarkHint = document.getElementById('reviewDecisionApplicantRemarkHint');
+        const reviewDecisionHelp = document.getElementById('reviewDecisionHelp');
         if (!(applicantRemark instanceof HTMLTextAreaElement)) {
             return;
         }
 
         if (status === 'Needs Correction') {
-            applicantRemark.placeholder = 'Explain clearly what the applicant needs to correct before resubmitting.';
+            applicantRemark.placeholder = 'Tell the applicant what needs to be corrected.';
+            if (applicantRemarkGroup instanceof HTMLElement) {
+                applicantRemarkGroup.hidden = false;
+            }
             if (applicantRemarkHint) {
-                applicantRemarkHint.textContent = 'Required when marking the form as Needs Correction.';
+                applicantRemarkHint.textContent = 'Required. This appears in the applicant portal.';
+            }
+            if (reviewDecisionHelp) {
+                reviewDecisionHelp.textContent = 'Send Back saves automatically after you add a note for the applicant.';
             }
             return;
         }
 
-        applicantRemark.placeholder = 'Optional note for the applicant after approval.';
+        applicantRemark.placeholder = 'Tell the applicant what needs to be corrected.';
+        if (applicantRemarkGroup instanceof HTMLElement) {
+            applicantRemarkGroup.hidden = applicantRemark.value.trim() === '';
+        }
         if (applicantRemarkHint) {
-            applicantRemarkHint.textContent = 'Optional. This note appears in the applicant portal as the reviewer note.';
+            applicantRemarkHint.textContent = 'This appears in the applicant portal.';
+        }
+        if (reviewDecisionHelp) {
+            reviewDecisionHelp.textContent = 'Approve saves automatically. Use Send Back only when the applicant still needs to correct the form.';
         }
     }
 
@@ -550,7 +743,7 @@
         }
         if (submitButton) {
             submitButton.disabled = !isTaskEditable(task);
-            submitButton.hidden = task.code === 'availment_form' && state.availmentPage !== 2;
+            submitButton.hidden = false;
         }
 
         applyFormEditability(task);
@@ -1015,6 +1208,15 @@
 
     function renderBusinessPlanUploadInline(label, fieldKey, metadata, disabled = false) {
         const ownership = buildFieldOwnershipAttributes(fieldKey, disabled);
+        if (isApplicantSignatureField(fieldKey) || isStaffSignatureField(fieldKey)) {
+            const signatureLabel = normalizeSignatureFieldLabel(label);
+            return `${ownership.note}${renderSignaturePadField(fieldKey, metadata, {
+                label: signatureLabel,
+                variant: 'inline',
+                disabled,
+                fallback: '',
+            })}`;
+        }
         const fileName = metadata?.original_name || '';
         const fileUrl = metadata?.file_path ? routeUrl(metadata.file_path) : '';
         const pad = renderSignaturePadField(fieldKey, metadata, {
@@ -1431,20 +1633,9 @@
             variant: 'inline',
             fallback: '',
         });
-        const fileName = metadata?.original_name || '';
-        const fileUrl = metadata?.file_path ? routeUrl(metadata.file_path) : '';
-
         return `
             <div class="buhat-paper__signature-block">
-                ${signaturePad || `
-                    <div class="buhat-paper__signature-upload">
-                        <label class="buhat-paper__upload-btn">
-                            <input type="file" class="upload-input" data-upload-field="${escapeAttribute(uploadField)}" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf">
-                            <span>${fileName ? 'Ilisi ang pirma' : 'Upload pirma'}</span>
-                        </label>
-                        ${fileUrl ? `<a class="upload-link" href="${escapeAttribute(fileUrl)}" target="_blank" rel="noopener">Tan-awa ang na-upload nga file</a>` : ''}
-                    </div>
-                `}
+                ${signaturePad}
                 <input class="buhat-paper__signature-name ${ownership.owner === FIELD_OWNER_STAFF ? 'is-staff-locked' : ''}" type="text" name="${escapeAttribute(nameKey)}" value="${escapeAttribute(nameValue || '')}" ${ownership.attrs} ${ownership.disabled ? 'disabled' : ''}>
                 <div class="buhat-paper__signature-caption">${escapeHtml(caption)}</div>
             </div>
@@ -2062,6 +2253,16 @@
 
     function renderDocumentUpload(label, fieldKey, metadata, disabled = false, spanClass = '') {
         const ownership = buildFieldOwnershipAttributes(fieldKey, disabled);
+        if (isApplicantSignatureField(fieldKey) || isStaffSignatureField(fieldKey)) {
+            const signatureLabel = normalizeSignatureFieldLabel(label);
+            return `
+                <div class="paper-field paper-upload ${escapeAttribute(spanClass)}">
+                    <span class="paper-field__label">${escapeHtml(signatureLabel)}</span>
+                    ${ownership.note}
+                    ${renderSignaturePadField(fieldKey, metadata, { label: signatureLabel, variant: 'inline', disabled, fallback: '' })}
+                </div>
+            `;
+        }
         const fallback = (() => {
             const fileName = metadata?.original_name || '';
             const fileUrl = metadata?.file_path ? routeUrl(metadata.file_path) : '';
@@ -2276,6 +2477,22 @@
 
     function renderUploadField(label, fieldKey, metadata, disabled = false) {
         const ownership = buildFieldOwnershipAttributes(fieldKey, disabled);
+        if (isApplicantSignatureField(fieldKey) || isStaffSignatureField(fieldKey)) {
+            const signatureLabel = normalizeSignatureFieldLabel(label);
+            return `
+                <div class="form-field full upload-field">
+                    <span>${escapeHtml(signatureLabel)}</span>
+                    ${ownership.note}
+                    ${assignedPdoSignatureWarning(fieldKey, metadata)}
+                    ${renderSignaturePadField(fieldKey, metadata, {
+                        label: signatureLabel,
+                        variant: 'inline',
+                        disabled,
+                        fallback: '',
+                    })}
+                </div>
+            `;
+        }
         const fileName = metadata?.original_name || '';
         const fileUrl = metadata?.file_path ? routeUrl(metadata.file_path) : '';
         const uploadedAt = metadata?.uploaded_at ? formatDateTime(metadata.uploaded_at) : '';
@@ -2374,22 +2591,6 @@
     }
 
     function handleRowAction(event) {
-        const pageButton = event.target instanceof Element ? event.target.closest('[data-availment-page]') : null;
-        if (pageButton && state.task?.code === 'availment_form') {
-            event.preventDefault();
-            const nextPage = Number(pageButton.getAttribute('data-availment-page'));
-            if (nextPage === 1 || nextPage === 2) {
-                const payload = gatherFormData();
-                if (payload) {
-                    state.activePayload = payload;
-                }
-                state.availmentPage = nextPage;
-                renderTask();
-                document.querySelector('.post-form-page-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            return;
-        }
-
         const actionButton = event.target instanceof Element ? event.target.closest('[data-row-action]') : null;
         const action = actionButton?.getAttribute('data-row-action');
         if (!action || !state.task) {
@@ -2762,17 +2963,6 @@
             return;
         }
 
-        if (state.task.code === 'availment_form' && state.availmentPage !== 2) {
-            const pageOnePayload = gatherFormData();
-            if (pageOnePayload) {
-                state.activePayload = pageOnePayload;
-            }
-            state.availmentPage = 2;
-            renderTask();
-            document.querySelector('.post-form-page-header')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-        }
-
         const form = gatherFormData();
         if (!form) {
             return;
@@ -2814,45 +3004,37 @@
             return;
         }
 
+        if (state.reviewerMode) {
+            await submitReviewerReview({
+                silent: false,
+                successMessage: 'Review decision saved.',
+            });
+            return;
+        }
+
         const form = gatherFormData();
         if (!form) {
             return;
         }
 
         try {
-            const payload = state.reviewerMode
-                ? await fetchJson('api/post-approval-review/review', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify({
-                        taskId: state.task.id || state.reviewTaskId || 0,
-                        status: document.getElementById('reviewDecisionStatus')?.value || 'Verified',
-                        remarks: document.getElementById('reviewDecisionApplicantRemark')?.value || '',
-                        applicantVisibleRemark: document.getElementById('reviewDecisionApplicantRemark')?.value || '',
-                        staffForm: structuredCloneSafe(form.staffReview || {}),
-                        formPayload: form,
-                    }),
-                })
-                : await fetchJson('api/post-approval/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify({
-                        code: state.task.code,
-                        form,
-                    }),
-                });
+            const payload = await fetchJson('api/post-approval/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    code: state.task.code,
+                    form,
+                }),
+            });
             if (!payload.ok) {
-                throw new Error(payload.message || (state.reviewerMode ? 'Unable to save review.' : 'Unable to submit form.'));
+                throw new Error(payload.message || 'Unable to submit form.');
             }
 
             state.formErrors = {};
-            showToast(state.reviewerMode ? 'Review decision saved.' : 'Application form submitted.', 'success');
+            showToast('Application form submitted.', 'success');
             state.activePayload = null;
             await loadTask();
         } catch (error) {
@@ -2866,6 +3048,84 @@
             }
 
             showToast(error.message || 'Unable to submit this form right now.', 'warning');
+        }
+    }
+
+    async function submitReviewerReview(options = {}) {
+        if (!state.reviewerMode || !state.task) {
+            return false;
+        }
+
+        if (state.reviewSaveInFlight) {
+            state.reviewSaveQueued = true;
+            return false;
+        }
+
+        const form = gatherFormData();
+        if (!form) {
+            return false;
+        }
+
+        const status = document.getElementById('reviewDecisionStatus')?.value || 'Verified';
+        const remark = document.getElementById('reviewDecisionApplicantRemark')?.value || '';
+        if (status === 'Needs Correction' && String(remark).trim() === '') {
+            if (!options.silent) {
+                showToast('Add a note first before sending this form back.', 'warning');
+            }
+            return false;
+        }
+
+        state.reviewSaveInFlight = true;
+
+        try {
+            const payload = await fetchJson('api/post-approval-review/review', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    taskId: state.task.id || state.reviewTaskId || 0,
+                    status,
+                    remarks: remark,
+                    applicantVisibleRemark: remark,
+                    staffForm: structuredCloneSafe(form.staffReview || {}),
+                    formPayload: form,
+                }),
+            });
+            if (!payload.ok) {
+                throw new Error(payload.message || 'Unable to save review.');
+            }
+
+            state.formErrors = {};
+            if (!options.silent) {
+                showToast(options.successMessage || 'Review decision saved.', 'success');
+            }
+            state.activePayload = null;
+            await loadTask();
+            return true;
+        } catch (error) {
+            const errors = error?.payload?.errors;
+            if (errors && typeof errors === 'object') {
+                state.formErrors = errors;
+                renderTask();
+                if (!options.silent) {
+                    document.getElementById('postApprovalFormErrorSummary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    showToast('Review could not be saved yet. Complete the required fields listed above.', 'warning');
+                }
+                return false;
+            }
+
+            if (!options.silent) {
+                showToast(error.message || 'Unable to save this review right now.', 'warning');
+            }
+            return false;
+        } finally {
+            state.reviewSaveInFlight = false;
+            if (state.reviewSaveQueued) {
+                state.reviewSaveQueued = false;
+                queueReviewerAutoSave({ immediate: true, silent: true });
+            }
         }
     }
 
@@ -3120,7 +3380,7 @@
             if (!isTaskEditable(task)) {
                 return 'This reviewed form is currently read-only.';
             }
-            return 'Review the applicant-filled paper form below, update any corrections, complete the PDO-only signature areas, then choose the final decision.';
+            return 'Review the applicant-filled paper form below, complete the PDO/Admin signature areas, and choose Approve or Send Back. Reviewer changes save automatically.';
         }
 
         if (task.reviewerRemarks) {
@@ -4795,6 +5055,21 @@
         ].includes(key);
     }
 
+    function normalizeSignatureFieldLabel(label) {
+        return String(label || 'Signature').trim()
+            .replace(/i-upload ang pirma sa\s*/i, 'Pirma sa ')
+            .replace(/upload sa pirma sa\s*/i, 'Pirma sa ')
+            .replace(/participant signature upload/ig, 'Participant signature')
+            .replace(/beneficiary signature upload/ig, 'Beneficiary signature')
+            .replace(/applicant signature upload/ig, 'Applicant signature')
+            .replace(/co-maker signature upload/ig, 'Co-maker signature')
+            .replace(/validator signature upload/ig, 'Validator signature')
+            .replace(/reviewer signature upload/ig, 'Reviewer signature')
+            .replace(/direct worker signature upload/ig, 'Direct Worker signature')
+            .replace(/certifying officer signature upload/ig, 'Certifying Officer signature')
+            .replace(/signature upload/ig, 'Signature');
+    }
+
     function canUseSignaturePad(fieldKey, ownership) {
         if (ownership.disabled) {
             return false;
@@ -5216,26 +5491,13 @@
         const nameOwnership = buildFieldOwnershipAttributes(nameKey, disabled);
         const uploadOwnership = buildFieldOwnershipAttributes(uploadField, disabled);
         const titleOwnership = titleKey ? buildFieldOwnershipAttributes(titleKey, disabled) : null;
-        const fileName = metadata?.original_name || '';
-        const fileUrl = metadata?.file_path ? routeUrl(metadata.file_path) : '';
-        const uploadedAt = metadata?.uploaded_at ? formatDateTime(metadata.uploaded_at) : '';
-
         return `
             <div class="sig-box ${disabled ? 'is-staff-only' : ''}">
                 ${titleKey ? `<input type="text" name="${escapeAttribute(titleKey)}" class="sig-title ${titleOwnership?.owner === FIELD_OWNER_STAFF ? 'is-staff-locked' : ''}" value="${escapeAttribute(titleValue || '')}" ${titleOwnership?.attrs || ''} ${titleOwnership?.disabled ? 'disabled' : ''}>${titleOwnership?.note || ''}` : ''}
                 ${renderSignaturePadField(uploadField, metadata, {
                     label: labelText,
                     disabled,
-                    fallback: `
-                        <div class="signature-upload-inline ${uploadOwnership.disabled ? 'is-disabled' : ''}">
-                            <label class="signature-launch signature-launch--upload ${uploadOwnership.disabled ? 'is-disabled' : ''}">
-                                <input type="file" class="upload-input" data-upload-field="${escapeAttribute(uploadField)}" ${uploadOwnership.attrs} accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf" ${uploadOwnership.disabled ? 'disabled' : ''}>
-                                ${fileName ? 'Ilisi ang pirma' : 'Upload pirma'}
-                            </label>
-                            ${fileUrl ? `<a class="signature-file-link" href="${escapeAttribute(fileUrl)}" target="_blank" rel="noopener">Tan-awa ang uploaded nga pirma</a>` : ''}
-                            ${uploadedAt ? `<span class="signature-status-text">Uploaded ${escapeHtml(uploadedAt)}</span>` : ''}
-                        </div>
-                    `,
+                    fallback: '',
                 })}
                 ${uploadOwnership.note}
                 <input type="text" name="${escapeAttribute(nameKey)}" class="sig-name ${nameOwnership.owner === FIELD_OWNER_STAFF ? 'is-staff-locked' : ''}" value="${escapeAttribute(nameValue || '')}" ${nameOwnership.attrs} ${nameOwnership.disabled ? 'disabled' : ''}>
@@ -5477,6 +5739,22 @@
 
     function renderUploadField(label, fieldKey, metadata, disabled = false) {
         const ownership = buildFieldOwnershipAttributes(fieldKey, disabled);
+        if (isApplicantSignatureField(fieldKey) || isStaffSignatureField(fieldKey)) {
+            const signatureLabel = normalizeSignatureFieldLabel(label);
+            return `
+                <div class="form-field full upload-field">
+                    <span>${escapeHtml(signatureLabel)}</span>
+                    ${ownership.note}
+                    ${assignedPdoSignatureWarning(fieldKey, metadata)}
+                    ${renderSignaturePadField(fieldKey, metadata, {
+                        label: signatureLabel,
+                        variant: 'inline',
+                        disabled,
+                        fallback: '',
+                    })}
+                </div>
+            `;
+        }
         const fileName = metadata?.original_name || '';
         const fileUrl = metadata?.file_path ? routeUrl(metadata.file_path) : '';
         const uploadedAt = metadata?.uploaded_at ? formatDateTime(metadata.uploaded_at) : '';
@@ -5570,7 +5848,7 @@
         const currentPage = state.availmentPage === 2 ? 2 : 1;
         return `
             ${renderAvailmentPageStepper(currentPage)}
-            <div class="availment-page-panel ${currentPage === 1 ? 'is-active' : ''}" ${currentPage === 1 ? '' : 'hidden'} data-availment-panel="1">
+            <div class="availment-page-panel is-active" data-availment-panel="1">
                 <div class="paper-document paper-document--availment">
                     <section class="paper-sheet paper-sheet--govform paper-sheet--availment-source">
                         ${renderAvailmentSourceHeader(true)}
@@ -5619,9 +5897,8 @@
                         ${renderAvailmentSourceFooter()}
                     </section>
                 </div>
-                ${renderAvailmentPageControls(currentPage)}
             </div>
-            <div class="availment-page-panel ${currentPage === 2 ? 'is-active' : ''}" ${currentPage === 2 ? '' : 'hidden'} data-availment-panel="2">
+            <div class="availment-page-panel is-active" data-availment-panel="2">
                 <div class="paper-document paper-document--availment">
                     <section class="paper-sheet paper-sheet--govform paper-sheet--availment-source">
                         ${renderAvailmentSourceHeader(false)}
@@ -5704,7 +5981,6 @@
                         ${renderAvailmentSourceFooter()}
                     </section>
                 </div>
-                ${renderAvailmentPageControls(currentPage)}
             </div>
             ${renderApplicantReviewerNote(state.task?.reviewerRemarks)}
         `;
@@ -6124,19 +6400,7 @@
     }
 
     function renderAvailmentPageControls(currentPage) {
-        if (currentPage === 1) {
-            return `
-                <div class="availment-page-controls">
-                    <button type="button" class="btn-primary" data-availment-page="2">Next page</button>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="availment-page-controls">
-                <button type="button" class="btn-outline" data-availment-page="1">Back to page 1</button>
-            </div>
-        `;
+        return '';
     }
 
     function renderBusinessPlanMobile(payload) {
@@ -7190,7 +7454,7 @@
         }
         if (submitButton) {
             submitButton.disabled = !isTaskEditable(task);
-            submitButton.hidden = !state.reviewerMode && task.code === 'availment_form' && state.availmentPage !== 2;
+            submitButton.hidden = false;
         }
 
         applyFormEditability(task);

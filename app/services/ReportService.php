@@ -447,36 +447,17 @@ class ReportService
         }
 
         if ($period === 'quarterly') {
-            $quarters = array_values(array_filter(
-                (array) ($periods['quarters'] ?? []),
-                static fn(array $quarter): bool => (int) ($quarter['year'] ?? 0) === $year
-            ));
-            if ($quarters === []) {
-                $quarters = (array) ($periods['quarters'] ?? []);
+            $quarter = (int) ($filters['quarter'] ?? 1);
+            if ($quarter < 1 || $quarter > 4) {
+                $quarter = 1;
             }
-            usort($quarters, static fn(array $left, array $right): int => [(int) ($left['year'] ?? 0), (int) ($left['quarter'] ?? 0)] <=> [(int) ($right['year'] ?? 0), (int) ($right['quarter'] ?? 0)]);
-
-            $selectedQuarterKey = sprintf('%04d-Q%d', (int) ($filters['year'] ?? $year), (int) ($filters['quarter'] ?? 0));
-            $validQuarterKeys = array_map(static fn(array $quarter): string => (string) ($quarter['key'] ?? ''), $quarters);
-            if ($quarters !== [] && !in_array($selectedQuarterKey, $validQuarterKeys, true)) {
-                $filters['year'] = (int) ($quarters[0]['year'] ?? $year);
-                $filters['quarter'] = (int) ($quarters[0]['quarter'] ?? 1);
-            }
-
-            $selectedQuarterKey = sprintf('%04d-Q%d', (int) ($filters['year'] ?? $year), (int) ($filters['quarter'] ?? 1));
-            foreach ($quarters as $quarterRow) {
-                if ((string) ($quarterRow['key'] ?? '') !== $selectedQuarterKey) {
-                    continue;
-                }
-                $startMonth = (string) ($quarterRow['startMonth'] ?? '');
-                $endMonth = (string) ($quarterRow['endMonth'] ?? '');
-                if (preg_match('/^\d{4}-\d{2}$/', $startMonth) && preg_match('/^\d{4}-\d{2}$/', $endMonth)) {
-                    $filters['effectiveFrom'] = $startMonth . '-01';
-                    $filters['effectiveTo'] = $this->monthEndDate($endMonth);
-                    $filters['periodLabel'] = (string) ($quarterRow['label'] ?? $this->formatRepaymentPeriodLabel($selectedQuarterKey, 'quarterly'));
-                    return $filters;
-                }
-            }
+            $filters['year'] = $year;
+            $filters['quarter'] = $quarter;
+            [$startMonth, $endMonth] = $this->calendarQuarterMonthRange($year, $quarter);
+            $filters['effectiveFrom'] = $startMonth . '-01';
+            $filters['effectiveTo'] = $this->monthEndDate($endMonth);
+            $filters['periodLabel'] = sprintf('Q%d %d (%s)', $quarter, $year, $this->formatRepaymentWindowLabel($startMonth, $endMonth));
+            return $filters;
         }
 
         if ($period === 'yearly') {
@@ -662,12 +643,15 @@ class ReportService
         $repaymentSchedules = $this->fetchRepaymentSchedules($beneficiaryIds);
         $obligations = $this->buildRepaymentObligations($records, $repaymentRows, $repaymentSchedules);
         $filteredObligations = $this->applyRepaymentFilters($obligations, $filters);
+        $breakdownObligations = (string) ($filters['period'] ?? '') === 'quarterly'
+            ? $obligations
+            : $filteredObligations;
 
         return [
             'obligations' => $filteredObligations,
             'summary' => $this->summarizeRepaymentObligations($filteredObligations, $filters, $useFixedRepaymentTarget),
             'periodMetrics' => $this->summarizeRepaymentObligations($filteredObligations, $filters, $useFixedRepaymentTarget),
-            'breakdown' => $this->buildRepaymentBreakdown($filteredObligations, $filters, $useFixedRepaymentTarget),
+            'breakdown' => $this->buildRepaymentBreakdown($breakdownObligations, $filters, $useFixedRepaymentTarget),
             'monthlyBreakdown' => $this->buildRepaymentMonthlyBreakdown($filteredObligations, $filters, $useFixedRepaymentTarget),
         ];
     }
@@ -1116,7 +1100,7 @@ class ReportService
                     'dueDate' => $dueDate,
                     'installmentNumber' => $installmentNumber,
                     'repaymentYearNumber' => (int) ceil($installmentNumber / 12),
-                    'repaymentQuarter' => (int) floor(((($installmentNumber - 1) % 12) / 3)) + 1,
+                    'repaymentQuarter' => (int) ceil(((int) substr($dueMonth, 5, 2)) / 3),
                     'expectedAmount' => (float) ($schedule['expectedAmount'] ?? self::MONTHLY_REPAYMENT_AMOUNT),
                     'barangay' => (string) ($record['barangay'] ?? 'Unassigned'),
                     'assignedPdo' => (string) ($record['assignedPdo'] ?? 'Unassigned'),
@@ -1232,8 +1216,15 @@ class ReportService
             : $this->seedRepaymentBreakdownPeriods($filters + ['period' => $breakdownPeriod]);
         $fixedTargetMonthsByPeriod = [];
 
+        $selectedYear = (int) ($filters['year'] ?? date('Y'));
         foreach ($obligations as $obligation) {
-            if ($this->repaymentTargetInReportRange($obligation, $filters)) {
+            $dueMonth = (string) ($obligation['dueMonth'] ?? '');
+            $dueYear = (int) substr($dueMonth, 0, 4);
+            $inBreakdownScope = $period === 'quarterly'
+                ? ($dueYear === $selectedYear)
+                : $this->repaymentTargetInReportRange($obligation, $filters);
+
+            if ($inBreakdownScope) {
                 $periodKey = $period === 'yearly'
                     ? 'repayment-year-' . (string) ($filters['repaymentYear'] ?? ($obligation['repaymentYearNumber'] ?? 1))
                     : $this->repaymentBreakdownKey($obligation, $breakdownPeriod);
@@ -1249,18 +1240,15 @@ class ReportService
                         ];
                     }
 
-                    if (!$useObligationTargetAmounts) {
-                        $dueMonth = (string) ($obligation['dueMonth'] ?? '');
-                        if (preg_match('/^\d{4}-\d{2}$/', $dueMonth)) {
-                            $fixedTargetMonthsByPeriod[$periodKey][$dueMonth] = true;
-                        }
-                    } else {
-                        $periods[$periodKey]['targetAmount'] += (float) ($obligation['expectedAmount'] ?? self::MONTHLY_REPAYMENT_AMOUNT);
-                    }
+                    $periods[$periodKey]['targetAmount'] += (float) ($obligation['expectedAmount'] ?? self::MONTHLY_REPAYMENT_AMOUNT);
                 }
             }
 
-            foreach ($this->verifiedPaymentsForReport($obligation, $filters) as $payment) {
+            $payments = $period === 'quarterly'
+                ? ($dueYear === $selectedYear ? array_values((array) ($obligation['verifiedPayments'] ?? [])) : [])
+                : $this->verifiedPaymentsForReport($obligation, $filters);
+
+            foreach ($payments as $payment) {
                 $paymentKey = $this->repaymentActualUsesPaymentDate($filters)
                     ? $this->repaymentBreakdownKeyForDate((string) ($payment['paymentDate'] ?? ''), $breakdownPeriod, $filters)
                     : $this->repaymentBreakdownKey($obligation, $breakdownPeriod);
@@ -1344,30 +1332,31 @@ class ReportService
         $monthValues = array_keys($months);
         sort($monthValues, SORT_STRING);
 
-        $quarters = [];
         $years = [];
-        foreach ($monthValues as $index => $month) {
-            $year = substr($month, 0, 4);
-            $years[$year] = true;
-            $repaymentQuarter = (int) floor((($index % 12) / 3)) + 1;
-            $quarterStartIndex = (int) (floor($index / 3) * 3);
-            $startMonth = $monthValues[$quarterStartIndex] ?? $month;
-            $endMonth = $monthValues[min($quarterStartIndex + 2, count($monthValues) - 1)] ?? $month;
-            $quarterYear = (int) substr($startMonth, 0, 4);
-            $quarterKey = sprintf('%04d-Q%d', $quarterYear, $repaymentQuarter);
-            if (!isset($quarters[$quarterKey])) {
+        foreach ($monthValues as $m) {
+            $y = (int) substr((string) $m, 0, 4);
+            if ($y > 0) {
+                $years[$y] = true;
+            }
+        }
+        if ($years === []) {
+            $years[(int) date('Y')] = true;
+        }
+        ksort($years);
+
+        $reportYears = $this->reportYearOptions(array_keys($years));
+        $quarters = [];
+        foreach ($reportYears as $y) {
+            for ($q = 1; $q <= 4; $q++) {
+                [$startMonth, $endMonth] = $this->calendarQuarterMonthRange((int) $y, $q);
+                $quarterKey = sprintf('%04d-Q%d', $y, $q);
                 $quarters[$quarterKey] = [
-                    'year' => $quarterYear,
-                    'quarter' => $repaymentQuarter,
+                    'year' => (int) $y,
+                    'quarter' => $q,
                     'key' => $quarterKey,
                     'startMonth' => $startMonth,
                     'endMonth' => $endMonth,
-                    'label' => sprintf(
-                        'Q%d %d (%s)',
-                        $repaymentQuarter,
-                        $quarterYear,
-                        $this->formatRepaymentWindowLabel($startMonth, $endMonth)
-                    ),
+                    'label' => sprintf('Q%d (%s)', $q, $this->formatRepaymentWindowLabel($startMonth, $endMonth)),
                 ];
             }
         }
@@ -1375,7 +1364,7 @@ class ReportService
         return [
             'months' => $monthValues,
             'quarters' => array_values($quarters),
-            'years' => array_map('intval', array_keys($years)),
+            'years' => $reportYears,
         ];
     }
 
@@ -1448,11 +1437,7 @@ class ReportService
 
     private function repaymentTargetUsesObligationAmounts(array $filters, bool $useFixedRepaymentTarget): bool
     {
-        if (!$useFixedRepaymentTarget) {
-            return true;
-        }
-
-        return in_array((string) ($filters['period'] ?? ''), ['daily', 'weekly'], true);
+        return true;
     }
 
     private function summarizeRepaymentPaymentsByBeneficiary(array $obligations, array $filters): array
@@ -1734,19 +1719,17 @@ class ReportService
         }
 
         if ($period === 'quarterly') {
-            $quarter = (int) ($filters['quarter'] ?? 1);
-            if ($quarter < 1 || $quarter > 4) {
-                $quarter = 1;
+            for ($q = 1; $q <= 4; $q++) {
+                $key = sprintf('%04d-Q%d', $year, $q);
+                $periods[$key] = [
+                    'period' => $key,
+                    'label' => $this->formatRepaymentPeriodLabel($key, 'quarterly'),
+                    'targetAmount' => 0.0,
+                    'actualCollectedAmount' => 0.0,
+                    'gapAmount' => 0.0,
+                    'roiPercent' => 0.0,
+                ];
             }
-            $key = sprintf('%04d-Q%d', $year, $quarter);
-            $periods[$key] = [
-                'period' => $key,
-                'label' => $this->formatRepaymentPeriodLabel($key, 'quarterly'),
-                'targetAmount' => 0.0,
-                'actualCollectedAmount' => 0.0,
-                'gapAmount' => 0.0,
-                'roiPercent' => 0.0,
-            ];
             return $periods;
         }
 
@@ -1789,10 +1772,9 @@ class ReportService
         }
 
         if ($period === 'quarterly') {
-            $installmentNumber = max((int) ($obligation['installmentNumber'] ?? 1), 1);
-            $quarterNumber = (int) floor((($installmentNumber - 1) % 12) / 3) + 1;
-            $quarterStartMonth = $this->shiftMonth($dueMonth, -((($installmentNumber - 1) % 3))) ?? $dueMonth;
-            $dueYear = (int) substr($quarterStartMonth, 0, 4);
+            $monthNum = (int) substr($dueMonth, 5, 2);
+            $dueYear = (int) substr($dueMonth, 0, 4);
+            $quarterNumber = (int) ceil($monthNum / 3);
             if ($quarterNumber < 1 || $quarterNumber > 4) {
                 return '';
             }
@@ -2257,25 +2239,6 @@ class ReportService
         }
     }
 
-    private function repaymentCycleMonthRange(int $year, int $repaymentYear = 1): array
-    {
-        $cycleStartYear = $year + max($repaymentYear - 1, 0);
-        $startMonth = sprintf('%04d-05', $cycleStartYear);
-        $endMonth = (string) ($this->shiftMonth($startMonth, 11) ?? sprintf('%04d-04', $cycleStartYear + 1));
-
-        return [$startMonth, $endMonth];
-    }
-
-    private function repaymentQuarterMonthRange(int $year, int $repaymentYear, int $quarter): array
-    {
-        [$cycleStartMonth, ] = $this->repaymentCycleMonthRange($year, $repaymentYear);
-        $quarterIndex = min(max($quarter, 1), 4) - 1;
-        $startMonth = (string) ($this->shiftMonth($cycleStartMonth, $quarterIndex * 3) ?? $cycleStartMonth);
-        $endMonth = (string) ($this->shiftMonth($startMonth, 2) ?? $startMonth);
-
-        return [$startMonth, $endMonth];
-    }
-
     private function calendarQuarterMonthRange(int $year, int $quarter): array
     {
         $quarterIndex = min(max($quarter, 1), 4) - 1;
@@ -2357,6 +2320,9 @@ class ReportService
         try {
             $start = new \DateTimeImmutable($startMonth . '-01');
             $end = new \DateTimeImmutable($endMonth . '-01');
+            if ($start->format('Y') === $end->format('Y')) {
+                return sprintf('%s - %s', $start->format('M'), $end->format('M'));
+            }
             return sprintf('%s - %s', $start->format('M Y'), $end->format('M Y'));
         } catch (\Throwable $exception) {
             return $startMonth . ' - ' . $endMonth;

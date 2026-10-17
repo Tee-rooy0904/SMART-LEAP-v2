@@ -13,6 +13,9 @@
     meta: { roles: [], statuses: [], districts: [], barangays: [], trainingGroups: [] },
     editingId: null,
     signatureBusy: false,
+    provisionedCredentials: null,
+    passwordVisible: false,
+    formDraft: null,
   };
 
   const baseUrl = (window.SMARTLEAP_BASE_URL || '').replace(/\/+$/, '');
@@ -140,14 +143,8 @@
   };
 
   const roleDescription = (role) => {
-    if (role === 'pdo') {
-      return 'Project Development Officers can be assigned to districts for applicant, beneficiary, training, and repayment operations.';
-    }
-    if (role === 'social_worker') {
-      return '';
-    }
     if (role === 'admin') {
-      return 'Administrators manage system-wide access, oversight, and configuration.';
+      return '';
     }
     return '';
   };
@@ -172,12 +169,85 @@
     return [firstName, middleName, lastName].map((value) => String(value || '').trim()).filter(Boolean).join(' ').trim();
   };
 
+  const defaultPositionTitle = (role) => {
+    if (role === 'social_worker') return 'Social Worker';
+    if (role === 'pdo') return 'Project Officer';
+    return '';
+  };
+
+  const fieldLabel = (text, required = false) => `${escapeHtml(text)}${required ? ' <em class="team-required-mark">*</em>' : ''}`;
+
+  const helperMarkup = () => '';
+
+  const createTemporaryPassword = (length = 12) => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+    const cryptoSource = window.crypto || window.msCrypto;
+    if (!cryptoSource?.getRandomValues) {
+      return `Smart${Math.random().toString(36).slice(2, 10)}!`;
+    }
+
+    const values = new Uint32Array(length);
+    cryptoSource.getRandomValues(values);
+    return Array.from(values, (value) => alphabet[value % alphabet.length]).join('');
+  };
+
+  const copyToClipboard = async (value) => {
+    const text = String(value || '').trim();
+    if (!text) return false;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const photoMarkup = (staff = null) => {
     const initials = composeFullName(deriveNameParts(staff)).split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('') || 'SL';
     if (staff?.photo) {
       return `<div class="team-profile-photo__frame"><img src="${escapeHtml(staff.photo)}" alt="${escapeHtml(staff.name || 'Staff profile photo')}"></div>`;
     }
     return `<div class="team-profile-photo__frame team-profile-photo__frame--placeholder" aria-hidden="true">${escapeHtml(initials)}</div>`;
+  };
+
+  const buildFormDraft = (staff = null) => {
+    const nameParts = deriveNameParts(staff);
+    return {
+      staffId: staff?.id || '',
+      firstName: nameParts.firstName || '',
+      middleName: nameParts.middleName || '',
+      lastName: nameParts.lastName || '',
+      email: String(staff?.email || '').trim(),
+      contactNumber: String(staff?.contactNumber || '').trim(),
+      positionTitle: String(staff?.positionTitle || '').trim(),
+      role: staff?.role || 'pdo',
+      status: staff?.status || 'active',
+      districtCode: String(staff?.assignedDistricts?.[0]?.code || ''),
+      password: '',
+    };
+  };
+
+  const readCurrentFormDraft = () => {
+    const form = document.getElementById('team-form');
+    if (!(form instanceof HTMLFormElement)) {
+      return state.formDraft;
+    }
+
+    const formData = new FormData(form);
+    return {
+      staffId: String(formData.get('staffId') || ''),
+      firstName: String(formData.get('firstName') || '').trim(),
+      middleName: String(formData.get('middleName') || '').trim(),
+      lastName: String(formData.get('lastName') || '').trim(),
+      email: String(formData.get('email') || '').trim(),
+      contactNumber: String(formData.get('contactNumber') || '').trim(),
+      positionTitle: String(formData.get('positionTitle') || '').trim(),
+      role: String(formData.get('role') || 'pdo').trim(),
+      status: String(formData.get('status') || 'active').trim(),
+      districtCode: String(formData.get('districtCode') || '').trim(),
+      password: String(formData.get('password') || ''),
+    };
   };
 
   const updateAssignmentSummary = () => {
@@ -250,6 +320,11 @@
     const root = qs('#team-filters');
     if (!root) return;
 
+    const activeEl = document.activeElement;
+    const isSearchFocused = activeEl && activeEl.id === 'team-filter-search';
+    const selectionStart = isSearchFocused ? activeEl.selectionStart : null;
+    const selectionEnd = isSearchFocused ? activeEl.selectionEnd : null;
+
     const roleOptions = (state.meta.roles || []).map((role) => `
       <option value="${role.value}" ${state.filters.role === role.value ? 'selected' : ''}>${role.label}</option>
     `).join('');
@@ -264,8 +339,11 @@
       <div class="filter-group filter-group--search">
         <span class="filter-label">Search</span>
         <div class="filter-search applications-search">
-          <i class="fas fa-search"></i>
-          <input type="search" id="team-filter-search" placeholder="Search staff by name or email" value="${escapeHtml(state.filters.search)}">
+          <i class="fas fa-search filter-search-icon" aria-hidden="true"></i>
+          <input type="search" id="team-filter-search" placeholder="Search staff by name or email" value="${escapeHtml(state.filters.search)}" autocomplete="off">
+          <button type="button" class="team-search-clear${state.filters.search ? ' is-visible' : ''}" id="team-filter-search-clear" aria-label="Clear search" title="Clear search">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
         </div>
       </div>
       <div class="filter-group">
@@ -290,6 +368,16 @@
         </select>
       </div>
     `);
+
+    if (isSearchFocused) {
+      const searchInput = qs('#team-filter-search');
+      if (searchInput) {
+        searchInput.focus();
+        if (selectionStart !== null && selectionEnd !== null) {
+          try { searchInput.setSelectionRange(selectionStart, selectionEnd); } catch (_) {}
+        }
+      }
+    }
   };
 
   const renderTable = () => {
@@ -343,25 +431,57 @@
     if (!root) return;
 
     const editing = state.staff.find((item) => item.id === state.editingId) || null;
-    const nameParts = deriveNameParts(editing);
-    const roleValue = editing ? editing.role : 'pdo';
-    const statusValue = editing ? editing.status : 'active';
-    const selectedDistrictCode = String(editing?.assignedDistricts?.[0]?.code || '');
+    const draft = state.formDraft || buildFormDraft(editing);
+    const nameParts = deriveNameParts(draft);
+    const roleValue = draft.role || (editing ? editing.role : 'pdo');
+    const statusValue = draft.status || (editing ? editing.status : 'active');
+    const selectedDistrictCode = String(draft.districtCode || editing?.assignedDistricts?.[0]?.code || '');
     const selectedRoleLabel = getRoleLabel(roleValue);
     const isPdo = isProjectDevelopmentOfficerRole(roleValue, selectedRoleLabel);
     const modalTitle = editing ? 'Edit Staff Account' : 'Add Staff Account';
     const assignedCount = selectedDistrictCode ? 1 : 0;
+    const roleDescriptionCopy = roleDescription(roleValue);
+    const positionPlaceholder = defaultPositionTitle(roleValue) || selectedRoleLabel;
+    const positionValue = escapeHtml(draft.positionTitle || editing?.positionTitle || positionPlaceholder);
+    const credentialCard = state.provisionedCredentials ? `
+      <section class="team-form-panel team-credentials-card">
+        <div class="team-form-panel__header">
+          <div>
+            <span class="team-form-panel__eyebrow">Staff Login Ready</span>
+            <h5>Share these credentials securely</h5>
+          </div>
+          <span class="team-form-panel__status">Email-based sign in</span>
+        </div>
+        <div class="team-credentials-grid">
+          <label>
+            <span>${fieldLabel('Login email')}</span>
+            <div class="team-credential-field">
+              <input type="text" value="${escapeHtml(state.provisionedCredentials.email || '')}" readonly>
+              <button type="button" class="team-action-button team-action-button--soft" id="team-credential-copy-email">Copy</button>
+            </div>
+          </label>
+          <label>
+            <span>${fieldLabel('Temporary password')}</span>
+            <div class="team-credential-field">
+              <input type="text" value="${escapeHtml(state.provisionedCredentials.temporaryPassword || '')}" readonly>
+              <button type="button" class="team-action-button team-action-button--soft" id="team-credential-copy-password">Copy</button>
+            </div>
+          </label>
+        </div>
+      </section>
+    ` : '';
     setHTML(root, `
       <div class="team-form-header">
-        <div>
+        <div class="team-form-header__copy">
           <span class="team-form-kicker">Staff Editor</span>
-          <h4>${editing ? escapeHtml(editing.name) : 'Create a new staff profile'}</h4>
+          <h4 id="team-modal-title">${escapeHtml(modalTitle)}</h4>
         </div>
         <button class="team-action-button team-action-button--soft" id="team-cancel-edit" type="button" aria-label="Close add staff modal">Close</button>
       </div>
       <form id="team-form" class="team-form-layout team-form-layout--stacked">
-        <input type="hidden" name="staffId" value="${editing ? editing.id : ''}">
+        <input type="hidden" name="staffId" value="${escapeHtml(String(draft.staffId || (editing ? editing.id : '')))}">
         <div class="team-form-main">
+          ${credentialCard}
           <section class="team-form-panel team-form-panel--hero">
             <div class="team-form-hero">
               <div class="team-profile-photo">
@@ -388,31 +508,38 @@
                 <span class="team-form-panel__eyebrow">Identity</span>
                 <h5>Staff profile</h5>
               </div>
+              <span class="team-form-panel__status">Required fields</span>
             </div>
             <div class="team-form-grid">
               <label>
-                <span>First name</span>
-                <input type="text" name="firstName" value="${escapeHtml(nameParts.firstName)}" required>
+                <span>${fieldLabel('First name', true)}</span>
+                <input type="text" name="firstName" value="${escapeHtml(nameParts.firstName)}" required autocomplete="given-name">
+                ${helperMarkup()}
               </label>
               <label>
-                <span>Middle name</span>
-                <input type="text" name="middleName" value="${escapeHtml(nameParts.middleName)}">
+                <span>${fieldLabel('Middle name')}</span>
+                <input type="text" name="middleName" value="${escapeHtml(nameParts.middleName)}" autocomplete="additional-name">
+                ${helperMarkup()}
               </label>
               <label>
-                <span>Last name</span>
-                <input type="text" name="lastName" value="${escapeHtml(nameParts.lastName)}" required>
+                <span>${fieldLabel('Last name', true)}</span>
+                <input type="text" name="lastName" value="${escapeHtml(nameParts.lastName)}" required autocomplete="family-name">
+                ${helperMarkup()}
               </label>
               <label>
-                <span>Email</span>
-                <input type="email" name="email" value="${editing ? escapeHtml(editing.email) : ''}" required>
+                <span>${fieldLabel('Email address', true)}</span>
+                <input type="email" name="email" value="${escapeHtml(draft.email || editing?.email || '')}" required autocomplete="email" placeholder="staff@email.com">
+                ${helperMarkup()}
               </label>
               <label>
-                <span>Contact Number</span>
-                <input type="text" name="contactNumber" value="${editing?.contactNumber ? escapeHtml(editing.contactNumber) : ''}">
+                <span>${fieldLabel('Contact number', true)}</span>
+                <input type="text" name="contactNumber" value="${escapeHtml(draft.contactNumber || editing?.contactNumber || '')}" required inputmode="tel" autocomplete="tel">
+                ${helperMarkup()}
               </label>
               <label>
-                <span>Position</span>
-                <input type="text" name="positionTitle" value="${editing?.positionTitle ? escapeHtml(editing.positionTitle) : escapeHtml(selectedRoleLabel)}">
+                <span>${fieldLabel('Position title', true)}</span>
+                <input type="text" name="positionTitle" value="${positionValue}" required placeholder="${escapeHtml(positionPlaceholder)}">
+                ${helperMarkup()}
               </label>
             </div>
           </section>
@@ -426,20 +553,29 @@
             </div>
             <div class="team-form-grid">
               <label>
-                <span>Role</span>
+                <span>${fieldLabel('Role', true)}</span>
                 <select name="role" id="team-role-select">
                   ${(state.meta.roles || []).map((role) => `<option value="${role.value}" ${role.value === roleValue ? 'selected' : ''}>${role.label}</option>`).join('')}
                 </select>
+                ${helperMarkup()}
               </label>
               <label>
-                <span>Status</span>
+                <span>${fieldLabel('Status', true)}</span>
                 <select name="status">
                   ${(state.meta.statuses || []).map((status) => `<option value="${status.value}" ${status.value === statusValue ? 'selected' : ''}>${statusLabel(status.value || status.label)}</option>`).join('')}
                 </select>
+                ${helperMarkup()}
               </label>
               <label class="team-form-grid__wide">
-                <span>${editing ? 'Password Reset' : 'Password'}</span>
-                <input type="password" name="password" ${editing ? '' : 'required'}>
+                <span>${fieldLabel(editing ? 'Temporary password reset' : 'Temporary password')}</span>
+                <div class="team-password-field">
+                  <input type="${state.passwordVisible ? 'text' : 'password'}" name="password" value="${escapeHtml(draft.password || '')}" minlength="8" autocomplete="new-password" placeholder="${editing ? 'Leave blank to keep the current password' : 'Leave blank to auto-generate one'}" spellcheck="false">
+                  <div class="team-password-field__actions">
+                    <button type="button" class="team-action-button team-action-button--soft" id="team-password-generate">Generate</button>
+                    <button type="button" class="team-action-button team-action-button--soft" id="team-password-toggle">${state.passwordVisible ? 'Hide' : 'Show'}</button>
+                  </div>
+                </div>
+                <small class="team-field-helper">Staff signs in using the email above and this temporary password. ${editing ? 'Enter a new one only when resetting access.' : 'If you leave this blank, SMART LEAP will generate one for you.'}</small>
               </label>
             </div>
           </section>
@@ -454,7 +590,7 @@
             </div>
             <div class="team-assignment-toolbar">
               <label class="team-assignment-search">
-                <span>Search district</span>
+                <span>${fieldLabel('Search district')}</span>
                 <input type="search" id="team-assignment-search" placeholder="Type a district name">
               </label>
               <button type="button" class="team-action-button team-action-button--soft" id="team-assignment-clear">Clear district</button>
@@ -476,7 +612,7 @@
 
           <div class="team-form-actions">
             <button type="button" class="team-action-button team-action-button--soft" id="team-form-cancel">Cancel</button>
-            <button type="submit" class="team-action-button team-action-button--primary">${editing ? 'Save Changes' : 'Create Account'}</button>
+            <button type="submit" class="team-action-button team-action-button--primary">${editing ? 'Save Changes' : 'Create Staff Account'}</button>
           </div>
         </div>
       </form>
@@ -503,6 +639,7 @@
     }
     if (!response.ok) {
       showNotice(response.message || 'Unable to load staff accounts.', 'danger');
+      renderFilters();
       return;
     }
 
@@ -551,6 +688,11 @@
     }
 
     const isEditing = Boolean(payload.staffId);
+    const validationMessage = validateTeamPayload(payload, isEditing);
+    if (validationMessage) {
+      showNotice(validationMessage, 'danger');
+      return;
+    }
     const response = await apiPost(isEditing ? 'api/team/update' : 'api/team', payload);
     if (response.redirect) {
       window.location.href = routeUrl(response.redirect);
@@ -581,10 +723,46 @@
       }
     }
 
-    state.editingId = null;
-    showNotice(isEditing ? 'Staff account updated.' : 'Staff account created.', 'success');
-    closeFormModal();
+    state.provisionedCredentials = response.credentials || null;
+    state.formDraft = state.provisionedCredentials
+      ? {
+        ...payload,
+        staffId: response.createdStaffId || payload.staffId || '',
+        password: String(response.credentials?.temporaryPassword || payload.password || ''),
+      }
+      : null;
+    state.passwordVisible = false;
+    state.editingId = isEditing ? state.editingId : null;
+    showNotice(
+      state.provisionedCredentials
+        ? (isEditing ? 'Staff account updated. Share the refreshed temporary password securely.' : 'Staff account created. Share the login email and temporary password securely.')
+        : (isEditing ? 'Staff account updated.' : 'Staff account created.'),
+      'success'
+    );
     await load();
+    if (state.provisionedCredentials) {
+      renderForm();
+      openFormModal();
+      return;
+    }
+    closeFormModal();
+  };
+
+  const validateTeamPayload = (payload, isEditing) => {
+    if (!String(payload.firstName || '').trim()) return 'First name is required.';
+    if (!String(payload.lastName || '').trim()) return 'Last name is required.';
+    if (!String(payload.email || '').trim()) return 'Email address is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(payload.email || '').trim())) return 'Enter a valid email address.';
+    if (!String(payload.contactNumber || '').trim()) return 'Contact number is required.';
+    const digits = String(payload.contactNumber || '').replace(/\D+/g, '');
+    if (digits.length < 10 || digits.length > 13) return 'Enter a valid contact number.';
+    if (!String(payload.positionTitle || '').trim()) return 'Position title is required.';
+    if (!String(payload.role || '').trim()) return 'Role is required.';
+    if (!String(payload.status || '').trim()) return 'Status is required.';
+    if (!isEditing && String(payload.password || '').trim() !== '' && String(payload.password || '').length < 8) return 'Temporary password must be at least 8 characters.';
+    if (isEditing && String(payload.password || '').trim() !== '' && String(payload.password || '').length < 8) return 'Temporary password must be at least 8 characters.';
+    if (payload.role === 'pdo' && !String(payload.districtCode || '').trim()) return 'Assign one district before saving a PDO account.';
+    return '';
   };
 
   const uploadSignature = async () => {
@@ -667,16 +845,69 @@
       }
     });
 
+    let searchDebounceTimer = null;
+
     on(section, 'input', (event) => {
       if (event.target.id === 'team-filter-search') {
+        const val = event.target.value;
+        state.filters.search = val;
+        const clearBtn = qs('#team-filter-search-clear');
+        if (clearBtn) clearBtn.classList.toggle('is-visible', Boolean(val.trim()));
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          load();
+        }, 300);
+      }
+    });
+
+    on(section, 'keydown', (event) => {
+      if (event.target.id === 'team-filter-search') {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          clearTimeout(searchDebounceTimer);
+          load();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          event.target.value = '';
+          state.filters.search = '';
+          const clearBtn = qs('#team-filter-search-clear');
+          if (clearBtn) clearBtn.classList.remove('is-visible');
+          clearTimeout(searchDebounceTimer);
+          load();
+        }
+      }
+    });
+
+    on(section, 'search', (event) => {
+      if (event.target.id === 'team-filter-search') {
         state.filters.search = event.target.value;
+        const clearBtn = qs('#team-filter-search-clear');
+        if (clearBtn) clearBtn.classList.toggle('is-visible', Boolean(event.target.value.trim()));
+        clearTimeout(searchDebounceTimer);
         load();
       }
     });
 
     on(section, 'click', async (event) => {
+      const clearBtn = event.target.closest('#team-filter-search-clear');
+      if (clearBtn) {
+        const searchInput = qs('#team-filter-search');
+        if (searchInput) {
+          searchInput.value = '';
+          searchInput.focus();
+        }
+        state.filters.search = '';
+        clearBtn.classList.remove('is-visible');
+        clearTimeout(searchDebounceTimer);
+        load();
+        return;
+      }
+
       if (event.target.closest('#team-focus-form')) {
         state.editingId = null;
+        state.provisionedCredentials = null;
+        state.passwordVisible = false;
+        state.formDraft = null;
         renderForm();
         openFormModal();
         return;
@@ -685,6 +916,9 @@
       const edit = event.target.closest('[data-team-edit]');
       if (edit) {
         state.editingId = Number(edit.dataset.teamEdit);
+        state.provisionedCredentials = null;
+        state.passwordVisible = false;
+        state.formDraft = null;
         renderForm();
         openFormModal();
         return;
@@ -714,11 +948,13 @@
 
     on(document, 'change', (event) => {
       if (event.target.id === 'team-role-select') {
+        state.formDraft = readCurrentFormDraft();
         const assignmentBlock = qs('#team-assignment-block');
         const roleSummary = qs('#team-role-summary');
         const coverageSummary = qs('#team-coverage-summary');
         const coverageSnapshot = qs('#team-coverage-snapshot');
         const roleDescriptionText = qs('#team-role-description');
+        const positionInput = document.querySelector('#team-form input[name="positionTitle"]');
         const signaturePanel = document.querySelector('.team-form-panel .team-signature-panel')?.closest('.team-form-panel');
         const selectedRoleLabel = event.target.selectedOptions?.[0]?.textContent || '';
         const isPdoRole = isProjectDevelopmentOfficerRole(event.target.value, selectedRoleLabel);
@@ -744,17 +980,31 @@
           roleDescriptionText.textContent = nextDescription;
           roleDescriptionText.hidden = !nextDescription;
         }
+        if (positionInput) {
+          const nextDefault = defaultPositionTitle(event.target.value) || selectedRoleLabel;
+          if (!String(positionInput.value || '').trim() || String(positionInput.value).trim() === defaultPositionTitle('pdo') || String(positionInput.value).trim() === defaultPositionTitle('social_worker')) {
+            positionInput.value = nextDefault;
+          }
+          positionInput.placeholder = nextDefault;
+          if (state.formDraft) {
+            state.formDraft.positionTitle = positionInput.value;
+          }
+        }
         if (!isPdoRole) {
           document.querySelectorAll('#team-assignment-block input[name="districtCode"]').forEach((input) => {
             input.checked = false;
             input.closest('.team-assignment-option')?.classList.remove('is-selected');
           });
+          if (state.formDraft) {
+            state.formDraft.districtCode = '';
+          }
         }
         updateAssignmentSummary();
       }
 
       const assignmentOption = event.target.closest('.team-assignment-option');
       if (assignmentOption && event.target.name === 'districtCode') {
+        state.formDraft = readCurrentFormDraft();
         document.querySelectorAll('#team-assignment-block .team-assignment-option').forEach((option) => {
           option.classList.toggle('is-selected', option.contains(event.target) && event.target.checked);
         });
@@ -771,8 +1021,38 @@
     on(document, 'click', (event) => {
       if (event.target.closest('#team-cancel-edit') || event.target.closest('#team-form-cancel') || event.target.closest('[data-team-modal-close]')) {
         state.editingId = null;
+        state.provisionedCredentials = null;
+        state.passwordVisible = false;
+        state.formDraft = null;
         renderForm();
         closeFormModal();
+      }
+
+      if (event.target.closest('#team-password-generate')) {
+        state.formDraft = readCurrentFormDraft() || buildFormDraft();
+        if (state.formDraft) {
+          state.formDraft.password = createTemporaryPassword();
+        }
+        state.passwordVisible = true;
+        renderForm();
+      }
+
+      if (event.target.closest('#team-password-toggle')) {
+        state.formDraft = readCurrentFormDraft() || buildFormDraft();
+        state.passwordVisible = !state.passwordVisible;
+        renderForm();
+      }
+
+      if (event.target.closest('#team-credential-copy-email') && state.provisionedCredentials?.email) {
+        copyToClipboard(state.provisionedCredentials.email).then((copied) => {
+          showNotice(copied ? 'Login email copied.' : 'Unable to copy login email right now.', copied ? 'success' : 'danger');
+        });
+      }
+
+      if (event.target.closest('#team-credential-copy-password') && state.provisionedCredentials?.temporaryPassword) {
+        copyToClipboard(state.provisionedCredentials.temporaryPassword).then((copied) => {
+          showNotice(copied ? 'Temporary password copied.' : 'Unable to copy temporary password right now.', copied ? 'success' : 'danger');
+        });
       }
 
       if (event.target.closest('#team-assignment-clear')) {
@@ -790,6 +1070,9 @@
     on(document, 'keydown', (event) => {
       if (event.key === 'Escape') {
         state.editingId = null;
+        state.provisionedCredentials = null;
+        state.passwordVisible = false;
+        state.formDraft = null;
         renderForm();
         closeFormModal();
       }

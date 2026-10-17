@@ -90,6 +90,10 @@ class TrainingService
             return $this->emptyListing();
         }
 
+        if ($this->isAdmin($actor)) {
+            $this->ensureRoundCoverageForExistingPrograms((int) ($actor['id'] ?? 0));
+        }
+
         $params = [];
         $conditions = ['1 = 1'];
 
@@ -325,6 +329,14 @@ class TrainingService
                 $programId = (int) db()->lastInsertId();
             }
 
+            $this->seedMissingGroupSlotsForRound(
+                $targetYear,
+                (int) ($input['data']['roundNumber'] ?? 0),
+                $input['data'],
+                (int) ($actor['id'] ?? 0),
+                $programId
+            );
+
             $this->syncSeminarFormsForRound(
                 $targetYear,
                 (int) $input['data']['roundNumber'],
@@ -342,6 +354,128 @@ class TrainingService
         ]);
 
         return ['ok' => true, 'programId' => $programId];
+    }
+
+    private function seedMissingGroupSlotsForRound(int $year, int $roundNumber, array $data, int $actorUserId, int $sourceProgramId): void
+    {
+        if ($year <= 0 || $roundNumber <= 0 || $sourceProgramId <= 0) {
+            return;
+        }
+
+        $existingSlots = [];
+        foreach ($this->roundSlotsForYear($year) as $slot) {
+            if ((int) ($slot['roundNumber'] ?? 0) !== $roundNumber) {
+                continue;
+            }
+            $existingSlots[(int) ($slot['targetGroupNumber'] ?? 0)] = true;
+        }
+
+        $statement = db()->prepare(
+            'INSERT INTO training_programs
+             (title, description, venue, speaker, starts_at, ends_at, what_to_bring, instructions, training_scope_mode, batch_group_count, batch_group_size, training_round_number, target_group_number, seminar_form_codes, status, created_by_user_id)
+             VALUES (:title, :description, :venue, :speaker, :starts_at, :ends_at, :what_to_bring, :instructions, :training_scope_mode, :batch_group_count, :batch_group_size, :training_round_number, :target_group_number, :seminar_form_codes, :status, :created_by_user_id)'
+        );
+
+        $startsAt = (string) ($data['date'] ?? '') . ' ' . (string) ($data['startTime'] ?? '') . ':00';
+        $endsAt = (string) ($data['date'] ?? '') . ' ' . (string) ($data['endTime'] ?? '') . ':00';
+
+        foreach (range(1, TRAINING_BATCH_GROUP_COUNT) as $groupNumber) {
+            if (isset($existingSlots[$groupNumber])) {
+                continue;
+            }
+
+            $statement->execute([
+                'title' => $data['programName'],
+                'description' => $data['description'] ?: null,
+                'venue' => $data['venue'] ?: null,
+                'speaker' => $data['speaker'] ?: null,
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
+                'what_to_bring' => $data['whatToBring'] ?: null,
+                'instructions' => $data['instructions'] ?: null,
+                'training_scope_mode' => $data['trainingMode'],
+                'batch_group_count' => $data['batchGroupCount'],
+                'batch_group_size' => $data['batchGroupSize'],
+                'training_round_number' => $roundNumber,
+                'target_group_number' => $groupNumber,
+                'seminar_form_codes' => $this->encodeSeminarFormCodes($data['seminarFormCodes'] ?? []),
+                'status' => $data['status'],
+                'created_by_user_id' => $actorUserId,
+            ]);
+        }
+    }
+
+    private function ensureRoundCoverageForExistingPrograms(int $actorUserId): void
+    {
+        if ($actorUserId <= 0) {
+            return;
+        }
+
+        try {
+            $rows = db()->query(
+                'SELECT
+                    id,
+                    title,
+                    description,
+                    venue,
+                    speaker,
+                    starts_at,
+                    ends_at,
+                    what_to_bring,
+                    instructions,
+                    training_scope_mode,
+                    batch_group_count,
+                    batch_group_size,
+                    training_round_number,
+                    seminar_form_codes,
+                    YEAR(starts_at) AS batch_year
+                 FROM training_programs
+                 ORDER BY YEAR(starts_at) ASC, training_round_number ASC, id ASC'
+            )->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $exception) {
+            log_database_query_failure('training.ensure_round_coverage', $exception);
+            return;
+        }
+
+        $sourceByRound = [];
+        foreach ($rows as $row) {
+            $year = (int) ($row['batch_year'] ?? 0);
+            $roundNumber = (int) ($row['training_round_number'] ?? 0);
+            if ($year <= 0 || $roundNumber <= 0) {
+                continue;
+            }
+            $key = $year . ':' . $roundNumber;
+            if (!isset($sourceByRound[$key])) {
+                $sourceByRound[$key] = $row;
+            }
+        }
+
+        foreach ($sourceByRound as $row) {
+            $startsAt = (string) ($row['starts_at'] ?? '');
+            $endsAt = (string) ($row['ends_at'] ?? '');
+            $this->seedMissingGroupSlotsForRound(
+                (int) ($row['batch_year'] ?? 0),
+                (int) ($row['training_round_number'] ?? 0),
+                [
+                    'programName' => (string) ($row['title'] ?? ''),
+                    'description' => (string) ($row['description'] ?? ''),
+                    'venue' => (string) ($row['venue'] ?? ''),
+                    'speaker' => (string) ($row['speaker'] ?? ''),
+                    'date' => substr($startsAt, 0, 10),
+                    'startTime' => substr($startsAt, 11, 5),
+                    'endTime' => substr($endsAt, 11, 5),
+                    'whatToBring' => (string) ($row['what_to_bring'] ?? ''),
+                    'instructions' => (string) ($row['instructions'] ?? ''),
+                    'trainingMode' => (string) ($row['training_scope_mode'] ?? TRAINING_SCOPE_BATCH),
+                    'batchGroupCount' => (int) ($row['batch_group_count'] ?? TRAINING_BATCH_GROUP_COUNT),
+                    'batchGroupSize' => (int) ($row['batch_group_size'] ?? TRAINING_BATCH_GROUP_SIZE),
+                    'seminarFormCodes' => $this->decodeSeminarFormCodes($row['seminar_form_codes'] ?? '[]'),
+                    'status' => TRAINING_STATUS_SCHEDULED,
+                ],
+                $actorUserId,
+                (int) ($row['id'] ?? 0)
+            );
+        }
     }
 
     public function getProgramDetail(int $programId, array $actor): ?array
@@ -543,6 +677,20 @@ class TrainingService
 
         if ($selected === []) {
             return ['ok' => false, 'errors' => ['invitees' => 'No eligible training participants were found for notice sending.']];
+        }
+
+        $requiredGroupSize = $this->currentTrainingGroupSize();
+        if (count($selected) !== $requiredGroupSize) {
+            return [
+                'ok' => false,
+                'errors' => [
+                    'invitees' => sprintf(
+                        'Group %d must have exactly %d assigned participants before notices can be sent.',
+                        max(1, $groupNumber),
+                        $requiredGroupSize
+                    ),
+                ],
+            ];
         }
 
         $notificationService = new NotificationService();

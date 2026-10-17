@@ -1,12 +1,35 @@
+# Environment secrets
 .env
 .env.*
 !.env.example
 
+# Composer & dependencies
 /vendor/
+
+# Storage & Temporary files
 /storage/logs/*.log
 /storage/logs/*.txt
-/storage/cache/
-/tmp/
+/storage/cache/*
+/storage/rate_limits/*
+/tmp/*
 
+# Database dumps and sensitive backups (keep schema and migrations)
+database/*.sql
+!database/schema.sql
+!database/sample-barangays.sql
+!database/sample-programs.sql
+!database/sample-staff.sql
+!database/seeds.sql
+!database/migrations/*.sql
+database/smartleap_full_dump.sql
+exports/
+
+# Uploaded Citizen Files & Documents
+/public/uploads/**
+!/public/uploads/**/.gitkeep
+
+# Local IDE and temporary test/inspect files
 /.vscode/
-
+.history/
+__tmp_*.php
+_tmp_*.php

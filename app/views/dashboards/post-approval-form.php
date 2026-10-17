@@ -10,17 +10,16 @@ $reviewerMode = !empty($reviewerMode);
 $taskId = (int) ($taskId ?? 0);
 $dashboardPath = $reviewerMode
     ? ($role === 'admin'
-        ? $baseUrl . '/admin-dashboard#applications-section'
-        : $baseUrl . '/project-officer#clients')
+        ? $baseUrl . '/admin#applications'
+        : $baseUrl . '/project-officer?section=applications')
     : ($isBeneficiary
         ? $baseUrl . '/applicant-dashboard#repayments'
-        : $baseUrl . '/applicant-dashboard#application-page');
+        : $baseUrl . '/applicant-dashboard#training-page');
+$applicantBackLabel = $isBeneficiary ? 'Back to repayments' : 'Back to training';
 $dashboardLabel = $reviewerMode ? 'Reviewer' : ($isBeneficiary ? 'Beneficiary' : 'Applicant');
 $applicantCssVersion = @filemtime(base_path('public/assets/css/dashboards/applicant.css')) ?: time();
 $postApprovalCssVersion = @filemtime(base_path('public/assets/css/dashboards/post-approval.css')) ?: time();
-$notificationsCssVersion = @filemtime(base_path('public/assets/css/components/notifications.css')) ?: time();
 $postApprovalFormJsVersion = @filemtime(base_path('public/assets/js/dashboards/post-approval-form.js')) ?: time();
-$notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
 $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
@@ -33,7 +32,6 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
     <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/applicant.css?v=<?= urlencode((string) $applicantCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval.css?v=<?= urlencode((string) $postApprovalCssVersion) ?>">
-    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode((string) $notificationsCssVersion) ?>">
 </head>
 <body class="post-approval-form-page">
     <script>
@@ -89,27 +87,27 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
                         <section class="post-approval-section">
                             <div class="post-approval-section__header">
                                 <h4>Review decision</h4>
-                                <p>Finalize the corrected form, then choose whether it is approved or needs correction.</p>
+                                <p>Choose the final result. Reviewer changes save automatically.</p>
                             </div>
                             <div class="post-approval-fields">
                                 <div class="form-field full review-decision-field">
-                                    <span>Decision</span>
+                                    <span>Final result</span>
                                     <input type="hidden" id="reviewDecisionStatus" name="review.status" value="Verified">
                                     <div class="review-decision-toggle" role="group" aria-label="Review decision">
-                                        <button type="button" class="review-decision-toggle__button is-active" data-review-decision="Verified">Approved</button>
-                                        <button type="button" class="review-decision-toggle__button" data-review-decision="Needs Correction">Needs Correction</button>
+                                        <button type="button" class="review-decision-toggle__button is-active" data-review-decision="Verified">Approve</button>
+                                        <button type="button" class="review-decision-toggle__button" data-review-decision="Needs Correction">Send Back</button>
                                     </div>
+                                    <small class="field-hint review-decision-help" id="reviewDecisionHelp">Use Send Back only when the applicant still needs to correct the form.</small>
                                 </div>
-                                <label class="form-field full">
-                                    <span id="reviewDecisionApplicantRemarkLabel">Applicant note</span>
-                                    <textarea id="reviewDecisionApplicantRemark" name="review.applicant_visible_remark" rows="3" placeholder="Optional note for the applicant after approval."></textarea>
-                                    <small class="field-hint" id="reviewDecisionApplicantRemarkHint">This note appears in the applicant portal as the reviewer note.</small>
+                                <label class="form-field full review-decision-note" id="reviewDecisionApplicantRemarkGroup" hidden>
+                                    <span id="reviewDecisionApplicantRemarkLabel">Note to applicant</span>
+                                    <textarea id="reviewDecisionApplicantRemark" name="review.applicant_visible_remark" rows="3" placeholder="Tell the applicant what needs to be corrected."></textarea>
+                                    <small class="field-hint" id="reviewDecisionApplicantRemarkHint">This appears in the applicant portal.</small>
                                 </label>
                             </div>
                         </section>
                         <div class="form-actions post-approval-form__actions post-approval-form__actions--sticky">
-                            <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; Back to application review</a>
-                            <button type="submit" class="btn-primary" id="postApprovalSubmitButton">Save review decision</button>
+                            <a class="btn-outline post-approval-form__back-action" id="postApprovalBackButton" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; Back to Applications</a>
                         </div>
                     </form>
                 </div>
@@ -219,7 +217,7 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
                             <div class="post-approval-form__sections" id="postApprovalFormSections"></div>
                             <div class="post-approval-form__staff" id="postApprovalStaffSections" hidden></div>
                             <div class="form-actions post-approval-form__actions post-approval-form__actions--sticky">
-                                <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; Back to application</a>
+                                <a class="btn-outline post-approval-form__back-action" href="<?= htmlspecialchars($dashboardPath, ENT_QUOTES, 'UTF-8') ?>">&larr; <?= htmlspecialchars($applicantBackLabel, ENT_QUOTES, 'UTF-8') ?></a>
                                 <button type="button" class="btn-outline" id="postApprovalSaveButton">Save progress</button>
                                 <button type="submit" class="btn-primary" id="postApprovalSubmitButton">Submit form</button>
                             </div>
@@ -237,7 +235,6 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
 
     <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="<?= $baseUrl ?>/assets/js/shared/notifications.js?v=<?= urlencode((string) $notificationsJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/post-approval-form.js?v=<?= urlencode((string) $postApprovalFormJsVersion) ?>" defer></script>
 </body>
 </html>

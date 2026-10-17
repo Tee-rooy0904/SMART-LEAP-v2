@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+
+ensure_csrf_cookie();
+
 $scriptName = str_replace('\\', '//', $_SERVER['SCRIPT_NAME'] ?? '/public/index.php');
 $baseUrl = rtrim(str_replace('\\', '//', dirname($scriptName)), '//');
 $baseUrl = $baseUrl === '/' ? '' : $baseUrl;
@@ -40,7 +47,17 @@ if (!is_array($route) || !isset($route['handler']) || !is_array($route['handler'
     abort(404);
 }
 
-$expectsJson = str_contains(strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? '')), 'application/json');
+$expectsJson = str_contains(strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? '')), 'application/json')
+    || strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
+
+if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+    if (!verify_csrf_request()) {
+        if ($expectsJson) {
+            response_json(['ok' => false, 'message' => 'Security check failed: cross-origin or expired request.'], 419);
+        }
+        abort(419);
+    }
+}
 
 $middlewareAliases = [
     'auth' => require base_path('app/middleware/auth.php'),

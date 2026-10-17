@@ -46,11 +46,11 @@ class TeamService
             $conditions[] = 'staff_profiles.status = :filter_status';
             $params['filter_status'] = $statusFilter;
         }
-
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
-            $conditions[] = '(users.full_name LIKE :search OR users.email LIKE :search)';
-            $params['search'] = '%' . $search . '%';
+            $conditions[] = '(users.full_name LIKE :search_name OR users.email LIKE :search_email)';
+            $params['search_name'] = '%' . $search . '%';
+            $params['search_email'] = '%' . $search . '%';
         }
 
         $sql = '
@@ -223,7 +223,10 @@ class TeamService
         }
 
         $statusFlags = self::STATUS_MAP[$input['data']['status']];
-        $passwordHash = (new PasswordService())->hash($input['data']['password']);
+        $plainPassword = $input['data']['password'] !== ''
+            ? $input['data']['password']
+            : $this->generateTemporaryPassword();
+        $passwordHash = (new PasswordService())->hash($plainPassword);
         $nameParts = $this->splitNameParts($input['data']['name']);
 
         $pdo = db();
@@ -300,7 +303,16 @@ class TeamService
             ]
         );
 
-        return ['ok' => true];
+        return [
+            'ok' => true,
+            'createdStaffId' => $userId,
+            'credentials' => [
+                'name' => $input['data']['name'],
+                'email' => $input['data']['email'],
+                'temporaryPassword' => $plainPassword,
+                'role' => $input['data']['role'],
+            ],
+        ];
     }
 
     public function updateStaff(array $payload, int $actorUserId): array
@@ -425,7 +437,17 @@ class TeamService
             ]
         );
 
-        return ['ok' => true];
+        return [
+            'ok' => true,
+            'credentials' => $input['data']['password'] !== ''
+                ? [
+                    'name' => $input['data']['name'],
+                    'email' => $input['data']['email'],
+                    'temporaryPassword' => $input['data']['password'],
+                    'role' => $input['data']['role'],
+                ]
+                : null,
+        ];
     }
 
     public function updateStaffStatus(int $staffId, string $status, int $actorUserId): array
@@ -616,13 +638,38 @@ class TeamService
         if (!isset(self::STATUS_MAP[$data['status']])) {
             $errors['status'] = 'Select a valid staff status.';
         }
-        if ($isCreate && strlen($data['password']) < 8) {
-            $errors['password'] = 'Password must be at least 8 characters.';
+        if ($data['contactNumber'] === '') {
+            $errors['contactNumber'] = 'Enter the staff contact number.';
+        } else {
+            $digits = preg_replace('/\D+/', '', $data['contactNumber']);
+            $digitCount = strlen((string) $digits);
+            if ($digitCount < 10 || $digitCount > 13) {
+                $errors['contactNumber'] = 'Enter a valid contact number.';
+            }
+        }
+        if ($data['positionTitle'] === '') {
+            $errors['positionTitle'] = 'Enter the staff position title.';
+        }
+        if ($isCreate && $data['password'] !== '' && strlen($data['password']) < 8) {
+            $errors['password'] = 'Temporary password must be at least 8 characters.';
         }
         if (!$isCreate && $data['password'] !== '' && strlen($data['password']) < 8) {
-            $errors['password'] = 'Password must be at least 8 characters.';
+            $errors['password'] = 'Temporary password must be at least 8 characters.';
         }
         return ['data' => $data, 'errors' => $errors];
+    }
+
+    private function generateTemporaryPassword(int $length = 12): string
+    {
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+        $maxIndex = strlen($alphabet) - 1;
+        $password = '';
+
+        for ($index = 0; $index < $length; $index++) {
+            $password .= $alphabet[random_int(0, $maxIndex)];
+        }
+
+        return $password;
     }
 
     private function roleNameToSlug(string $roleName): string

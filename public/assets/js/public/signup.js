@@ -10,6 +10,7 @@
     const fields = {
         registrationMode: document.getElementById('signupRegistrationMode'),
         beneficiaryProfileId: document.getElementById('signupBeneficiaryProfileId'),
+        inviteToken: document.getElementById('signupInviteToken'),
         firstName: document.getElementById('signupFirstName'),
         middleName: document.getElementById('signupMiddleName'),
         lastName: document.getElementById('signupLastName'),
@@ -298,6 +299,7 @@
         const payload = {
             registrationMode: fields.registrationMode?.value || (isCoMakerMode ? 'co-maker' : 'applicant'),
             beneficiaryProfileId: fields.beneficiaryProfileId?.value || '',
+            inviteToken: fields.inviteToken?.value || '',
             firstName: fieldValue(fields.firstName).trim(),
             middleName: fieldValue(fields.middleName).trim(),
             lastName: fieldValue(fields.lastName).trim(),
@@ -359,6 +361,11 @@
         if (isCoMakerMode && (!payload.lastName || payload.lastName.length < 2)) {
             valid = false;
             setFieldError('signupLastName', 'Enter your last name.');
+        }
+
+        if (isCoMakerMode && !String(payload.inviteToken || '').trim()) {
+            valid = false;
+            setFeedback('danger', 'This co-maker registration link is incomplete. Please use the latest invitation email link.');
         }
 
         if (!EMAIL_PATTERN.test(payload.email)) {

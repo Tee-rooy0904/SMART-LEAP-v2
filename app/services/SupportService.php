@@ -473,8 +473,10 @@ class SupportService
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
-            $where[] = '(ticket_no LIKE :search OR subject LIKE :search OR message LIKE :search)';
-            $params['search'] = '%' . $search . '%';
+            $where[] = '(ticket_no LIKE :search_ticket OR subject LIKE :search_subject OR message LIKE :search_message)';
+            $params['search_ticket'] = '%' . $search . '%';
+            $params['search_subject'] = '%' . $search . '%';
+            $params['search_message'] = '%' . $search . '%';
         }
 
         if ($allowStaffFilters) {

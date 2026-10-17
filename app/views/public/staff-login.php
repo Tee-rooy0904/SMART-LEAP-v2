@@ -1,7 +1,9 @@
 <?php /** @var string $baseUrl */ ?>
 <?php
 $sharedStylesVersion = @filemtime(base_path('public/assets/css/shared/styles.css')) ?: time();
+$transitionsCssVersion = @filemtime(base_path('public/assets/css/shared/transitions.css')) ?: time();
 $authJsVersion = @filemtime(base_path('public/assets/js/shared/auth.js')) ?: time();
+$uiInteractiveJsVersion = @filemtime(base_path('public/assets/js/shared/ui-interactive.js')) ?: time();
 $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
@@ -15,6 +17,7 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= $baseUrl ?>/assets/css/shared/styles.css?v=<?= urlencode((string) $sharedStylesVersion) ?>" rel="stylesheet">
+    <link href="<?= $baseUrl ?>/assets/css/shared/transitions.css?v=<?= urlencode((string) $transitionsCssVersion) ?>" rel="stylesheet">
 </head>
 <body>
     <div id="loginPage" class="login-page">
@@ -46,7 +49,7 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
                         <input type="hidden" name="entryPoint" value="staff">
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <input type="email" id="email" name="email" placeholder="username" required>
+                            <input type="email" id="email" name="email" autocomplete="email" placeholder="your@email.com" required>
                         </div>
                         
                         <div class="form-group">
@@ -77,5 +80,6 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= $baseUrl ?>/assets/js/shared/auth.js?v=<?= urlencode((string) $authJsVersion) ?>"></script>
+    <script src="<?= $baseUrl ?>/assets/js/shared/ui-interactive.js?v=<?= urlencode((string) $uiInteractiveJsVersion) ?>" defer></script>
 </body>
 </html>

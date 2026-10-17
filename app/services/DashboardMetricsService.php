@@ -64,6 +64,7 @@ class DashboardMetricsService
         $beneficiaryProfileService->synchronizeSystemInactivityStatuses();
         $applicationSummary = $this->applicationSummary();
         $trainingSummary = $this->trainingSummary();
+        $trainingAttendanceSummary = $this->trainingAttendanceSummary();
         $beneficiarySummary = $this->beneficiarySummary();
         $repaymentSummary = $this->repaymentSummary($beneficiarySummary);
         $beneficiaryRoster = $this->beneficiaryRoster();
@@ -87,8 +88,14 @@ class DashboardMetricsService
             'repaymentSummary' => $repaymentSummary,
             'workflowDistribution' => $this->workflowDistribution($applicationSummary, $trainingSummary, $beneficiarySummary),
             'repaymentDistribution' => $repaymentSummary['distribution'] ?? ['segments' => [], 'total' => 0],
+            'trainingAttendanceSummary' => $trainingAttendanceSummary,
             'recentActivity' => $this->recentActivity(),
         ];
+    }
+
+    public function sharedTrainingAttendanceSummary(): array
+    {
+        return $this->trainingAttendanceSummary();
     }
 
     private function applicationSummary(): array

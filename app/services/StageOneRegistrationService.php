@@ -142,7 +142,7 @@ class StageOneRegistrationService
                   business_photo_path, business_photo_original_name, business_photo_mime_type, business_photo_file_size,
                   valid_id_path, valid_id_original_name, valid_id_mime_type, valid_id_file_size,
                   hardcopy_form_path, hardcopy_form_original_name, hardcopy_form_mime_type, hardcopy_form_file_size,
-                  submission_channel, encoded_by_user_id, encoded_at, validation_status, created_at, updated_at)
+                  submission_channel, encoded_by_user_id, encoded_at, validation_status, batch_no, created_at, updated_at)
                  VALUES
                  (:reference_code, :first_name, :middle_name, :last_name, :full_name, :email, :contact_number, :complete_address,
                   :birthdate, :age, :gender, :barangay, :is_4ps, :educational_attainment, :sector, :sector_other_specify, :livelihood_type, :business_name,
@@ -150,7 +150,7 @@ class StageOneRegistrationService
                   :business_photo_path, :business_photo_original_name, :business_photo_mime_type, :business_photo_file_size,
                   :valid_id_path, :valid_id_original_name, :valid_id_mime_type, :valid_id_file_size,
                   :hardcopy_form_path, :hardcopy_form_original_name, :hardcopy_form_mime_type, :hardcopy_form_file_size,
-                  :submission_channel, :encoded_by_user_id, :encoded_at, :validation_status, NOW(), NOW())'
+                  :submission_channel, :encoded_by_user_id, :encoded_at, :validation_status, :batch_no, NOW(), NOW())'
             );
             $statement->execute([
                 'reference_code' => $referenceCode,
@@ -191,6 +191,7 @@ class StageOneRegistrationService
                 'encoded_by_user_id' => $encodedByUserId !== null && $encodedByUserId > 0 ? $encodedByUserId : null,
                 'encoded_at' => $channel === 'staff_hardcopy' ? date('Y-m-d H:i:s') : null,
                 'validation_status' => $initialStatus,
+                'batch_no' => (new BatchService())->getActiveBatch(),
             ]);
 
             $registrationId = (int) $pdo->lastInsertId();
@@ -227,12 +228,18 @@ class StageOneRegistrationService
         ];
     }
 
-    public function validationState(): array
+    public function validationState(?string $scopedBatch = null): array
     {
         $this->ensureSchema();
         $this->syncLegacySelectedApplicants();
         $this->hydrateLegacySelectedRegistrations();
         $this->syncOverflowRegistrationsToSaved();
+
+        $batchService = new BatchService();
+        $activeBatch = $batchService->getActiveBatch();
+        $targetBatch = ($scopedBatch !== null && trim($scopedBatch) !== '' && strtolower(trim($scopedBatch)) !== 'all')
+            ? trim($scopedBatch)
+            : $activeBatch;
 
         $rows = db()->query(
             'SELECT
@@ -254,7 +261,15 @@ class StageOneRegistrationService
         $pending          = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_PENDING && !$row['isMarkedDuplicate']));
         $possibleDups     = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_PENDING && $row['isPossibleDuplicate'] && !$row['isMarkedDuplicate']));
         $markedDups       = array_values(array_filter($items, fn (array $row): bool => $row['isMarkedDuplicate']));
-        $selected         = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_SELECTED));
+        $selected         = array_values(array_filter($items, function (array $row) use ($targetBatch, $scopedBatch): bool {
+            if ($row['statusKey'] !== self::STATUS_SELECTED) {
+                return false;
+            }
+            if ($scopedBatch !== null && strtolower(trim($scopedBatch)) === 'all') {
+                return true;
+            }
+            return ($row['batchNo'] ?? '') === $targetBatch;
+        }));
         $saved            = array_values(array_filter($items, fn (array $row): bool => $row['statusKey'] === self::STATUS_SAVED));
 
         // Clean pending = pending minus possible duplicates (possible dups still show in pending tab with a badge but are separated)
@@ -263,6 +278,10 @@ class StageOneRegistrationService
         return [
             'summary' => [
                 'batchCapacity' => $this->currentBatchCapacity(),
+                'activeBatch' => $activeBatch,
+                'viewBatch' => $targetBatch,
+                'allBatches' => $batchService->getAllBatches(),
+                'nextBatch' => $batchService->getNextBatch(),
                 'pending' => count($pending),
                 'pendingClean' => count($cleanPending),
                 'possibleDuplicates' => count($possibleDups),
@@ -816,6 +835,7 @@ class StageOneRegistrationService
                 self::STATUS_SAVED => 'Saved for Next Batch',
                 default => 'Pending Validation',
             },
+            'batchNo' => (string) ($row['batch_no'] ?? (new BatchService())->getActiveBatch()),
             'duplicateStatus' => $duplicateStatus,
             'duplicateOf' => $row['duplicate_of'] !== null ? (int) $row['duplicate_of'] : null,
             'duplicateNote' => (string) ($row['duplicate_note'] ?? ''),
@@ -943,10 +963,11 @@ class StageOneRegistrationService
         };
     }
 
-    private function selectedCount(): int
+    private function selectedCount(?string $batchNo = null): int
     {
-        $statement = db()->prepare('SELECT COUNT(*) FROM stage_one_registrations WHERE validation_status = :validation_status');
-        $statement->execute(['validation_status' => self::STATUS_SELECTED]);
+        $batch = $batchNo ?: (new BatchService())->getActiveBatch();
+        $statement = db()->prepare('SELECT COUNT(*) FROM stage_one_registrations WHERE validation_status = :validation_status AND batch_no = :batch_no');
+        $statement->execute(['validation_status' => self::STATUS_SELECTED, 'batch_no' => $batch]);
         return (int) ($statement->fetchColumn() ?: 0);
     }
 

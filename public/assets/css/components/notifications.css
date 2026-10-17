@@ -260,3 +260,74 @@
     max-height: calc(100vh - 6rem);
   }
 }
+
+/* ==========================================================================
+   Dark Mode Overrides for Notification Center
+   ========================================================================== */
+[data-theme="dark"] .smart-notification-toggle {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .smart-notification-toggle:hover,
+[data-theme="dark"] .smart-notification-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .smart-notification-toggle__icon {
+  background: rgba(56, 182, 255, 0.2) !important;
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .smart-notification-panel {
+  background: #111d33 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.65) !important;
+}
+
+[data-theme="dark"] .smart-notification-panel__header {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .smart-notification-panel__header h2 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .smart-notification-panel__eyebrow {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .smart-notification-panel__meta {
+  color: #94a3b8 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .smart-notification-item,
+[data-theme="dark"] .smart-notification-empty {
+  background: #162540 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .smart-notification-item.is-unread {
+  background: #192a47 !important;
+  border-color: rgba(56, 182, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .smart-notification-item__top strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .smart-notification-panel__refresh,
+[data-theme="dark"] .smart-notification-mark,
+[data-theme="dark"] .smart-notification-item__read {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+

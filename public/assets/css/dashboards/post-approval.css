@@ -4548,6 +4548,14 @@ body.has-signature-pad-modal {
     gap: 12px;
 }
 
+.review-decision-note {
+    margin-top: 2px;
+}
+
+.review-decision-help {
+    margin: 0;
+}
+
 .review-decision-toggle {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

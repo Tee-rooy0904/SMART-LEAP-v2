@@ -25,6 +25,85 @@
   grid-column: 1 / -1;
 }
 
+.admin-section#team-section .filter-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-section#team-section .filter-search:focus-within {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.16);
+}
+
+.admin-section#team-section .filter-search .filter-search-icon,
+.admin-section#team-section .filter-search > i {
+  color: #64748b;
+  font-size: 0.88rem;
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.admin-section#team-section .filter-search:focus-within > i {
+  color: #1a73e8;
+}
+
+.admin-section#team-section .filter-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 28px 0 0;
+  border: none;
+  background: transparent;
+  color: #102347;
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-section#team-section .filter-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.team-search-clear {
+  position: absolute;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.2);
+  color: #64748b;
+  font-size: 0.72rem;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.team-search-clear.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.team-search-clear:hover {
+  background: rgba(148, 163, 184, 0.35);
+  color: #1e293b;
+  transform: scale(1.08);
+}
+
 .admin-section#team-section .applications-filters > .filter-actions {
   justify-content: flex-start;
 }
@@ -205,8 +284,13 @@ body.team-modal-open {
   color: #fff;
 }
 
+.team-form-header__copy {
+  display: grid;
+  gap: 6px;
+}
+
 .team-form-header h4 {
-  margin: 6px 0 8px;
+  margin: 6px 0 0;
   font-size: 1.52rem;
   color: #fff;
 }
@@ -440,6 +524,21 @@ body.team-modal-open {
   gap: 16px;
 }
 
+.team-form-panel__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.96);
+  color: var(--blue-700);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .team-form-panel__header h5 {
   margin: 8px 0 0;
   font-size: 1.08rem;
@@ -471,6 +570,18 @@ body.team-modal-open {
   text-transform: uppercase;
 }
 
+.team-required-mark {
+  color: #dc2626;
+  font-style: normal;
+  margin-left: 4px;
+}
+
+.team-field-helper {
+  color: var(--slate-500);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .team-form-grid input,
 .team-form-grid select,
 .team-assignment-search input {
@@ -498,8 +609,61 @@ body.team-modal-open {
     0 12px 22px rgba(15, 23, 42, 0.06);
 }
 
+.team-form-grid input:required,
+.team-form-grid select:required {
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
 .team-form-grid__wide {
   grid-column: 1 / -1;
+}
+
+.team-password-field,
+.team-credential-field {
+  display: grid;
+  gap: 10px;
+}
+
+.team-password-field__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.team-password-field__actions .team-action-button,
+.team-credential-field .team-action-button {
+  min-height: 42px;
+}
+
+.team-credentials-card {
+  border: 1px solid rgba(16, 185, 129, 0.16);
+  background: linear-gradient(180deg, rgba(240, 253, 250, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.team-credentials-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.team-credential-field input[readonly] {
+  background: rgba(255, 255, 255, 0.96);
+  font-weight: 700;
+}
+
+.team-required-callout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(254, 242, 242, 0.92);
+  border: 1px solid rgba(248, 113, 113, 0.22);
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .team-signature-panel {
@@ -678,6 +842,28 @@ body.team-modal-open {
   background: rgba(255, 255, 255, 0.98);
 }
 
+.team-form-panel--role-note {
+  border-style: dashed;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.98));
+}
+
+.team-role-note {
+  display: grid;
+  gap: 10px;
+}
+
+.team-role-note h5 {
+  margin: 0;
+  font-size: 1.08rem;
+  color: var(--blue-900);
+}
+
+.team-role-note p {
+  margin: 0;
+  color: var(--slate-600);
+  line-height: 1.55;
+}
+
 .team-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -771,7 +957,14 @@ body.team-modal-open {
     grid-template-columns: 1fr;
   }
 
+  .team-form-panel__status,
+  .team-required-callout {
+    width: 100%;
+    justify-content: center;
+  }
+
   .team-form-grid,
+  .team-credentials-grid,
   .team-assignment-grid {
     grid-template-columns: 1fr;
   }
@@ -797,4 +990,152 @@ body.team-modal-open {
   .team-form-actions .team-action-button {
     width: 100%;
   }
+}
+
+/* --------------------------------------------------------------------------
+   DARK MODE OVERRIDES (ADMIN TEAM)
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] #team-section,
+[data-theme="dark"] .team-workspace-grid {
+  background: #0a1120 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .team-table-shell {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .team-action-button {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .team-action-button:hover {
+  background: #1c2e4f !important;
+  border-color: #38b6ff !important;
+}
+
+[data-theme="dark"] .team-table-shell .data-table thead th {
+  background: #0c1628 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .team-table-shell .data-table tbody td {
+  background: #111d33 !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .team-modal__card,
+[data-theme="dark"] .team-modal__dialog {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .team-modal__body {
+  background: #0d1527 !important;
+}
+
+[data-theme="dark"] .team-modal__footer {
+  background: #111d33 !important;
+  border-top-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .team-assignment-card,
+[data-theme="dark"] .team-assignment-list {
+  background: #162540 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .team-assignment-option {
+  background: #111d33 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+
+[data-theme="dark"] .team-roster-table tbody tr:hover {
+  background: #182744 !important;
+}
+
+[data-theme="dark"] .team-roster-table tbody tr:hover td {
+  background: #182744 !important;
+}
+
+[data-theme="dark"] .team-roster-table td.actions {
+  background: transparent !important;
+}
+
+[data-theme="dark"] .team-form-side__card,
+[data-theme="dark"] .team-form-panel,
+[data-theme="dark"] .team-form-panel--hero {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .team-form-hero__copy h5,
+[data-theme="dark"] .team-form-hero__meta strong,
+[data-theme="dark"] .team-form-side__card strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .team-form-hero__copy p,
+[data-theme="dark"] .team-form-side__card p,
+[data-theme="dark"] .team-form-panel__note {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+}
+
+[data-theme="dark"] .team-credential-field input {
+  background: #0c1527 !important;
+  color: #ffffff !important;
+}
+
+/* Dark Mode Team Search */
+[data-theme="dark"] #team-section .filter-search {
+  background: #0c1527 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] #team-section .filter-search:focus-within {
+  border-color: #38b6ff !important;
+  box-shadow: 0 0 0 3px rgba(56, 182, 255, 0.28), 0 2px 6px rgba(0, 0, 0, 0.3) inset !important;
+}
+
+[data-theme="dark"] #team-section .filter-search .filter-search-icon,
+[data-theme="dark"] #team-section .filter-search > i {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] #team-section .filter-search input,
+[data-theme="dark"] #team-filter-search {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] #team-section .filter-search input::placeholder,
+[data-theme="dark"] #team-filter-search::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .team-search-clear {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .team-search-clear:hover {
+  background: rgba(56, 182, 255, 0.25) !important;
+  color: #38b6ff !important;
 }

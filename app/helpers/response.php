@@ -22,5 +22,10 @@ function response_json(array $payload, int $status = 200): never
 
 function abort(int $status = 404): never
 {
+    $viewPath = base_path('app/views/errors/' . $status . '.php');
+    if (!is_file($viewPath)) {
+        $status = 403;
+    }
     response_view('errors/' . $status, [], $status);
 }
+

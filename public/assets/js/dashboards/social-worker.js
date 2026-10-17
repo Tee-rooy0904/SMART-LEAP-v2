@@ -26,6 +26,12 @@
     partial_paid: '#31d0c6',
     fully_paid: '#8c61ff',
   };
+  const TRAINING_ATTENDANCE_COLORS = {
+    attended: '#16a34a',
+    absent: '#ef4444',
+    excused: '#8b5cf6',
+    pending: '#f59e0b',
+  };
   const FALLBACK_CHART_COLORS = ['#1d4ed8', '#16a34a', '#f97316', '#7c3aed', '#dc2626', '#0891b2', '#be185d', '#4d7c0f'];
 
   // Client state for oversight lists, reports initialization, and help-desk tickets.
@@ -37,6 +43,7 @@
       barangay: '',
       pdo: '',
       repayment: '',
+      batch: '',
     },
     coMakerFilters: {
       search: '',
@@ -59,6 +66,7 @@
     busy: false,
     overviewLoadPromise: null,
   };
+  let repaymentWorkspace = null;
 
   function asArray(value) {
     return Array.isArray(value) ? value.slice() : [];
@@ -77,6 +85,7 @@
     state.recentApplications = asArray(overview.recentApplications);
     populateBeneficiaryFilters();
     populateCoMakerFilters();
+    repaymentWorkspace?.syncBeneficiaries?.();
   }
 
   function uniqueSorted(values) {
@@ -135,6 +144,61 @@
     input.value = value || '';
   }
 
+  function wireSearchInput(inputId, onInputCallback) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const parent = input.closest('.filter-search, .sw-ticket-search');
+    let clearBtn = parent?.querySelector('.team-search-clear');
+    if (parent && !clearBtn) {
+      clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'team-search-clear';
+      clearBtn.title = 'Clear search';
+      clearBtn.textContent = '✕';
+      clearBtn.style.display = 'none';
+      parent.appendChild(clearBtn);
+    }
+
+    const updateVisibility = () => {
+      if (clearBtn) {
+        const hasVal = !!input.value;
+        clearBtn.style.display = hasVal ? 'inline-flex' : 'none';
+        clearBtn.classList.toggle('is-visible', hasVal);
+      }
+    };
+
+    let timer = null;
+    input.addEventListener('input', (e) => {
+      updateVisibility();
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        onInputCallback(e);
+      }, 200);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && input.value) {
+        input.value = '';
+        updateVisibility();
+        clearTimeout(timer);
+        onInputCallback(e);
+      } else if (e.key === 'Enter') {
+        clearTimeout(timer);
+        onInputCallback(e);
+      }
+    });
+
+    clearBtn?.addEventListener('click', () => {
+      input.value = '';
+      updateVisibility();
+      clearTimeout(timer);
+      onInputCallback({ currentTarget: input, target: input });
+      input.focus();
+    });
+
+    updateVisibility();
+  }
+
   function syncBeneficiaryFilterControls() {
     syncInputValue('swBeneficiarySearch', state.beneficiaryFilters.search);
     populateSelectOptions(
@@ -148,6 +212,15 @@
       state.beneficiaries.map((item) => item.assignedPdo || ''),
       'All PDOs',
       state.beneficiaryFilters.pdo
+    );
+    populateSelectOptions(
+      'swBeneficiaryBatch',
+      uniqueSorted([
+        ...state.beneficiaries.map((item) => item.batchNo || 'Batch 3'),
+        'Batch 1', 'Batch 2', 'Batch 3',
+      ]),
+      'All batches',
+      state.beneficiaryFilters.batch
     );
     const repaymentSelect = document.getElementById('swBeneficiaryRepayment');
     if (repaymentSelect) {
@@ -423,13 +496,11 @@
   // Recompute dashboard KPIs and charts from the latest oversight data in memory.
   function renderDashboardSummary() {
     const applicationSummary = overview.applicationSummary || {};
-    const repaymentSummary = overview.repaymentSummary || {};
     const roster = state.beneficiaries.slice();
     const beneficiaryTotal = safeNumber(overview.beneficiarySummary?.total) || roster.length;
-    const applicationCounts = countBy(state.applications, (application) => application.status || application.applicationStatus || 'Draft');
     const beneficiaryCounts = countBy(roster, (beneficiary) => beneficiary.statusLabel || beneficiary.programStatus || beneficiary.beneficiaryStatus || beneficiary.status || 'Active');
     const repaymentCounts = countBy(roster, (beneficiary) => beneficiary.repayment?.label || beneficiary.repayment?.key || 'No Upload Yet');
-    const appValue = (key) => safeNumber(applicationCounts.get(normalizeKey(key))?.count);
+    const trainingDistribution = overview.trainingAttendanceSummary || { segments: [], total: 0 };
     const repaymentValue = (key) => safeNumber(repaymentCounts.get(normalizeKey(key))?.count);
 
     setText('swDashApplicationsTotal', safeNumber(applicationSummary.total) || state.applications.length);
@@ -441,15 +512,15 @@
       + repaymentValue('Rejected');
     setText('swDashRepaymentsPending', repaymentTotal);
 
-    renderDashboardChart('swApplicantsStatusChart', Array.from(applicationCounts.values()), {
-      colors: APPLICATION_COLORS,
-      legendId: 'swApplicantsStatusLegend',
-      footerId: 'swApplicantsStatusFooter',
-      ariaLabel: 'Column chart of Social Worker application statuses',
-      emptyFooter: 'No application records yet.',
+    renderDashboardChart('swTrainingAttendanceChart', Array.isArray(trainingDistribution.segments) ? trainingDistribution.segments : [], {
+      colors: TRAINING_ATTENDANCE_COLORS,
+      legendId: 'swTrainingAttendanceLegend',
+      footerId: 'swTrainingAttendanceFooter',
+      ariaLabel: 'Column chart of Social Worker training attendance',
+      emptyFooter: 'No attendance records yet.',
       footerText: (items, total) => {
         const top = items[0];
-        return top ? `${top.label}: ${top.count} of ${total}.` : `${total} application records tracked.`;
+        return top ? `${top.label}: ${top.count} of ${total}.` : `${total} attendance records tracked.`;
       },
     });
     renderDashboardChart('swBeneficiariesStatusChart', Array.from(beneficiaryCounts.values()), {
@@ -498,6 +569,10 @@
     setText('[data-sw-validation-tab-count="pending"]', safeNumber(validationSummary.pending));
     setText('[data-sw-validation-tab-count="selected"]', safeNumber(validationSummary.selected));
     setText('[data-sw-validation-tab-count="saved"]', safeNumber(validationSummary.saved));
+    const selectedBatch = validationSummary.viewBatch || validationSummary.activeBatch || 'Batch 3';
+    const nextBatch = validationSummary.nextBatch || 'Next Batch';
+    setText('[data-sw-validation-selected-label]', `Selected for ${selectedBatch}`);
+    setText('[data-sw-validation-saved-label]', `Saved for ${nextBatch}`);
   }
 
   function renderOverviewMetrics() {
@@ -539,12 +614,12 @@
     try {
       const payload = await request('api/repayments');
       state.repayments = Array.isArray(payload.data?.payments) ? payload.data.payments : [];
-      renderRepayments();
+      repaymentWorkspace?.setPayments?.(state.repayments);
       renderBeneficiaries();
       renderDashboardSummary();
     } catch (error) {
       console.warn('Unable to load Social Worker repayment records', error);
-      renderRepayments();
+      repaymentWorkspace?.setPayments?.([]);
     }
   }
 
@@ -572,6 +647,8 @@
       initReports();
     } else if (state.section === 'support') {
       loadSupportTickets();
+    } else if (state.section === 'repayments') {
+      repaymentWorkspace?.syncBeneficiaries?.();
     }
   }
 
@@ -580,6 +657,8 @@
       state.validationTab = 'pending';
       const search = document.getElementById('swValidationSearch');
       if (search) search.value = '';
+      clearSelectState('swValidationBatch');
+      forceDefaultSelects(['swValidationBatch']);
       renderValidation();
       return;
     }
@@ -587,7 +666,8 @@
       const search = document.getElementById('swApplicationSearch');
       if (search) search.value = '';
       clearSelectState('swApplicationStatus');
-      forceDefaultSelects(['swApplicationStatus']);
+      clearSelectState('swApplicationBatch');
+      forceDefaultSelects(['swApplicationStatus', 'swApplicationBatch']);
       renderApplications();
       return;
     }
@@ -597,6 +677,7 @@
         barangay: '',
         pdo: '',
         repayment: '',
+        batch: '',
       };
       syncBeneficiaryFilterControls();
       renderBeneficiaries();
@@ -613,11 +694,7 @@
       return;
     }
     if (section === 'repayments') {
-      const search = document.getElementById('swRepaymentSearch');
-      if (search) search.value = '';
-      clearSelectState('swRepaymentStatus');
-      forceDefaultSelects(['swRepaymentStatus']);
-      renderRepayments();
+      repaymentWorkspace?.resetFilters?.();
       return;
     }
     if (section === 'support') {
@@ -769,6 +846,20 @@
   function renderApplications() {
     const search = String(document.getElementById('swApplicationSearch')?.value || '').toLowerCase();
     const status = String(document.getElementById('swApplicationStatus')?.value || '').toLowerCase();
+    const batch = String(document.getElementById('swApplicationBatch')?.value || '').toLowerCase();
+
+    const batchSelect = document.getElementById('swApplicationBatch');
+    if (batchSelect && !batchSelect.dataset.populated) {
+      const currentBatchVal = String(batchSelect.value || '');
+      const rawBatches = Array.from(new Set(state.applications.map((item) => String(item.batchNo || '').trim()).filter(Boolean)));
+      ['Batch 1', 'Batch 2', 'Batch 3'].forEach((b) => {
+        if (!rawBatches.includes(b)) rawBatches.push(b);
+      });
+      rawBatches.sort((a, b) => parseInt(a.replace(/\D/g, '') || '0', 10) - parseInt(b.replace(/\D/g, '') || '0', 10));
+      batchSelect.innerHTML = `<option value="">All batches</option>${rawBatches.map((b) => `<option value="${escapeHtml(b)}"${currentBatchVal.toLowerCase() === b.toLowerCase() ? ' selected' : ''}>${escapeHtml(b)}</option>`).join('')}`;
+      batchSelect.dataset.populated = 'true';
+    }
+
     const filtered = state.applications.filter((application) => {
       const haystack = [
         application.applicantName,
@@ -778,7 +869,9 @@
         application.status,
       ].join(' ').toLowerCase();
       const statusValue = String(application.status || '').toLowerCase();
-      return (!search || haystack.includes(search)) && (!status || statusValue === status);
+      const batchValue = String(application.batchNo || '').toLowerCase();
+      const matchesBatch = !batch || batchValue === batch;
+      return (!search || haystack.includes(search)) && (!status || statusValue === status) && matchesBatch;
     });
 
     renderApplicationRows('[data-sw-applications-body]', filtered, 7);
@@ -827,8 +920,13 @@
     const searchInput = document.getElementById('swApplicationSearch');
     if (searchInput) searchInput.value = '';
     clearSelectState('swApplicationStatus');
-    document.getElementById('swApplicationSearch')?.addEventListener('input', renderApplications);
+    clearSelectState('swApplicationBatch');
+    wireSearchInput('swApplicationSearch', renderApplications);
     document.getElementById('swApplicationStatus')?.addEventListener('change', (event) => {
+      event.currentTarget.dataset.userTouched = '1';
+      renderApplications();
+    });
+    document.getElementById('swApplicationBatch')?.addEventListener('change', (event) => {
       event.currentTarget.dataset.userTouched = '1';
       renderApplications();
     });
@@ -854,6 +952,20 @@
     }
 
     const search = String(document.getElementById('swValidationSearch')?.value || '').toLowerCase();
+    const batchFilter = String(document.getElementById('swValidationBatch')?.value || '').toLowerCase();
+
+    const batchSelect = document.getElementById('swValidationBatch');
+    if (batchSelect && !batchSelect.dataset.populated) {
+      const currentVal = String(batchSelect.value || '');
+      const rawBatches = Array.from(new Set(state.validationRecords.map((r) => String(r.batchNo || '').trim()).filter(Boolean)));
+      ['Batch 1', 'Batch 2', 'Batch 3'].forEach((b) => {
+        if (!rawBatches.includes(b)) rawBatches.push(b);
+      });
+      rawBatches.sort((a, b) => parseInt(a.replace(/\D/g, '') || '0', 10) - parseInt(b.replace(/\D/g, '') || '0', 10));
+      batchSelect.innerHTML = `<option value="">All batches</option>${rawBatches.map((b) => `<option value="${escapeHtml(b)}"${currentVal.toLowerCase() === b.toLowerCase() ? ' selected' : ''}>${escapeHtml(b)}</option>`).join('')}`;
+      batchSelect.dataset.populated = 'true';
+    }
+
     const activeTab = ['pending', 'selected', 'saved'].includes(state.validationTab) ? state.validationTab : 'pending';
     const tabLabels = {
       pending: 'Pending',
@@ -874,17 +986,24 @@
         record.statusLabel,
       ].join(' ').toLowerCase();
       const recordStatus = normalizeKey(record.statusKey || record.statusLabel || '');
-      return (!search || haystack.includes(search)) && recordStatus === activeTab;
+      const matchesBatch = !batchFilter || String(record.batchNo || '').toLowerCase() === batchFilter;
+      return (!search || haystack.includes(search)) && recordStatus === activeTab && matchesBatch;
     });
 
     const count = document.querySelector('[data-sw-validation-count]');
     if (count) count.textContent = `${filtered.length} ${activeTab}`;
-    const activeLabel = document.querySelector('[data-sw-validation-active-label]');
-    if (activeLabel) activeLabel.textContent = tabLabels[activeTab] || 'Pending';
-    const meta = document.querySelector('[data-sw-validation-meta]');
-    if (meta) {
-      const searchNote = search ? ` filtered by "${search}"` : '';
-      meta.textContent = `${filtered.length} record${filtered.length === 1 ? '' : 's'} shown in the ${tabLabels[activeTab] || 'Pending'} queue${searchNote}.`;
+    const panelTitle = document.getElementById('swValidationPanelTitle');
+    if (panelTitle) {
+      panelTitle.textContent = activeTab === 'saved' ? 'Saved for Next Batch' : (tabLabels[activeTab] || 'Pending');
+    }
+    const panelBadge = document.getElementById('swValidationPanelBadge');
+    if (panelBadge) {
+      const badgeLabel = activeTab === 'saved'
+        ? `${filtered.length} saved`
+        : activeTab === 'selected'
+          ? `${filtered.length} selected`
+          : `${filtered.length} pending`;
+      panelBadge.textContent = badgeLabel;
     }
     const badge = document.querySelector('[data-section-badge="validation"]');
     if (badge) {
@@ -900,9 +1019,9 @@
     body.innerHTML = filtered.map((record) => `
       <tr>
         <td><div class="sw-applicant-cell"><strong>${escapeHtml(record.fullName || 'Unnamed applicant')}</strong><span>${escapeHtml(record.referenceCode || 'No reference code')}</span></div></td>
-        <td><div class="sw-validation-detail-cell"><strong>${escapeHtml(record.email || '--')}</strong><span>${escapeHtml(record.barangay || '--')}</span></div></td>
-        <td><div class="sw-validation-detail-cell"><strong>${escapeHtml(record.contactNumber || '--')}</strong><span>${escapeHtml(record.gender || '--')}</span></div></td>
         <td><div class="sw-validation-address-cell"><strong>${escapeHtml(record.completeAddress || '--')}</strong></div></td>
+        <td><div class="sw-validation-detail-cell"><strong>${escapeHtml(record.contactNumber || '--')}</strong><span>${escapeHtml(record.gender || '--')}</span></div></td>
+        <td><div class="sw-validation-detail-cell"><strong>${escapeHtml(record.email || '--')}</strong><span>${escapeHtml(record.barangay || '--')}</span></div></td>
         <td><span class="sw-status ${statusClass(record.statusLabel)}">${escapeHtml(record.statusLabel || '--')}</span></td>
         <td>${escapeHtml(formatDate(record.submittedAt))}</td>
         <td class="actions"><button type="button" class="app-btn-outline" data-open-validation-record="${Number(record.id || 0)}">Open record</button></td>
@@ -913,7 +1032,18 @@
   function initValidationFilters() {
     const searchInput = document.getElementById('swValidationSearch');
     if (searchInput) searchInput.value = '';
-    document.getElementById('swValidationSearch')?.addEventListener('input', renderValidation);
+    clearSelectState('swValidationBatch');
+    wireSearchInput('swValidationSearch', renderValidation);
+    document.getElementById('swValidationBatch')?.addEventListener('change', renderValidation);
+    document.getElementById('swValidationRefreshButton')?.addEventListener('click', async () => {
+      try {
+        await loadOverviewData();
+        renderValidation();
+        showToast('Validation records refreshed.', 'success');
+      } catch (error) {
+        console.warn('Unable to refresh Social Worker validation records', error);
+      }
+    });
     document.addEventListener('click', (event) => {
       const tab = event.target.closest('[data-sw-validation-tab]');
       if (tab) {
@@ -985,8 +1115,8 @@
 
   function initCoMakerFilters() {
     syncCoMakerFilterControls();
-    document.getElementById('swCoMakerSearch')?.addEventListener('input', (event) => {
-      state.coMakerFilters.search = cleanText(event.currentTarget.value || '');
+    wireSearchInput('swCoMakerSearch', (event) => {
+      state.coMakerFilters.search = cleanText(event.currentTarget?.value || '');
       renderCoMakers();
     });
     document.getElementById('swCoMakerStatus')?.addEventListener('change', (event) => {
@@ -1057,7 +1187,7 @@
     const searchInput = document.getElementById('swRepaymentSearch');
     if (searchInput) searchInput.value = '';
     clearSelectState('swRepaymentStatus');
-    document.getElementById('swRepaymentSearch')?.addEventListener('input', renderRepayments);
+    wireSearchInput('swRepaymentSearch', renderRepayments);
     document.getElementById('swRepaymentStatus')?.addEventListener('change', (event) => {
       event.currentTarget.dataset.userTouched = '1';
       renderRepayments();
@@ -1066,6 +1196,83 @@
       const button = event.target.closest('[data-open-repayment-record]');
       if (!button) return;
       openRepaymentRecord(Number(button.dataset.openRepaymentRecord || 0));
+    });
+  }
+
+  function initRepaymentWorkspace() {
+    if (!window.SMARTLEAP_REPAYMENT_REVIEW || typeof window.SMARTLEAP_REPAYMENT_REVIEW.createWorkspace !== 'function') {
+      return;
+    }
+    repaymentWorkspace = window.SMARTLEAP_REPAYMENT_REVIEW.createWorkspace({
+      actorName: authUser?.name || 'Social Worker',
+      actorRole: 'Social Worker',
+      notify: showToast,
+      initialPayments: state.repayments,
+      readOnly: true,
+      recordModalId: 'swRepaymentRecordModal',
+      recordCloseId: 'swRepaymentRecordClose',
+      beneficiaryRecordsProvider: () => Array.isArray(state.beneficiaries) ? state.beneficiaries : [],
+      onPaymentsUpdated: (payments) => {
+        state.repayments = Array.isArray(payments) ? payments : [];
+        renderBeneficiaries();
+        renderDashboardSummary();
+      },
+      ids: {
+        approvedCount: 'swRepaymentApprovedCount',
+        pendingCount: 'swRepaymentPendingCount',
+        partialCount: 'swRepaymentPartialCount',
+        fullCount: 'swRepaymentFullCount',
+        search: 'swRepaymentSearch',
+        barangayFilter: 'swRepaymentBarangay',
+        pdoFilter: 'swRepaymentPdo',
+        stateFilter: 'swRepaymentState',
+        fromDateFilter: 'swRepaymentFromDate',
+        toDateFilter: 'swRepaymentToDate',
+        resetFilters: 'swRepaymentReset',
+        rosterBody: 'swRepaymentRosterBody',
+        rosterCount: 'swRepaymentRosterCount',
+        modalRoot: 'swRepaymentModal',
+        modalClose: 'swRepaymentModalClose',
+        modalStatus: 'swRepaymentModalStatus',
+        modalTitle: 'swRepaymentModalTitle',
+        modalSubtitle: 'swRepaymentModalSubtitle',
+        beneficiaryName: 'swRepaymentBeneficiaryName',
+        business: 'swRepaymentBusiness',
+        barangay: 'swRepaymentDetailBarangay',
+        assignedPdo: 'swRepaymentAssignedPdo',
+        submittedAt: 'swRepaymentSubmittedAt',
+        summaryOutstanding: 'swRepaymentSummaryOutstanding',
+        summaryVerified: 'swRepaymentSummaryVerified',
+        summaryProgress: 'swRepaymentSummaryProgress',
+        summaryStanding: 'swRepaymentSummaryStanding',
+        proofName: 'swRepaymentProofName',
+        proofType: 'swRepaymentProofType',
+        proofDate: 'swRepaymentProofDate',
+        proofPreview: 'swRepaymentProofPreview',
+        openProof: 'swRepaymentOpenProof',
+        downloadProof: 'swRepaymentDownloadProof',
+        fullscreenProof: 'swRepaymentFullscreenProof',
+        orNumber: 'swRepaymentOrNumber',
+        paymentDate: 'swRepaymentPaymentDate',
+        submittedBy: 'swRepaymentSubmittedBy',
+        submissionType: 'swRepaymentSubmissionType',
+        coverage: 'swRepaymentCoverage',
+        amount: 'swRepaymentAmount',
+        uploadStatus: 'swRepaymentUploadStatus',
+        hardCopyStatus: 'swRepaymentHardCopyStatus',
+        duplicateWarning: 'swRepaymentDuplicateWarning',
+        historyBody: 'swRepaymentHistoryBody',
+        decisionGrid: 'swRepaymentDecisionGrid',
+        remarksGroup: 'swRepaymentRemarksGroup',
+        remarks: 'sw-repayment-remarks',
+        decisionCards: 'swRepaymentDecisionCards',
+        decisionGuide: 'swRepaymentDecisionGuide',
+        decisionNote: 'swRepaymentDecisionNote',
+        close: 'swRepaymentClose',
+      },
+      emptyColspan: 12,
+      emptyRosterMessage: 'No repayment records matched the current filters.',
+      bodyModalClass: 'sw-repayment-modal-open',
     });
   }
 
@@ -1087,9 +1294,11 @@
     const barangay = cleanText(state.beneficiaryFilters.barangay || '');
     const pdo = cleanText(state.beneficiaryFilters.pdo || '');
     const repayment = optionalFilterKey(state.beneficiaryFilters.repayment);
+    const batch = cleanText(state.beneficiaryFilters.batch || '');
     const filtered = state.beneficiaries.filter((beneficiary) => {
       const repaymentKey = normalizeKey(beneficiary.repayment?.key || '');
       const payer = responsiblePayerForBeneficiary(beneficiary);
+      const beneficiaryBatch = cleanText(beneficiary.batchNo || 'Batch 3');
       const haystack = [
         payer.name,
         payer.originalName,
@@ -1107,6 +1316,7 @@
       return (!search || haystack.includes(search))
         && (!barangay || cleanText(beneficiary.barangay || '') === barangay)
         && (!pdo || cleanText(beneficiary.assignedPdo || '') === pdo)
+        && (!batch || beneficiaryBatch.toLowerCase() === batch.toLowerCase())
         && matchesFilterKey(repaymentKey, repayment);
     });
 
@@ -1166,8 +1376,8 @@
 
   function initBeneficiaryFilters() {
     syncBeneficiaryFilterControls();
-    document.getElementById('swBeneficiarySearch')?.addEventListener('input', (event) => {
-      state.beneficiaryFilters.search = cleanText(event.currentTarget.value || '');
+    wireSearchInput('swBeneficiarySearch', (event) => {
+      state.beneficiaryFilters.search = cleanText(event.currentTarget?.value || '');
       renderBeneficiaries();
     });
     document.getElementById('swBeneficiaryBarangay')?.addEventListener('change', (event) => {
@@ -1180,6 +1390,10 @@
     });
     document.getElementById('swBeneficiaryRepayment')?.addEventListener('change', (event) => {
       state.beneficiaryFilters.repayment = cleanText(event.currentTarget.value || '');
+      renderBeneficiaries();
+    });
+    document.getElementById('swBeneficiaryBatch')?.addEventListener('change', (event) => {
+      state.beneficiaryFilters.batch = cleanText(event.currentTarget.value || '');
       renderBeneficiaries();
     });
     document.addEventListener('click', (event) => {
@@ -1764,10 +1978,7 @@
       if (button) openTicket(Number(button.dataset.openTicket || 0));
     });
 
-    const searchInput = document.getElementById('swSupportSearch');
-    if (searchInput) {
-      searchInput.addEventListener('input', filterTicketList);
-    }
+    wireSearchInput('swSupportSearch', filterTicketList);
   }
 
   let ticketSearchTimer = null;
@@ -1802,9 +2013,21 @@
     const detail = document.querySelector('[data-sw-ticket-detail]');
     if (!detail || !ticket) return;
     const messages = Array.isArray(ticket.messages) ? ticket.messages : [];
-    const closed = String(ticket.status || '').toLowerCase() === 'closed';
+    const status = String(ticket.status || 'New');
+    const closed = status.toLowerCase() === 'closed';
+    const resolved = status.toLowerCase() === 'resolved';
     const createdBy = ticket.createdByName || ticket.created_by_name || 'Sender';
     const initials = createdBy.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    const resolvedAt = ticket.resolvedAt || ticket.resolved_at || '';
+    const closedAt = ticket.closedAt || ticket.closed_at || '';
+    const updatedAt = ticket.updatedAt || ticket.updated_at || '';
+    const statusMeta = resolvedAt
+      ? `Resolved ${formatDateTime(resolvedAt)}`
+      : closedAt
+        ? `Closed ${formatDateTime(closedAt)}`
+        : updatedAt
+          ? `Last updated ${formatDateTime(updatedAt)}`
+          : '';
     detail.innerHTML = `
       <div class="sw-chat-header">
         <div class="sw-chat-header__info">
@@ -1815,7 +2038,26 @@
             <p class="sw-chat-header__subtitle">${escapeHtml(ticket.category || 'Other')} &middot; ${escapeHtml(formatDate(ticket.createdAt || ticket.created_at))}</p>
           </div>
         </div>
-        <span class="sw-status ${statusClass(ticket.status)}">${escapeHtml(ticket.status || 'New')}</span>
+        <div class="sw-ticket-statusbar">
+          <span class="sw-status ${statusClass(status)}">${escapeHtml(status)}</span>
+          <form class="sw-ticket-statusbar__form" data-ticket-status-form data-ticket-id="${Number(ticket.id || 0)}">
+            <label class="sw-ticket-statusbar__field">
+              <span>Concern status</span>
+              <select name="status" ${closed ? 'disabled' : ''}>
+                <option value="New" ${status === 'New' ? 'selected' : ''}>New</option>
+                <option value="In Review" ${status === 'In Review' ? 'selected' : ''}>In Review</option>
+                <option value="Waiting for Beneficiary" ${status === 'Waiting for Beneficiary' ? 'selected' : ''}>Waiting for Beneficiary</option>
+                <option value="Referred" ${status === 'Referred' ? 'selected' : ''}>Referred</option>
+                <option value="Resolved" ${status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                <option value="Closed" ${status === 'Closed' ? 'selected' : ''}>Closed</option>
+              </select>
+            </label>
+            <button type="submit" class="app-btn-outline sw-ticket-statusbar__submit" ${closed ? 'disabled' : ''}>Update Status</button>
+          </form>
+          ${statusMeta ? `<p class="sw-ticket-statusbar__meta">${escapeHtml(statusMeta)}</p>` : ''}
+          ${resolved ? '<p class="sw-ticket-statusbar__hint">If the requester says this is not fixed yet, they can reopen the concern.</p>' : ''}
+          <p class="sw-inline-error sw-ticket-statusbar__error" data-ticket-status-error></p>
+        </div>
       </div>
       <div class="sw-ticket-thread" data-thread-container>
         ${messages.length ? messages.map(renderMessage).join('') : '<div class="sw-chat-empty">No messages yet. Start the conversation below.</div>'}
@@ -1835,6 +2077,7 @@
         </form>
       `}
     `;
+    detail.querySelector('[data-ticket-status-form]')?.addEventListener('submit', updateTicketStatus);
     detail.querySelector('[data-ticket-reply]')?.addEventListener('submit', sendTicketReply);
 
     const thread = detail.querySelector('[data-thread-container]');
@@ -1886,6 +2129,31 @@
     } catch (error) {
       if (errorNode) errorNode.textContent = error.message || 'Unable to send reply.';
       showToast(error.message || 'Unable to send reply.', 'error');
+    }
+  }
+
+  async function updateTicketStatus(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const ticketId = Number(form.dataset.ticketId || 0);
+    const errorNode = form.parentElement?.querySelector('[data-ticket-status-error]');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const select = form.querySelector('select[name="status"]');
+    const data = new FormData(form);
+    data.append('ticket_id', String(ticketId));
+    if (errorNode) errorNode.textContent = '';
+    if (submitButton) submitButton.disabled = true;
+    if (select) select.disabled = true;
+    try {
+      await request('staff/support/ticket/status', { method: 'POST', body: data });
+      showToast('Concern status updated.', 'success');
+      await loadSupportTickets();
+      await openTicket(ticketId);
+    } catch (error) {
+      if (errorNode) errorNode.textContent = error.message || 'Unable to update concern status.';
+      showToast(error.message || 'Unable to update concern status.', 'error');
+      if (submitButton) submitButton.disabled = false;
+      if (select) select.disabled = false;
     }
   }
 
@@ -2279,6 +2547,19 @@
     return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  function formatDateTime(value) {
+    if (!value) return '--';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
   function labelize(value) {
     return String(value || '')
       .replace(/_/g, ' ')
@@ -2305,7 +2586,7 @@
     initApplicationFilters();
     initBeneficiaryFilters();
     initCoMakerFilters();
-    initRepaymentFilters();
+    initRepaymentWorkspace();
     initSupport();
     initRefresh();
     renderOverviewMetrics();
@@ -2313,7 +2594,6 @@
     renderApplications();
     renderBeneficiaries();
     renderCoMakers();
-    renderRepayments();
     renderTickets();
     renderDashboardSummary();
     setSection('dashboard');
@@ -2325,10 +2605,12 @@
 
   window.addEventListener('pageshow', () => {
     clearSelectState('swApplicationStatus');
-    clearSelectState('swRepaymentStatus');
+    clearSelectState('swApplicationBatch');
+    clearSelectState('swValidationBatch');
     forceDefaultSelects([
       'swApplicationStatus',
-      'swRepaymentStatus',
+      'swApplicationBatch',
+      'swValidationBatch',
     ]);
     state.validationTab = 'pending';
     state.beneficiaryFilters = {
@@ -2336,6 +2618,7 @@
       barangay: '',
       pdo: '',
       repayment: '',
+      batch: '',
     };
     state.coMakerFilters = {
       search: '',
@@ -2349,6 +2632,6 @@
     renderApplications();
     renderBeneficiaries();
     renderCoMakers();
-    renderRepayments();
+    repaymentWorkspace?.resetFilters?.();
   });
 })();

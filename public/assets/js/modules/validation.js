@@ -22,6 +22,7 @@
     },
     activeId: 0,
     activeTab: 'pending',
+    selectedBatch: '',
   };
 
   const baseUrl = (window.SMARTLEAP_BASE_URL || '').replace(/\/+$/, '');
@@ -264,6 +265,29 @@
       emailBadge.textContent = `${emailFailureCount} failed`;
     }
 
+    const activeBatch = summary.activeBatch || 'Batch 3';
+    const viewBatch = summary.viewBatch || activeBatch;
+    const nextBatch = summary.nextBatch || 'Batch 4';
+    const selLabel = document.getElementById('validationSelectedBatchLabel');
+    if (selLabel) selLabel.textContent = `Selected for ${viewBatch}`;
+    const savLabel = document.getElementById('validationSavedBatchLabel');
+    if (savLabel) savLabel.textContent = `Saved for ${nextBatch}`;
+    const activePill = document.getElementById('validationActiveBatchPill');
+    if (activePill) activePill.textContent = activeBatch;
+    const switchBtnBadge = document.getElementById('batchSwitchButtonBadge');
+    if (switchBtnBadge) switchBtnBadge.textContent = activeBatch;
+
+    const cohortFilter = document.getElementById('validationCohortFilter');
+    if (cohortFilter) {
+      const all = Array.isArray(summary.allBatches) ? summary.allBatches : ['Batch 1', 'Batch 2', 'Batch 3'];
+      const currentVal = state.selectedBatch || activeBatch;
+      cohortFilter.innerHTML = `
+        <option value="${activeBatch}" ${currentVal === activeBatch ? 'selected' : ''}>${activeBatch} (Active)</option>
+        ${all.filter((b) => b !== activeBatch).map((b) => `<option value="${b}" ${currentVal === b ? 'selected' : ''}>${b}</option>`).join('')}
+        <option value="all" ${currentVal === 'all' ? 'selected' : ''}>All Batches</option>
+      `;
+    }
+
     const navBadge = document.querySelector('[data-section-badge="validation"]');
     if (navBadge) {
       const pending = Number(summary.pending || 0);
@@ -349,12 +373,12 @@
       const active = button.getAttribute('data-validation-tab') === nextTab;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-selected', active ? 'true' : 'false');
-      button.style.color = active ? '#ffffff' : '#18385b';
-      button.style.webkitTextFillColor = active ? '#ffffff' : '#18385b';
+      button.style.color = '';
+      button.style.webkitTextFillColor = '';
       const badge = button.querySelector('span');
       if (badge instanceof HTMLElement) {
-        badge.style.color = '#ffffff';
-        badge.style.webkitTextFillColor = '#ffffff';
+        badge.style.color = '';
+        badge.style.webkitTextFillColor = '';
       }
     });
 
@@ -643,7 +667,8 @@
   };
 
   const refresh = async (noticeMessage = '', noticeTone = 'info') => {
-    const response = await apiGet('api/validation');
+    const params = state.selectedBatch ? { batch: state.selectedBatch } : {};
+    const response = await apiGet('api/validation', params);
     if (!response.ok) {
       renderNotice(response.message || 'Unable to load validation records.', 'danger');
       return;
@@ -690,6 +715,141 @@
     closeModal();
   };
 
+  let currentBatchMetrics = null;
+
+  const updateBatchExplanationAndAction = () => {
+    if (!currentBatchMetrics) return;
+    const select = document.getElementById('batchModalTargetSelect');
+    if (!select) return;
+
+    const target = select.value;
+    const active = currentBatchMetrics.activeBatch || 'Batch 3';
+    const next = currentBatchMetrics.nextBatch || 'Batch 4';
+    const waitlisted = Number(currentBatchMetrics.waitlistedCount || 0);
+
+    const explanationEl = document.getElementById('batchModalExplanationText');
+    const btnTextEl = document.getElementById('batchModalBtnText');
+
+    if (target === active) {
+      if (explanationEl) {
+        explanationEl.textContent = `${active} is currently active. Public Stage 1 registrations and intake processes are assigned to ${active}.`;
+      }
+      if (btnTextEl) {
+        btnTextEl.textContent = `Keep ${active}`;
+      }
+    } else if (target === next) {
+      if (explanationEl) {
+        explanationEl.textContent = `Advancing to ${next} will activate a new intake cohort. ${waitlisted > 0 ? `${waitlisted} waitlisted applicant(s) will automatically be promoted to Pending in ${next}.` : 'New public registrants will be enrolled in ' + next + '.'}`;
+      }
+      if (btnTextEl) {
+        btnTextEl.textContent = `Advance to ${next}`;
+      }
+    } else {
+      if (explanationEl) {
+        explanationEl.textContent = `Switching to ${target} will set the active intake cohort to ${target} for review and intake validation.`;
+      }
+      if (btnTextEl) {
+        btnTextEl.textContent = `Switch to ${target}`;
+      }
+    }
+  };
+
+  const openBatchModal = async () => {
+    const modal = document.getElementById('batchSwitchModal');
+    if (!modal) return;
+
+    const feedback = document.getElementById('batchModalFeedback');
+    if (feedback) {
+      feedback.hidden = true;
+      feedback.textContent = '';
+    }
+
+    const res = await apiGet('api/validation/batch-metrics');
+    if (res.ok && res.data) {
+      currentBatchMetrics = res.data;
+      const d = res.data;
+      const active = d.activeBatch || 'Batch 3';
+      const next = d.nextBatch || 'Batch 4';
+      const all = Array.isArray(d.allBatches) ? d.allBatches : ['Batch 1', 'Batch 2', 'Batch 3'];
+
+      const activeEl = document.getElementById('batchModalActiveName');
+      if (activeEl) activeEl.textContent = active;
+
+      const waitEl = document.getElementById('batchModalWaitlistCount');
+      if (waitEl) waitEl.textContent = `${d.waitlistedCount || 0} applicants`;
+
+      const select = document.getElementById('batchModalTargetSelect');
+      if (select) {
+        select.innerHTML = '';
+        all.forEach((b) => {
+          const opt = document.createElement('option');
+          opt.value = b;
+          opt.textContent = b === active ? `${b} (Current Active)` : b;
+          if (b === active) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        if (!all.includes(next)) {
+          const nextOpt = document.createElement('option');
+          nextOpt.value = next;
+          nextOpt.textContent = `+ Advance to ${next} (New Cohort)`;
+          select.appendChild(nextOpt);
+        }
+      }
+
+      updateBatchExplanationAndAction();
+    }
+
+    modal.hidden = false;
+  };
+
+  const closeBatchModal = () => {
+    const modal = document.getElementById('batchSwitchModal');
+    if (modal) modal.hidden = true;
+  };
+
+  const handleSwitchBatchConfirm = async () => {
+    const btn = document.getElementById('confirmSwitchBatchBtn');
+    const feedback = document.getElementById('batchModalFeedback');
+    const select = document.getElementById('batchModalTargetSelect');
+    const targetBatch = select ? select.value : '';
+
+    if (!targetBatch) return;
+
+    const activeEl = document.getElementById('batchModalActiveName');
+    const currentActive = activeEl ? activeEl.textContent.trim() : '';
+
+    if (targetBatch === currentActive) {
+      closeBatchModal();
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Switching...';
+    }
+
+    const res = await apiPost('api/validation/switch-batch', { targetBatch });
+
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-check mr-1"></i> <span id="batchModalBtnText">Switch to ${escapeHtml(targetBatch)}</span>`;
+    }
+
+    if (!res.ok) {
+      if (feedback) {
+        feedback.className = 'notice danger';
+        feedback.textContent = res.message || 'Failed to switch batch.';
+        feedback.hidden = false;
+      }
+      return;
+    }
+
+    closeBatchModal();
+    state.selectedBatch = targetBatch;
+    await refresh(res.message || `Active batch set to ${targetBatch}.`, 'info');
+  };
+
   const bindEvents = () => {
     const target = section();
     if (!target || target.dataset.validationBound === 'true') return;
@@ -714,6 +874,10 @@
         closeHardcopyModal();
       }
 
+      if (targetNode.matches('[data-batch-modal-close]') || targetNode.closest('[data-batch-modal-close]')) {
+        closeBatchModal();
+      }
+
       const actionButton = targetNode.closest('[data-validation-action]');
       if (actionButton instanceof HTMLElement) {
         handleReview(actionButton);
@@ -724,6 +888,15 @@
         handleDuplicateReview(dupButton);
       }
     });
+
+    const batchModal = document.getElementById('batchSwitchModal');
+    if (batchModal) {
+      batchModal.addEventListener('click', (e) => {
+        if (e.target === batchModal) {
+          closeBatchModal();
+        }
+      });
+    }
 
     document.addEventListener('submit', (event) => {
       const form = event.target;
@@ -745,6 +918,13 @@
     });
 
     document.getElementById('validationHardcopyButton')?.addEventListener('click', openHardcopyModal);
+    document.getElementById('validationCohortFilter')?.addEventListener('change', (event) => {
+      state.selectedBatch = event.target.value;
+      refresh();
+    });
+    document.getElementById('batchSwitchButton')?.addEventListener('click', openBatchModal);
+    document.getElementById('confirmSwitchBatchBtn')?.addEventListener('click', handleSwitchBatchConfirm);
+    document.getElementById('batchModalTargetSelect')?.addEventListener('change', updateBatchExplanationAndAction);
 
     target.dataset.validationBound = 'true';
   };

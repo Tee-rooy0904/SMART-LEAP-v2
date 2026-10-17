@@ -43,11 +43,16 @@
     partial_paid: '#31d0c6',
     fully_paid: '#8c61ff',
   };
+  const TRAINING_ATTENDANCE_COLORS = {
+    attended: '#16a34a',
+    absent: '#ef4444',
+    excused: '#8b5cf6',
+    pending: '#f59e0b',
+  };
   const FALLBACK_CHART_COLORS = ['#1d4ed8', '#16a34a', '#f97316', '#7c3aed', '#dc2626', '#0891b2', '#be185d', '#4d7c0f'];
   const today = new Date();
   const currentReportMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const currentReportYear = String(today.getFullYear());
-  const repaymentCycleStartMonth = 5;
   const formatReportCurrencyLabel = (value) => {
     const amount = safeNumber(value);
     if (!Number.isFinite(amount) || amount === 0) return '\u20b10';
@@ -56,23 +61,19 @@
     }
     return `\u20b1${amount.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   };
-  const buildRepaymentCycleMonths = (yearValue, repaymentYear = '1') => {
-    const baseYear = (Number.parseInt(yearValue, 10) || Number.parseInt(currentReportYear, 10)) + (String(repaymentYear) === '2' ? 1 : 0);
-    const start = new Date(baseYear, repaymentCycleStartMonth - 1, 1);
-    return Array.from({ length: 12 }, (_, index) => {
-      const month = new Date(start.getFullYear(), start.getMonth() + index, 1);
-      return `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
-    });
+  const buildRepaymentCycleMonths = (yearValue) => {
+    const baseYear = Number.parseInt(yearValue, 10) || Number.parseInt(currentReportYear, 10);
+    return Array.from({ length: 12 }, (_, index) => `${baseYear}-${String(index + 1).padStart(2, '0')}`);
   };
   const defaultCycleMonth = (() => {
-    const cycleMonths = buildRepaymentCycleMonths(currentReportYear, '1');
+    const cycleMonths = buildRepaymentCycleMonths(currentReportYear);
     return cycleMonths.includes(currentReportMonth) ? currentReportMonth : cycleMonths[0];
   })();
   const deriveRepaymentQuarter = (monthValue) => {
     const [, monthPart] = String(monthValue || '').split('-');
     const monthNumber = Number.parseInt(monthPart, 10);
     if (!monthNumber) return '1';
-    return String(Math.floor(((monthNumber - repaymentCycleStartMonth + 12) % 12) / 3) + 1);
+    return String(Math.floor((monthNumber - 1) / 3) + 1);
   };
   const niceAxisStep = (rawMax) => {
     const safeMax = Math.max(safeNumber(rawMax), 1);
@@ -96,7 +97,7 @@
     reports: 'Reports',
   };
   // Shared client state for scoped applications, beneficiaries, repayments, reports, and training subviews.
-  const state = { applications: Array.isArray(initialOverview.applications) ? initialOverview.applications : [], roster: Array.isArray(initialOverview.roster) ? initialOverview.roster : [], summary: initialOverview.summary || {}, scopeBarangays: Array.isArray(initialOverview.scopeBarangays) ? initialOverview.scopeBarangays : [], beneficiarySummary: initialOverview.beneficiarySummary || {}, beneficiaryRoster: Array.isArray(initialOverview.beneficiaryRoster) ? initialOverview.beneficiaryRoster : [], repaymentRecords: Array.isArray(initialRepaymentData.payments) ? initialRepaymentData.payments : [], dashboardLoaded: false, activeApplication: null, activePreviewToken: '', activePreviewOwnerId: null, activeBeneficiaryId: null, beneficiaryFilters: { search: '', barangay: '', repayment: '', status: '' }, reportsInitialized: false, reports: { period: 'monthly', month: defaultCycleMonth, quarter: deriveRepaymentQuarter(defaultCycleMonth), year: currentReportYear, repaymentYear: '1', from: '', to: '', search: '', barangay: '', pdo: '', serviceType: '', gender: '', repayment: '', refreshTimer: null, refreshing: false, liveRequestId: 0 }, searchTimers: {}, returnToApplicationModal: false, assistanceReceivedSelection: false, repayments: { workspace: null, syncObserver: null, syncingDetail: false, modal: null, syncTimer: null }, training: { view: 'overview', subview: 'attendance', programs: [], summary: {}, eligibleInvitees: [], seminarForms: [], selectedProgramId: null, activeProgram: null, lastUpdatedInviteeId: null, lastNotifiedInviteeId: null, savingProgram: false, syncingInvitees: false, sendingProgramNotice: '', removingProgramId: null, confirmRemoveProgramId: null, busyInvitees: {}, rosterSearch: '', rosterFilter: '', assignmentSearch: '', assignmentFilter: '', assignedSearch: '', assignedFilter: '', noticeSelection: [], noticeFilters: { search: '', status: '' }, noticeWarning: '', attendanceEditorId: null, attendanceDrafts: {}, sessionFilter: '', groupFilter: '', activityFilter: '', overviewStatusFilter: '' } };
+  const state = { applications: Array.isArray(initialOverview.applications) ? initialOverview.applications : [], roster: Array.isArray(initialOverview.roster) ? initialOverview.roster : [], summary: initialOverview.summary || {}, scopeBarangays: Array.isArray(initialOverview.scopeBarangays) ? initialOverview.scopeBarangays : [], beneficiarySummary: initialOverview.beneficiarySummary || {}, beneficiaryRoster: Array.isArray(initialOverview.beneficiaryRoster) ? initialOverview.beneficiaryRoster : [], repaymentRecords: Array.isArray(initialRepaymentData.payments) ? initialRepaymentData.payments : [], dashboardLoaded: false, activeApplication: null, activePreviewToken: '', activePreviewOwnerId: null, activeBeneficiaryId: null, beneficiaryFilters: { search: '', barangay: '', repayment: '', status: '', batch: '' }, reportsInitialized: false, reports: { period: 'monthly', month: defaultCycleMonth, quarter: deriveRepaymentQuarter(defaultCycleMonth), year: currentReportYear, repaymentYear: '1', from: '', to: '', search: '', barangay: '', pdo: '', serviceType: '', gender: '', repayment: '', refreshTimer: null, refreshing: false, liveRequestId: 0 }, searchTimers: {}, returnToApplicationModal: false, assistanceReceivedSelection: false, repayments: { workspace: null, syncObserver: null, syncingDetail: false, modal: null, syncTimer: null }, training: { view: 'overview', subview: 'attendance', programs: [], summary: {}, eligibleInvitees: [], seminarForms: [], selectedProgramId: null, activeProgram: null, lastUpdatedInviteeId: null, lastNotifiedInviteeId: null, savingProgram: false, syncingInvitees: false, sendingProgramNotice: '', removingProgramId: null, confirmRemoveProgramId: null, busyInvitees: {}, rosterSearch: '', rosterFilter: '', assignmentSearch: '', assignmentFilter: '', assignedSearch: '', assignedFilter: '', noticeSelection: [], noticeFilters: { search: '', status: '' }, noticeWarning: '', attendanceEditorId: null, attendanceDrafts: {}, sessionFilter: '', groupFilter: '', activityFilter: '', overviewStatusFilter: '' } };
   const routeUrl = (path) => `${baseUrl}/${String(path || '').replace(/^\/+/, '')}`;
   const absoluteRouteUrl = (path) => new URL(routeUrl(path), window.location.origin).toString();
 
@@ -129,12 +130,84 @@
     document.getElementById('po-refresh')?.addEventListener('click', async () => { await loadDashboard(); await loadTraining(); });
     document.getElementById('po-training-add-session')?.addEventListener('click', openNewTrainingSession);
     document.getElementById('po-training-back')?.addEventListener('click', () => switchTrainingView('overview'));
-    document.getElementById('po-app-search')?.addEventListener('input', () => debounceRender('application-search', renderApplicationsTable));
+    const poAppSearch = document.getElementById('po-app-search');
+    const poAppSearchClear = document.getElementById('po-app-search-clear');
+    const updatePoAppSearchClear = () => {
+      if (poAppSearchClear) poAppSearchClear.style.display = poAppSearch?.value ? 'inline-flex' : 'none';
+    };
+    poAppSearch?.addEventListener('input', () => {
+      updatePoAppSearchClear();
+      debounceRender('application-search', renderApplicationsTable);
+    });
+    poAppSearch?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && poAppSearch.value) {
+        poAppSearch.value = '';
+        updatePoAppSearchClear();
+        renderApplicationsTable();
+      }
+    });
+    poAppSearchClear?.addEventListener('click', () => {
+      if (poAppSearch) poAppSearch.value = '';
+      updatePoAppSearchClear();
+      renderApplicationsTable();
+      poAppSearch?.focus();
+    });
+
     document.getElementById('po-app-filter')?.addEventListener('change', renderApplicationsTable);
     document.getElementById('po-app-livelihood-filter')?.addEventListener('change', renderApplicationsTable);
-    document.getElementById('poBeneficiarySearch')?.addEventListener('input', (event) => {
+    document.getElementById('po-app-batch-filter')?.addEventListener('change', renderApplicationsTable);
+
+    const poBenSearch = document.getElementById('poBeneficiarySearch');
+    const poBenSearchClear = document.getElementById('poBeneficiarySearchClear');
+    const updatePoBenSearchClear = () => {
+      if (poBenSearchClear) {
+        poBenSearchClear.style.display = poBenSearch?.value ? 'inline-flex' : 'none';
+        poBenSearchClear.classList.toggle('is-visible', !!poBenSearch?.value);
+      }
+    };
+    poBenSearch?.addEventListener('input', (event) => {
       state.beneficiaryFilters.search = String(event.target.value || '');
+      updatePoBenSearchClear();
       debounceRender('beneficiary-search', renderBeneficiariesTable);
+    });
+    poBenSearch?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && poBenSearch.value) {
+        poBenSearch.value = '';
+        state.beneficiaryFilters.search = '';
+        updatePoBenSearchClear();
+        renderBeneficiariesTable();
+      }
+    });
+    poBenSearchClear?.addEventListener('click', () => {
+      if (poBenSearch) poBenSearch.value = '';
+      state.beneficiaryFilters.search = '';
+      updatePoBenSearchClear();
+      renderBeneficiariesTable();
+      poBenSearch?.focus();
+    });
+
+    const poRepaySearch = document.getElementById('po-repayment-search');
+    const poRepaySearchClear = document.getElementById('po-repayment-search-clear');
+    const updatePoRepaySearchClear = () => {
+      if (poRepaySearchClear) poRepaySearchClear.style.display = poRepaySearch?.value ? 'inline-flex' : 'none';
+    };
+    poRepaySearch?.addEventListener('input', () => {
+      updatePoRepaySearchClear();
+    });
+    poRepaySearch?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && poRepaySearch.value) {
+        poRepaySearch.value = '';
+        updatePoRepaySearchClear();
+        poRepaySearch.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    poRepaySearchClear?.addEventListener('click', () => {
+      if (poRepaySearch) {
+        poRepaySearch.value = '';
+        updatePoRepaySearchClear();
+        poRepaySearch.dispatchEvent(new Event('input', { bubbles: true }));
+        poRepaySearch.focus();
+      }
     });
     document.getElementById('poBeneficiaryBarangayFilter')?.addEventListener('change', (event) => {
       state.beneficiaryFilters.barangay = String(event.target.value || '');
@@ -146,6 +219,10 @@
     });
     document.getElementById('poBeneficiaryStatusFilter')?.addEventListener('change', (event) => {
       state.beneficiaryFilters.status = String(event.target.value || '');
+      renderBeneficiariesTable();
+    });
+    document.getElementById('poBeneficiaryBatchFilter')?.addEventListener('change', (event) => {
+      state.beneficiaryFilters.batch = String(event.target.value || '');
       renderBeneficiariesTable();
     });
     ['poReportsPeriod', 'poReportsMonth', 'poReportsQuarter', 'poReportsYear', 'poReportsRepaymentYear', 'poReportsFrom', 'poReportsTo', 'poReportsServiceType', 'poReportsGender'].forEach((id) => {
@@ -814,6 +891,7 @@
     state.summary = response.data?.summary || {};
     state.beneficiarySummary = response.data?.beneficiarySummary || {};
     state.beneficiaryRoster = Array.isArray(response.data?.beneficiaryRoster) ? response.data.beneficiaryRoster : [];
+    state.trainingAttendanceSummary = response.data?.trainingAttendanceSummary || { segments: [], total: 0 };
     state.scopeBarangays = response.data?.scopeBarangays || [];
     state.dashboardLoaded = true;
     const scopeDistricts = Array.from(new Set(
@@ -914,11 +992,21 @@
       { value: '1', label: 'Year 1' },
       { value: '2', label: 'Year 2' },
     ], state.reports.repaymentYear, 'Select repayment cycle');
-    fill('poReportsQuarter', [
-      { value: '1', label: 'Q1 (May-Jul)' },
-      { value: '2', label: 'Q2 (Aug-Oct)' },
-      { value: '3', label: 'Q3 (Nov-Jan)' },
-      { value: '4', label: 'Q4 (Feb-Apr)' },
+    const quarterOptions = Array.isArray(options.repaymentQuarters) && options.repaymentQuarters.length
+      ? options.repaymentQuarters
+          .filter((item) => String(item.year || '') === String(state.reports.year || currentReportYear))
+          .map((item) => ({ value: String(item.quarter || ''), label: String(item.label || `Q${item.quarter || ''}`) }))
+      : [
+          { value: '1', label: 'Q1 (Jan - Mar)' },
+          { value: '2', label: 'Q2 (Apr - Jun)' },
+          { value: '3', label: 'Q3 (Jul - Sep)' },
+          { value: '4', label: 'Q4 (Oct - Dec)' },
+        ];
+    fill('poReportsQuarter', quarterOptions.length ? quarterOptions : [
+      { value: '1', label: 'Q1 (Jan - Mar)' },
+      { value: '2', label: 'Q2 (Apr - Jun)' },
+      { value: '3', label: 'Q3 (Jul - Sep)' },
+      { value: '4', label: 'Q4 (Oct - Dec)' },
     ], state.reports.quarter, 'Select repayment quarter');
   }
 
@@ -1240,9 +1328,9 @@
         submittedBy: 'poRepaymentSubmittedBy',
         uploadStatus: 'poRepaymentUploadStatus',
         hardCopyStatus: 'poRepaymentHardCopyStatus',
-        hardCopyInput: 'poRepaymentHardCopyInput',
-        hardCopyUpdateBtn: 'poRepaymentHardCopyUpdateBtn',
         duplicateWarning: 'poRepaymentDuplicateWarning',
+        decisionGrid: 'poRepaymentDecisionGrid',
+        remarksGroup: 'poRepaymentRemarksGroup',
         proofName: 'poRepaymentProofName',
         proofType: 'poRepaymentProofType',
         proofDate: 'poRepaymentProofDate',
@@ -1253,6 +1341,7 @@
         historyBody: 'poRepaymentHistoryBody',
         remarks: 'po-repayment-remarks',
         decisionCards: 'poRepaymentDecisionCards',
+        decisionGuide: 'poRepaymentDecisionGuide',
         decisionNote: 'poRepaymentDecisionNote',
         close: 'poRepaymentClose',
       },
@@ -1306,13 +1395,29 @@
       const options = Array.from(new Set([...livelihoodCategories, ...availableCategories])).sort((left, right) => left.localeCompare(right));
       livelihoodFilterSelect.innerHTML = `<option value="">All categories</option>${options.map((category) => `<option value="${escapeHtml(category)}"${currentValue === category ? ' selected' : ''}>${escapeHtml(category)}</option>`).join('')}`;
     }
+    const batchFilterSelect = document.getElementById('po-app-batch-filter');
+    if (batchFilterSelect) {
+      const currentValue = String(batchFilterSelect.value || '');
+      const rawBatches = Array.from(new Set(state.applications.map((item) => formatBatchNo(item.batchNo)).filter(Boolean)));
+      ['Batch 1', 'Batch 2', 'Batch 3'].forEach((b) => {
+        if (!rawBatches.includes(b)) rawBatches.push(b);
+      });
+      const sortedBatches = rawBatches.sort((a, b) => {
+        const numA = parseInt(a.replace(/\D/g, '') || '0', 10);
+        const numB = parseInt(b.replace(/\D/g, '') || '0', 10);
+        return numA - numB;
+      });
+      batchFilterSelect.innerHTML = `<option value="">All batches</option>${sortedBatches.map((b) => `<option value="${escapeHtml(b)}"${currentValue === b ? ' selected' : ''}>${escapeHtml(b)}</option>`).join('')}`;
+    }
     const filter = String(document.getElementById('po-app-filter')?.value || '');
     const livelihoodCategory = String(document.getElementById('po-app-livelihood-filter')?.value || '');
+    const batchFilter = String(document.getElementById('po-app-batch-filter')?.value || '');
     const search = String(document.getElementById('po-app-search')?.value || '').toLowerCase();
     const filtered = state.applications.filter((item) => {
       const matchesStatus = !filter || item.status === filter;
       const matchesLivelihoodCategory = !livelihoodCategory || String(item.livelihoodCategory || '').trim() === livelihoodCategory;
-      return matchesStatus && matchesLivelihoodCategory && applicationMatchesSearch(item, search);
+      const matchesBatch = !batchFilter || formatBatchNo(item.batchNo) === batchFilter;
+      return matchesStatus && matchesLivelihoodCategory && matchesBatch && applicationMatchesSearch(item, search);
     });
     tbody.innerHTML = filtered.map((item) => `<tr><td><div class="po-application-identity"><div class="table-primary">${escapeHtml(item.applicantName)}</div><div class="table-secondary">${escapeHtml(item.businessName || 'No business name recorded')}</div><div class="table-tertiary">${escapeHtml(item.email || item.contactNumber || '--')}</div></div></td><td><div class="po-location-cell"><strong>${escapeHtml(item.barangay || '--')}</strong><span>${escapeHtml(item.contactNumber || 'No contact number')}</span></div></td><td><span class="po-batch-pill">${escapeHtml(formatBatchNo(item.batchNo))}</span></td><td><div class="po-progress-cell"><strong>${item.verifiedRequirementCount || 0} / ${item.requiredRequirementCount || 0}</strong><span>verified of required requirements</span></div></td><td><span class="po-status-pill po-status-pill--workflow ${statusClass(item.status)}">${escapeHtml(item.status || '--')}</span></td><td><span class="po-status-pill po-status-pill--readiness ${readinessBadgeClass(item.status)}">${escapeHtml(readinessLabel(item.status))}</span></td><td><div class="po-date-cell"><strong>${formatDate(item.submittedAt)}</strong><span>submission date</span></div></td><td class="text-center"><button type="button" class="action-button po-case-action" data-open-application="${item.id}"><i class="fas fa-folder-open"></i><span>Open Review</span></button></td></tr>`).join('') || '<tr><td colspan="8" class="text-center text-muted">No scoped applications found.</td></tr>';
     setText('po-app-table-caption', filter ? `${filter} queue` : 'Queue review list');
@@ -1387,6 +1492,23 @@
     }
     if (repayment) repayment.value = state.beneficiaryFilters.repayment || '';
     if (status) status.value = state.beneficiaryFilters.status || '';
+    const batchFilter = document.getElementById('poBeneficiaryBatchFilter');
+    if (batchFilter) {
+      const current = normalizeFilterValue(state.beneficiaryFilters.batch);
+      const rawBatches = uniqueSorted(records.map((item) => formatBatchNo(item.batchNo || 'Batch 3')));
+      ['Batch 1', 'Batch 2', 'Batch 3'].forEach((b) => {
+        if (!rawBatches.includes(b)) rawBatches.push(b);
+      });
+      const sortedBatches = rawBatches.sort((a, b) => {
+        const numA = parseInt(a.replace(/\D/g, '') || '0', 10);
+        const numB = parseInt(b.replace(/\D/g, '') || '0', 10);
+        return numA - numB;
+      });
+      batchFilter.innerHTML = `<option value="">All batches</option>${sortedBatches.map((value) => {
+        const normalized = normalizeFilterValue(value);
+        return `<option value="${escapeHtml(normalized)}"${current === normalized ? ' selected' : ''}>${escapeHtml(value)}</option>`;
+      }).join('')}`;
+    }
   }
 
   function filterBeneficiaryRecords(records = getScopedBeneficiaryRecords()) {
@@ -1403,11 +1525,13 @@
       const barangay = normalizeFilterValue(record.barangay || 'Unassigned');
       const repayment = normalizeDashboardKey(record.repayment?.key || 'no_upload_yet');
       const status = normalizeDashboardKey(record.programStatus || 'active');
+      const recordBatch = normalizeFilterValue(formatBatchNo(record.batchNo || 'Batch 3'));
 
       return (!search || searchable.includes(search))
         && (!state.beneficiaryFilters.barangay || barangay === state.beneficiaryFilters.barangay)
         && (!state.beneficiaryFilters.repayment || repayment === state.beneficiaryFilters.repayment)
-        && (!state.beneficiaryFilters.status || status === state.beneficiaryFilters.status);
+        && (!state.beneficiaryFilters.status || status === state.beneficiaryFilters.status)
+        && (!state.beneficiaryFilters.batch || recordBatch === state.beneficiaryFilters.batch);
     });
   }
 
@@ -2309,32 +2433,32 @@
   }
 
   function renderOverviewCharts() {
-    const applicationCounts = countDashboardEntries(state.applications, (item) => item.status || 'Draft');
     const beneficiaryCounts = countDashboardEntries(state.beneficiaryRoster, (item) => beneficiaryStatusLabel(item.programStatus || 'active'));
     const repaymentCounts = countDashboardEntries(
       buildScopedRepaymentRoster(state.beneficiaryRoster, state.repaymentRecords),
       (item) => item.repayment?.label || item.repayment?.key || 'No Upload Yet'
     );
+    const trainingDistribution = state.trainingAttendanceSummary || initialOverview.trainingAttendanceSummary || { segments: [], total: 0 };
 
-    const applicantEntries = Array.from(applicationCounts.values());
     const beneficiaryEntries = [
       { key: 'deceased', label: 'Deceased', count: safeNumber(beneficiaryCounts.get('deceased')?.count || 0), forceDisplay: true },
       { key: 'inactive', label: 'Inactive', count: safeNumber(beneficiaryCounts.get('inactive')?.count || 0), forceDisplay: true },
       { key: 'active', label: 'Active', count: safeNumber(beneficiaryCounts.get('active')?.count || 0), forceDisplay: true },
     ];
     const repaymentEntries = Array.from(repaymentCounts.values());
+    const trainingEntries = Array.isArray(trainingDistribution?.segments) ? trainingDistribution.segments : [];
 
-    renderPoDashboardChart('poApplicantsStatusChart', applicantEntries, APPLICATION_STATUS_COLORS, 'No applicant records yet.');
+    renderPoDashboardChart('poTrainingAttendanceChart', trainingEntries, TRAINING_ATTENDANCE_COLORS, 'No attendance records yet.');
     renderPoDashboardLegend(
-      'poApplicantsStatusLegend',
-      'poApplicantsStatusFooter',
-      applicantEntries,
-      APPLICATION_STATUS_COLORS,
+      'poTrainingAttendanceLegend',
+      'poTrainingAttendanceFooter',
+      trainingEntries,
+      TRAINING_ATTENDANCE_COLORS,
       (items, total) => {
         const largest = items.slice().sort((left, right) => safeNumber(right.count) - safeNumber(left.count))[0];
-        return largest ? `${largest.label}: ${safeNumber(largest.count)} of ${total}.` : 'No applicant records yet.';
+        return largest ? `${largest.label}: ${safeNumber(largest.count)} of ${total}.` : 'No attendance records yet.';
       },
-      'No applicant records yet.'
+      'No attendance records yet.'
     );
 
     renderPoDashboardChart('poBeneficiariesStatusChart', beneficiaryEntries, BENEFICIARY_STATUS_COLORS, 'No beneficiary records yet.');
@@ -2706,6 +2830,10 @@
     return `${total} ${total === 1 ? 'item' : 'items'}`;
   }
 
+  function formReviewTaskId(item) {
+    return Number(item?.reviewTaskId || item?.taskId || item?.id || 0);
+  }
+
   function ensureActivePreview(app) {
     const appId = Number(app?.id || 0) || null;
     if (state.activePreviewOwnerId !== appId) {
@@ -2719,14 +2847,14 @@
       return;
     }
     const firstForm = (app.formRequirements || []).find((item) => formReviewUrl(item, true));
-    state.activePreviewToken = firstForm ? `form:${String(firstForm.id)}` : '';
+    state.activePreviewToken = firstForm ? `form:${String(formReviewTaskId(firstForm) || firstForm.key || '')}` : '';
   }
 
   function resolvePreviewItem(token, app = state.activeApplication) {
     if (!token || !app) return null;
     const [kind, rawId] = String(token).split(':');
     if (kind === 'upload') return (app.requirements || []).find((item) => String(item.key) === rawId) ? { kind, item: (app.requirements || []).find((item) => String(item.key) === rawId) } : null;
-    if (kind === 'form') return (app.formRequirements || []).find((item) => String(item.id) === rawId) ? { kind, item: (app.formRequirements || []).find((item) => String(item.id) === rawId) } : null;
+    if (kind === 'form') return (app.formRequirements || []).find((item) => String(formReviewTaskId(item) || item.key || '') === rawId) ? { kind, item: (app.formRequirements || []).find((item) => String(formReviewTaskId(item) || item.key || '') === rawId) } : null;
     return null;
   }
 
@@ -2802,18 +2930,30 @@
   }
 
   function formReviewUrl(item, embedded = false) {
-    const taskId = Number(item?.id || 0);
+    const taskId = formReviewTaskId(item);
     if (taskId > 0) {
       return routeUrl(`post-approval-review?task_id=${encodeURIComponent(String(taskId))}${embedded ? '&embed=1' : ''}`);
     }
-    return String(item?.reviewUrl || '');
+
+    const fallbackUrl = String(item?.reviewUrl || '').trim();
+    if (!fallbackUrl) return '';
+
+    if (embedded) {
+      return fallbackUrl.includes('embed=1')
+        ? fallbackUrl
+        : `${fallbackUrl}${fallbackUrl.includes('?') ? '&' : '?'}embed=1`;
+    }
+
+    return fallbackUrl
+      .replace(/([?&])embed=1(&?)/, (_, prefix, suffix) => (prefix === '?' && suffix ? '?' : suffix ? prefix : ''))
+      .replace(/[?&]$/, '');
   }
 
   function getReviewItems(app = state.activeApplication) {
     if (!app) return [];
     return [
       ...(app.requirements || []).map((item) => ({ token: `upload:${String(item.key)}`, kind: 'upload', item })),
-      ...(app.formRequirements || []).map((item) => ({ token: `form:${String(item.id)}`, kind: 'form', item })),
+      ...(app.formRequirements || []).map((item) => ({ token: `form:${String(formReviewTaskId(item) || item.key || '')}`, kind: 'form', item })),
     ];
   }
 
@@ -2827,8 +2967,8 @@
     }
     root.innerHTML = items.map(({ token, kind, item }) => {
       const selected = state.activePreviewToken === token;
-      const itemKey = String(kind === 'upload' ? item.key : item.id);
-      const formUploadKey = String(kind === 'form' ? item.key : itemKey);
+      const itemKey = String(kind === 'upload' ? item.key : formReviewTaskId(item) || item.key || '');
+      const formUploadKey = String(kind === 'form' ? item.key || formReviewTaskId(item) || '' : itemKey);
       const uploadedFormFile = kind === 'form' ? formRequirementFile(item) : null;
       const proofLocked = kind === 'form' && isAssistanceProofLocked(item);
       const statusValue = visualRequirementStatus(item);
@@ -2851,7 +2991,7 @@
       return;
     }
     const { kind, item } = preview;
-    const itemKey = String(kind === 'upload' ? item.key : item.id);
+    const itemKey = String(kind === 'upload' ? item.key : formReviewTaskId(item) || item.key || '');
     const statusValue = visualRequirementStatus(item);
     const statusLabel = requirementStatusLabel(statusValue);
     const reviewUrl = kind === 'upload' ? '' : formReviewUrl(item, false);
@@ -2862,7 +3002,8 @@
     const proofLocked = isFinalAssistanceProof && isAssistanceProofLocked(item);
     const canReviewForm = kind === 'form' && !proofLocked && (item.canReview !== false) && (requirementSubmissionLabel(kind, item) === 'Submitted');
     const canReviewItem = canReviewUpload || canReviewForm;
-    const reviewActions = canReviewItem
+    const showInlineDecisionActions = canReviewUpload;
+    const reviewActions = showInlineDecisionActions
       ? `<div class="po-inspector-actions">
           <button type="button" class="action-button action-button--success" data-review-item="${escapeAttribute(kind)}:${escapeAttribute(itemKey)}:approve">Approve</button>
           <button type="button" class="action-button action-button--warning" data-review-item="${escapeAttribute(kind)}:${escapeAttribute(itemKey)}:needs_correction">Needs Correction</button>
@@ -2887,6 +3028,7 @@
   async function handleReviewClick(event) {
     const formReviewLink = event.target.closest('[data-open-form-review]');
     if (formReviewLink) {
+      event.preventDefault();
       const url = String(formReviewLink.dataset.openFormReview || '').trim();
       if (url) {
         window.location.href = url;
@@ -3797,7 +3939,16 @@
     const activityFilter = event.target.closest('#po-training-activity-filter');
     if (activityFilter) {
       state.training.activityFilter = String(activityFilter.value || '');
-      return renderTrainingOverview();
+      const cursor = activityFilter.selectionStart;
+      debounceRender('training-activity-filter', () => {
+        renderTrainingOverview();
+        const input = document.getElementById('po-training-activity-filter');
+        if (input) {
+          input.focus();
+          try { input.setSelectionRange(cursor, cursor); } catch (_) {}
+        }
+      }, 200);
+      return;
     }
     const overviewStatusFilter = event.target.closest('#po-training-overview-status-filter');
     if (overviewStatusFilter) {
@@ -3807,7 +3958,16 @@
     const search = event.target.closest('#po-training-roster-search');
     if (search) {
       state.training.rosterSearch = String(search.value || '');
-      return renderTrainingSessionView();
+      const cursor = search.selectionStart;
+      debounceRender('training-roster-search', () => {
+        renderTrainingSessionView();
+        const input = document.getElementById('po-training-roster-search');
+        if (input) {
+          input.focus();
+          try { input.setSelectionRange(cursor, cursor); } catch (_) {}
+        }
+      }, 200);
+      return;
     }
     const filter = event.target.closest('#po-training-roster-filter');
     if (filter) {
@@ -3817,7 +3977,16 @@
     const noticeSearch = event.target.closest('#po-training-notice-search');
     if (noticeSearch) {
       state.training.noticeFilters.search = String(noticeSearch.value || '');
-      return renderTrainingSessionView();
+      const cursor = noticeSearch.selectionStart;
+      debounceRender('training-notice-search', () => {
+        renderTrainingSessionView();
+        const input = document.getElementById('po-training-notice-search');
+        if (input) {
+          input.focus();
+          try { input.setSelectionRange(cursor, cursor); } catch (_) {}
+        }
+      }, 200);
+      return;
     }
     const noticeStatus = event.target.closest('#po-training-notice-status');
     if (noticeStatus) {

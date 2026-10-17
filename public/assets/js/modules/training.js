@@ -129,10 +129,19 @@
     const selectedGroupNumber = Number(state.filters.group || 0);
     const selectedInvitees = selectedProgram ? inviteesForProgram(selectedProgram) : [];
     const selectedSummary = selectedProgram ? programInviteeSummary(selectedProgram) : null;
-    const notifyEnabled = Boolean(selectedProgram?.id && selectedSessionNumber > 0 && selectedGroupNumber > 0 && selectedInvitees.length > 0 && !state.loading.notices);
-    const notifyTitle = notifyEnabled
-      ? `Send the latest notice to Session ${selectedSessionNumber}, Group ${selectedGroupNumber}.`
-      : 'Choose a scheduled session and group with assigned participants to send notices.';
+    const notifyEnabled = Boolean(
+      selectedProgram?.id
+      && selectedSessionNumber > 0
+      && selectedGroupNumber > 0
+      && selectedInvitees.length === GROUP_SIZE
+      && !state.loading.notices
+    );
+    let notifyTitle = `Choose a scheduled session and group with exactly ${GROUP_SIZE} assigned participants before sending notices.`;
+    if (selectedProgram?.id && selectedSessionNumber > 0 && selectedGroupNumber > 0) {
+      notifyTitle = selectedInvitees.length === GROUP_SIZE
+        ? `Send the latest notice to Session ${selectedSessionNumber}, Group ${selectedGroupNumber}.`
+        : `Session ${selectedSessionNumber}, Group ${selectedGroupNumber} currently has ${selectedInvitees.length} of ${GROUP_SIZE} required participants.`;
+    }
 
     const overviewCards = [
       buildOverviewCard({
@@ -450,13 +459,15 @@
 
   function attendanceCategory(status) {
     const normalized = String(status || '').trim().toLowerCase();
-    if (['completed', 'attended', 'present'].includes(normalized)) return 'present';
+    if (normalized === 'completed') return 'completed';
+    if (['attended', 'present'].includes(normalized)) return 'present';
     if (['missed', 'absent'].includes(normalized)) return 'absent';
     if (normalized === 'excused') return 'excused';
     return 'pending';
   }
 
   function attendanceToneFor(status) {
+    if (status === 'completed') return 'blue';
     if (status === 'present') return 'emerald';
     if (status === 'absent') return 'rose';
     if (status === 'excused') return 'amber';
@@ -465,7 +476,8 @@
 
   function attendanceLabel(status) {
     const normalized = String(status || '').trim().toLowerCase();
-    if (['completed', 'attended', 'present'].includes(normalized)) return 'Present';
+    if (normalized === 'completed') return 'Completed';
+    if (['attended', 'present'].includes(normalized)) return 'Present';
     if (['missed', 'absent'].includes(normalized)) return 'Absent';
     if (normalized === 'excused') return 'Excused';
     if (normalized === 'notified') return 'Notified';
@@ -619,8 +631,8 @@
       return showNotice('Unable to find the selected training session.', 'warning');
     }
     const participantCount = inviteesForProgram(program).length;
-    if (participantCount <= 0) {
-      return showNotice('Assign at least one participant before sending notices.', 'warning');
+    if (participantCount !== GROUP_SIZE) {
+      return showNotice(`Group ${program.targetGroupNumber || '--'} must have exactly ${GROUP_SIZE} assigned participants before notices can be sent.`, 'warning');
     }
 
     state.loading.notices = true;

@@ -14,6 +14,7 @@
       barangay: '',
       pdo: '',
       repayment: '',
+      batch: '',
     },
     selectedBeneficiaryId: null,
   };
@@ -152,6 +153,12 @@
       state.filters.pdo,
       'All PDOs'
     );
+    renderFilterOptions(
+      document.getElementById('adminBeneficiaryBatchFilter'),
+      uniqueSorted(roster.map((beneficiary) => beneficiary.batchNo || 'Batch 3')),
+      state.filters.batch,
+      'All batches'
+    );
 
     const search = document.getElementById('adminBeneficiarySearch');
     if (search && search.value !== state.filters.search) {
@@ -186,10 +193,12 @@
   function filteredBeneficiaries(data = overview()) {
     const filters = state.filters;
     const search = normalizeFilterValue(filters.search);
+    const batch = normalizeFilterValue(filters.batch);
     return getBeneficiaryRoster(data).filter((beneficiary) => {
       const repaymentKey = normalizeFilterValue(beneficiary.repayment?.key);
       const barangay = normalizeFilterValue(beneficiary.barangay || 'Unassigned');
       const pdo = normalizeFilterValue(beneficiary.assignedPdo || 'Unassigned');
+      const beneficiaryBatch = normalizeFilterValue(beneficiary.batchNo || 'Batch 3');
       const searchable = normalizeFilterValue([
         beneficiary.name,
         beneficiary.email,
@@ -203,7 +212,8 @@
       return (!search || searchable.includes(search))
         && (!filters.barangay || barangay === filters.barangay)
         && (!filters.pdo || pdo === filters.pdo)
-        && (!filters.repayment || repaymentKey === filters.repayment);
+        && (!filters.repayment || repaymentKey === filters.repayment)
+        && (!filters.batch || beneficiaryBatch === batch);
     });
   }
 
@@ -540,11 +550,48 @@
 
     document.getElementById('adminBeneficiaryExport')?.addEventListener('click', exportCsv);
 
+    const benSearch = document.getElementById('adminBeneficiarySearch');
+    const benClear = document.getElementById('adminBeneficiarySearchClear');
+    const updateBenClear = () => {
+      if (benClear) {
+        benClear.style.display = benSearch?.value ? 'inline-flex' : 'none';
+        benClear.classList.toggle('is-visible', !!benSearch?.value);
+      }
+    };
+    let benSearchTimer = null;
     section.addEventListener('input', (event) => {
       if (event.target.id === 'adminBeneficiarySearch') {
         state.filters.search = event.target.value || '';
-        renderTable();
+        updateBenClear();
+        clearTimeout(benSearchTimer);
+        benSearchTimer = setTimeout(() => {
+          renderTable();
+        }, 200);
       }
+    });
+
+    section.addEventListener('keydown', (event) => {
+      if (event.target.id === 'adminBeneficiarySearch') {
+        if (event.key === 'Escape' && state.filters.search) {
+          state.filters.search = '';
+          event.target.value = '';
+          updateBenClear();
+          clearTimeout(benSearchTimer);
+          renderTable();
+        } else if (event.key === 'Enter') {
+          clearTimeout(benSearchTimer);
+          renderTable();
+        }
+      }
+    });
+
+    benClear?.addEventListener('click', () => {
+      state.filters.search = '';
+      if (benSearch) benSearch.value = '';
+      updateBenClear();
+      clearTimeout(benSearchTimer);
+      renderTable();
+      benSearch?.focus();
     });
 
     section.addEventListener('change', (event) => {
@@ -552,6 +599,7 @@
       if (target.id === 'adminBeneficiaryBarangayFilter') state.filters.barangay = target.value || '';
       if (target.id === 'adminBeneficiaryPdoFilter') state.filters.pdo = target.value || '';
       if (target.id === 'adminBeneficiaryRepaymentFilter') state.filters.repayment = target.value || '';
+      if (target.id === 'adminBeneficiaryBatchFilter') state.filters.batch = target.value || '';
       renderTable();
     });
 

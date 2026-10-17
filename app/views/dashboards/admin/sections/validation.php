@@ -4,8 +4,16 @@
             <div class="validation-header__copy">
                 <!-- This pill marks the workspace as the public Stage 1 intake queue. -->
                 <span class="admin-inline-pill">Stage 1 Intake</span>
+                <span class="admin-inline-pill admin-inline-pill--primary" id="validationActiveBatchPill">Batch 3</span>
             </div>
             <div class="validation-header__actions">
+                <select id="validationCohortFilter" class="filter-select" style="min-width: 140px; height: 38px; border-radius: 6px; font-size: 13px;">
+                    <option value="">Active Batch</option>
+                </select>
+                <!-- Manage and switch active intake batch -->
+                <button type="button" class="app-btn-outline" id="batchSwitchButton">
+                    <i class="fas fa-layer-group"></i> Manage Batch <span class="admin-inline-pill" id="batchSwitchButtonBadge" style="margin-left: 6px;">Batch 3</span>
+                </button>
                 <!-- Manual refresh for the Stage 1 registrant queues and counters. -->
                 <button type="button" class="app-btn-outline" id="validationRefreshButton">Refresh</button>
             </div>
@@ -21,14 +29,14 @@
             </article>
             <article class="metric-card metric-card--soft">
                 <div class="metric-card__body">
-                    <span class="metric-card__label">Selected for Batch 1</span>
+                    <span class="metric-card__label" id="validationSelectedBatchLabel">Selected for Batch 3</span>
                     <strong class="metric-card__value" id="validationApprovedCount">0</strong>
                     <span class="metric-card__meta" id="validationEmailFailureMeta">0 failed notices</span>
                 </div>
             </article>
             <article class="metric-card metric-card--soft">
                 <div class="metric-card__body">
-                    <span class="metric-card__label">Saved for Batch 2</span>
+                    <span class="metric-card__label" id="validationSavedBatchLabel">Saved for Batch 4</span>
                     <strong class="metric-card__value" id="validationDeferredCount">0</strong>
                 </div>
             </article>
@@ -173,6 +181,53 @@
                     </table>
                 </div>
             </section>
+        </div>
+    </div>
+
+    <!-- Modal for Managing and Switching Intake Batches -->
+    <div class="modal-overlay admin-batch-modal" id="batchSwitchModal" hidden>
+        <div class="modal-card admin-batch-modal__card" role="dialog" aria-modal="true" aria-labelledby="batchModalTitle">
+            <div class="modal-header">
+                <div class="po-modal-title-block">
+                    <span class="po-modal-eyebrow"><i class="fas fa-layer-group mr-1"></i> Intake Cohort</span>
+                    <h3 class="modal-title" id="batchModalTitle">Manage Intake Batch</h3>
+                </div>
+                <button class="modal-close" type="button" data-batch-modal-close aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body admin-batch-modal__body">
+                <div class="notice info" id="batchModalFeedback" hidden></div>
+
+                <div class="batch-status-banner">
+                    <div class="batch-status-banner__item">
+                        <span class="batch-status-banner__label">Current Active Cohort</span>
+                        <strong class="batch-status-banner__value" id="batchModalActiveName">Batch 3</strong>
+                    </div>
+                    <div class="batch-status-banner__item">
+                        <span class="batch-status-banner__label">Waitlisted Applicants</span>
+                        <strong class="batch-status-banner__value" id="batchModalWaitlistCount">0 applicants</strong>
+                    </div>
+                </div>
+
+                <div class="batch-field-group">
+                    <label for="batchModalTargetSelect" class="batch-field-label">
+                        Select Active Intake Batch:
+                    </label>
+                    <select id="batchModalTargetSelect" class="batch-select">
+                        <!-- Populated dynamically via JS -->
+                    </select>
+                </div>
+
+                <div class="batch-explanation-box" id="batchModalExplanation">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="batchModalExplanationText">Batch 3 is currently active. Public Stage 1 registrations and intake processes are assigned to Batch 3.</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="app-btn-outline" data-batch-modal-close>Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSwitchBatchBtn">
+                    <i class="fas fa-check mr-1"></i> <span id="batchModalBtnText">Keep Batch 3</span>
+                </button>
+            </div>
         </div>
     </div>
 </section>

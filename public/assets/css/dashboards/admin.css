@@ -177,14 +177,18 @@ body.admin-control-body {
 
 .nav-badge {
   margin-left: auto;
-  min-width: 20px;
-  padding: 2px 6px;
+  min-width: 18px;
+  min-height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #f97316;
   color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 800;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-badge[hidden] {
@@ -343,4 +347,26 @@ body.admin-control-body {
 
 .admin-profile-photo-action .app-btn-outline {
     pointer-events: none;
+}
+
+/* Dark theme explicit overrides for admin shell and canvas */
+[data-theme="dark"] body.admin-control-body,
+[data-theme="dark"] #mainSystem.admin-shell,
+[data-theme="dark"] .content-area,
+[data-theme="dark"] .content-main,
+[data-theme="dark"] .admin-section {
+  background: #0a1120 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .content-header.admin-topbar {
+  background: #0d1527 !important;
+  background-image: none !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .content-headline h1,
+[data-theme="dark"] #adminSectionTitle {
+  color: #ffffff !important;
 }

@@ -20,6 +20,23 @@ function user_by_name(string $fullName): array
     return $row;
 }
 
+function project_officer_users(): array
+{
+    $statement = db()->query(
+        'SELECT users.id, users.full_name, users.email, roles.name AS role
+         FROM users
+         INNER JOIN roles ON roles.id = users.role_id
+         WHERE LOWER(roles.name) IN ("project officer", "project_officer", "pdo")
+         ORDER BY users.full_name ASC'
+    );
+
+    $rows = $statement instanceof PDOStatement
+        ? ($statement->fetchAll(PDO::FETCH_ASSOC) ?: [])
+        : [];
+
+    return is_array($rows) ? $rows : [];
+}
+
 function repayment_metrics(array $report): array
 {
     return $report['repaymentAnalytics']['summary'] ?? [];
@@ -49,15 +66,35 @@ $adminYearly = repayment_metrics($service->build([
     'repaymentYear' => 1,
 ]));
 
-$pdoActor = user_by_name('Brian Neil Cruz');
-$pdoMonthly = $pdoActor !== []
-    ? repayment_metrics($service->buildForProjectOfficer($pdoActor, [
+$pdoActor = [];
+$pdoMonthly = [];
+foreach (project_officer_users() as $candidate) {
+    $candidateMetrics = repayment_metrics($service->buildForProjectOfficer($candidate, [
         'period' => 'monthly',
         'month' => $month,
         'year' => $year,
         'repaymentYear' => 1,
-    ]))
-    : [];
+    ]));
+
+    if ((int) ($candidateMetrics['scopedBeneficiaries'] ?? 0) > 0) {
+        $pdoActor = $candidate;
+        $pdoMonthly = $candidateMetrics;
+        break;
+    }
+}
+
+if ($pdoActor === []) {
+    $fallback = user_by_name('Brian Neil Cruz');
+    if ($fallback !== []) {
+        $pdoActor = $fallback;
+        $pdoMonthly = repayment_metrics($service->buildForProjectOfficer($fallback, [
+            'period' => 'monthly',
+            'month' => $month,
+            'year' => $year,
+            'repaymentYear' => 1,
+        ]));
+    }
+}
 
 echo json_encode([
     'generated_at' => date('c'),

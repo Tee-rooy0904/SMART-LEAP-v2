@@ -11,7 +11,11 @@
             <div class="admin-repayments-filters-grid">
                 <label class="filter-group admin-repayments-filter admin-repayments-filter--search">
                     <span class="filter-label">Search beneficiary</span>
-                    <input type="search" class="filter-select" id="adminRepaymentSearch" placeholder="Search beneficiary, business, or OR number">
+                    <div class="applications-search-box">
+                        <i class="fas fa-search applications-search-box__icon"></i>
+                        <input type="search" class="filter-select applications-search-box__input" id="adminRepaymentSearch" placeholder="Search beneficiary, business, or OR number">
+                        <button type="button" id="adminRepaymentSearchClear" class="applications-search-box__clear" title="Clear search" style="display:none;">✕</button>
+                    </div>
                 </label>
                 <label class="filter-group admin-repayments-filter">
                     <span class="filter-label">Barangay</span>
@@ -31,8 +35,8 @@
                         <option value="">All repayment states</option>
                         <option value="no_upload_yet">No Upload Yet</option>
                         <option value="under_review">Under Review</option>
-                        <option value="needs_correction">Needs Correction</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="needs_correction">Return for Update</option>
+                        <option value="rejected">Marked Invalid</option>
                         <option value="partial_paid">Partial Paid</option>
                         <option value="fully_paid">Fully Paid</option>
                     </select>
@@ -247,13 +251,14 @@
                                         <h4>Decision Actions</h4>
                                     </div>
                                 </header>
-                                <div class="admin-repayment-decision-grid">
-                                    <label class="filter-group admin-repayment-remarks-group">
+                                <div class="admin-repayment-decision-grid" id="adminRepaymentDecisionGrid">
+                                    <label class="filter-group admin-repayment-remarks-group" id="adminRepaymentRemarksGroup">
                                         <span class="filter-label">Remarks</span>
-                                        <textarea class="filter-select admin-repayment-remarks" id="adminRepaymentRemarks" rows="5" placeholder="Record review findings, correction notes, or rejection basis."></textarea>
+                                        <textarea class="filter-select admin-repayment-remarks" id="adminRepaymentRemarks" rows="5" placeholder="Record review findings, return notes, or why the receipt is invalid."></textarea>
                                     </label>
                                     <div class="admin-repayment-decision-actions">
                                         <p class="admin-repayment-decision-note" id="adminRepaymentDecisionNote">Open a beneficiary repayment record to review proof and apply a decision.</p>
+                                        <p class="admin-repayment-decision-guide" id="adminRepaymentDecisionGuide">Use <strong>Return for Update</strong> for fixable issues. Use <strong>Marked Invalid</strong> when the receipt itself should not be accepted, such as a duplicate OR, wrong month, or unreadable proof.</p>
                                         <div class="admin-repayment-decision-cards" id="adminRepaymentDecisionCards">
                                             <button type="button" class="repayment-decision-card" data-decision="approved">
                                                 <span class="repayment-decision-card__icon">&check;</span>
@@ -267,13 +272,13 @@
                                             </button>
                                             <button type="button" class="repayment-decision-card" data-decision="needs_correction">
                                                 <span class="repayment-decision-card__icon">&equals;</span>
-                                                <span class="repayment-decision-card__label">Needs Correction</span>
-                                                <span class="repayment-decision-card__desc">Request correction (remarks required)</span>
+                                                <span class="repayment-decision-card__label">Return for Update</span>
+                                                <span class="repayment-decision-card__desc">Fixable issue; beneficiary can submit a corrected receipt</span>
                                             </button>
                                             <button type="button" class="repayment-decision-card" data-decision="rejected">
                                                 <span class="repayment-decision-card__icon">&times;</span>
-                                                <span class="repayment-decision-card__label">Reject</span>
-                                                <span class="repayment-decision-card__desc">Reject submission (remarks required)</span>
+                                                <span class="repayment-decision-card__label">Mark Invalid</span>
+                                                <span class="repayment-decision-card__desc">Receipt cannot be accepted as valid proof (remarks required)</span>
                                             </button>
                                         </div>
                                     </div>
@@ -283,20 +288,13 @@
                                 <header class="admin-repayment-panel__header">
                                     <div>
                                         <span class="admin-section-label">Physical OR</span>
-                                        <h4>Hard Copy Receipt Status</h4>
+                                        <h4>Office Receipt Status</h4>
                                     </div>
                                 </header>
-                                <div class="admin-repayment-hardcopy-update">
-                                    <label class="filter-group" for="adminRepaymentHardCopyInput">
-                                        <span class="filter-label">Receipt status</span>
-                                        <select class="filter-select" id="adminRepaymentHardCopyInput">
-                                            <option value="not_submitted">Not Submitted</option>
-                                            <option value="submitted_to_office">Submitted to Office</option>
-                                            <option value="confirmed_by_office">Confirmed by Office</option>
-                                        </select>
-                                    </label>
-                                    <button type="button" class="app-btn-outline" id="adminRepaymentHardCopyUpdateBtn">Update</button>
-                                    <span class="admin-repayment-hardcopy-current" id="adminRepaymentHardCopyStatus">Not tracked</span>
+                                <div class="admin-repayment-hardcopy-summary">
+                                    <span class="admin-repayment-hardcopy-label">Current status</span>
+                                    <strong class="admin-repayment-hardcopy-current" id="adminRepaymentHardCopyStatus">Not tracked</strong>
+                                    <p class="admin-repayment-hardcopy-note">For confirmed physical ORs, use <strong>Approve &amp; Confirm Receipt</strong> in the decision actions above.</p>
                                 </div>
                             </section>
                         </div>

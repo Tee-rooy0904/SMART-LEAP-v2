@@ -5,13 +5,17 @@
 $adminCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin.css')) ?: time();
 $adminComponentsCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-components.css')) ?: time();
 $adminBeneficiariesCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-beneficiaries.css')) ?: time();
+$adminRepaymentsCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-repayments.css')) ?: time();
 $adminValidationCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-validation.css')) ?: time();
 $adminReportsCssVersion = @filemtime(base_path('public/assets/css/dashboards/admin-reports.css')) ?: time();
 $socialWorkerCssVersion = @filemtime(base_path('public/assets/css/dashboards/social-worker.css')) ?: time();
 $notificationsCssVersion = @filemtime(base_path('public/assets/css/components/notifications.css')) ?: time();
+$repaymentWorkspaceJsVersion = @filemtime(base_path('public/assets/js/dashboards/repayment-review-workspace.js')) ?: time();
 $reportsModuleJsVersion = @filemtime(base_path('public/assets/js/modules/reports.js')) ?: time();
 $socialWorkerJsVersion = @filemtime(base_path('public/assets/js/dashboards/social-worker.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
+$transitionsCssVersion = @filemtime(base_path('public/assets/css/shared/transitions.css')) ?: time();
+$uiInteractiveJsVersion = @filemtime(base_path('public/assets/js/shared/ui-interactive.js')) ?: time();
 $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 
 $applicationSummary = $overview['applicationSummary'] ?? [];
@@ -38,14 +42,26 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
   <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
   <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
 
+  <script>
+    (function() {
+      try {
+        if (localStorage.getItem('smartleap_staff_theme') === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Shared admin component styles plus Social Worker-specific dashboard styling. -->
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin.css?v=<?= urlencode((string) $adminCssVersion) ?>">
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin-components.css?v=<?= urlencode((string) $adminComponentsCssVersion) ?>">
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin-beneficiaries.css?v=<?= urlencode((string) $adminBeneficiariesCssVersion) ?>">
+  <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin-repayments.css?v=<?= urlencode((string) $adminRepaymentsCssVersion) ?>">
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin-validation.css?v=<?= urlencode((string) $adminValidationCssVersion) ?>">
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin-reports.css?v=<?= urlencode((string) $adminReportsCssVersion) ?>">
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/social-worker.css?v=<?= urlencode((string) $socialWorkerCssVersion) ?>">
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode((string) $notificationsCssVersion) ?>">
+  <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/shared/transitions.css?v=<?= urlencode((string) $transitionsCssVersion) ?>">
 
   <!-- Icon font used in navigation, KPI cards, and action buttons. -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -123,6 +139,10 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
         </div>
 
         <div class="admin-topbar__actions">
+          <!-- Quick toggle for Staff Dark Mode (reduces eye strain for CSWDD personnel) -->
+          <button type="button" class="app-btn-outline" id="staffThemeToggle" aria-label="Toggle dark mode" title="Toggle dark mode" style="display:inline-flex;align-items:center;justify-content:center;padding:0.5rem;min-width:38px;min-height:38px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
           <!-- Refresh reloads oversight counts, applicant queues, beneficiary lists, and support data. -->
           <button type="button" class="app-btn-outline admin-refresh-button" id="swRefreshButton" aria-label="Refresh social worker dashboard">
             <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.2L13 11h8V3l-3.3 3.3Z"/></svg>
@@ -188,10 +208,10 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
 
             <section class="sw-dashboard-chart-grid" aria-label="Social Worker dashboard charts">
               <article class="admin-layout-card sw-dashboard-chart-card">
-                <h2>Applicants by Status</h2>
-                <div class="sw-dashboard-chart" id="swApplicantsStatusChart"></div>
-                <div class="sw-dashboard-legend" id="swApplicantsStatusLegend"></div>
-                <div class="sw-dashboard-chart-footer" id="swApplicantsStatusFooter">No application records yet.</div>
+                <h2>Training Attendance</h2>
+                <div class="sw-dashboard-chart" id="swTrainingAttendanceChart"></div>
+                <div class="sw-dashboard-legend" id="swTrainingAttendanceLegend"></div>
+                <div class="sw-dashboard-chart-footer" id="swTrainingAttendanceFooter">No attendance records yet.</div>
               </article>
               <article class="admin-layout-card sw-dashboard-chart-card">
                 <h2>Beneficiaries by Status</h2>
@@ -210,21 +230,36 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
         </section>
 
         <section id="validation-section" class="admin-section" data-role-section hidden>
-          <div class="sw-page-stack">
-            <section class="sw-summary-strip sw-summary-strip--compact" aria-label="Validation overview">
-              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--pending">
-                <span class="admin-section-eyebrow">Pending Queue</span>
-                <strong class="metric-card__value" data-sw-validation-pending><?= (int) ($validationSummary['pending'] ?? 0) ?></strong>
-              </article>
-              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--selected">
-                <span class="admin-section-eyebrow">Selected Queue</span>
-                <strong class="metric-card__value" data-sw-validation-selected><?= (int) ($validationSummary['selected'] ?? 0) ?></strong>
-              </article>
-              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--saved">
-                <span class="admin-section-eyebrow">Saved Queue</span>
-                <strong class="metric-card__value" data-sw-validation-saved><?= (int) ($validationSummary['saved'] ?? 0) ?></strong>
-              </article>
+          <div class="validation-shell sw-page-stack">
+            <section class="section-header admin-layout-header validation-header">
+              <div class="validation-header__copy">
+                <span class="admin-inline-pill">Stage 1 Intake</span>
+              </div>
+              <div class="validation-header__actions">
+                <button type="button" class="app-btn-outline" id="swValidationRefreshButton">Refresh</button>
+              </div>
             </section>
+
+            <div class="metric-grid metric-grid--compact validation-metrics">
+              <article class="metric-card metric-card--soft">
+                <div class="metric-card__body">
+                  <span class="metric-card__label">Pending Validation</span>
+                  <strong class="metric-card__value" data-sw-validation-pending><?= (int) ($validationSummary['pending'] ?? 0) ?></strong>
+                </div>
+              </article>
+              <article class="metric-card metric-card--soft">
+                <div class="metric-card__body">
+                  <span class="metric-card__label" data-sw-validation-selected-label>Selected for <?= htmlspecialchars((string) ($validationSummary['viewBatch'] ?? $validationSummary['activeBatch'] ?? 'Batch 3')) ?></span>
+                  <strong class="metric-card__value" data-sw-validation-selected><?= (int) ($validationSummary['selected'] ?? 0) ?></strong>
+                </div>
+              </article>
+              <article class="metric-card metric-card--soft">
+                <div class="metric-card__body">
+                  <span class="metric-card__label" data-sw-validation-saved-label>Saved for <?= htmlspecialchars((string) ($validationSummary['nextBatch'] ?? 'Next Batch')) ?></span>
+                  <strong class="metric-card__value" data-sw-validation-saved><?= (int) ($validationSummary['saved'] ?? 0) ?></strong>
+                </div>
+              </article>
+            </div>
 
             <div class="validation-tabs sw-validation-tabs" role="tablist" aria-label="Social Worker validation queues">
               <button type="button" class="validation-tab is-active" data-sw-validation-tab="pending" role="tab" aria-selected="true">Pending <span data-sw-validation-tab-count="pending"><?= (int) ($validationSummary['pending'] ?? 0) ?></span></button>
@@ -232,7 +267,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
               <button type="button" class="validation-tab" data-sw-validation-tab="saved" role="tab" aria-selected="false">Saved <span data-sw-validation-tab-count="saved"><?= (int) ($validationSummary['saved'] ?? 0) ?></span></button>
             </div>
 
-            <section class="filters-row admin-beneficiaries-filters sw-admin-filters sw-admin-filters--single-search">
+            <section class="filters-row admin-beneficiaries-filters sw-admin-filters sw-admin-filters--two">
               <label class="filter-group filter-group--search">
                 <span class="filter-label">Search</span>
                 <div class="filter-search">
@@ -240,26 +275,34 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                   <input type="search" id="swValidationSearch" placeholder="Search applicant, email, or address" autocomplete="off">
                 </div>
               </label>
+              <label class="filter-group">
+                <span class="filter-label">Batch</span>
+                <select class="filter-select" id="swValidationBatch">
+                  <option value="">All batches</option>
+                </select>
+              </label>
             </section>
 
-            <section class="table-card">
-              <div class="sw-validation-table-head">
+            <section class="table-card validation-table-card">
+              <div class="validation-table-card__head sw-validation-table-head">
                 <div>
-                  <span class="admin-section-eyebrow">Queue List</span>
-                  <h3>Applicant validation records</h3>
+                  <h3 id="swValidationPanelTitle">Pending</h3>
+                </div>
+                <div class="validation-table-card__badges">
+                  <span class="admin-inline-pill" id="swValidationPanelBadge">0 pending</span>
                 </div>
               </div>
               <div class="table-wrapper sw-table-wrapper">
-                <table class="admin-data-table">
+                <table class="data-table validation-table">
                   <thead>
                     <tr>
-                      <th>Applicant</th>
-                      <th>Email</th>
+                      <th>Registrant</th>
+                      <th>Complete Address</th>
                       <th>Contact</th>
-                      <th>Address</th>
+                      <th>Email</th>
                       <th>Status</th>
                       <th>Submitted</th>
-                      <th>Action</th>
+                      <th class="actions">Action</th>
                     </tr>
                   </thead>
                   <tbody data-sw-validation-body>
@@ -290,6 +333,14 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                   <option value="under review">Under Review</option>
                   <option value="needs correction">Needs Correction</option>
                   <option value="rejected">Rejected</option>
+                </select>
+              <label class="filter-group">
+                <span class="filter-label">Batch</span>
+                <select class="filter-select" id="swApplicationBatch">
+                  <option value="">All batches</option>
+                  <option value="Batch 1">Batch 1</option>
+                  <option value="Batch 2">Batch 2</option>
+                  <option value="Batch 3">Batch 3</option>
                 </select>
               </label>
             </section>
@@ -338,6 +389,12 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                   <span class="filter-label">Assigned PDO</span>
                   <select class="filter-select" id="swBeneficiaryPdo">
                     <option value="">All PDOs</option>
+                  </select>
+                </label>
+                <label class="filter-group">
+                  <span class="filter-label">Batch</span>
+                  <select class="filter-select" id="swBeneficiaryBatch">
+                    <option value="">All batches</option>
                   </select>
                 </label>
                 <label class="filter-group">
@@ -435,6 +492,25 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
 
         <section id="repayments-section" class="admin-section" data-role-section hidden>
           <div class="sw-page-stack">
+            <section class="sw-summary-strip sw-summary-strip--compact" aria-label="Repayment oversight summary">
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--selected">
+                <span class="admin-section-eyebrow">Beneficiary Roster</span>
+                <strong class="metric-card__value" id="swRepaymentApprovedCount">0</strong>
+              </article>
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--pending">
+                <span class="admin-section-eyebrow">Pending Review</span>
+                <strong class="metric-card__value" id="swRepaymentPendingCount">0</strong>
+              </article>
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--saved">
+                <span class="admin-section-eyebrow">Partial Paid</span>
+                <strong class="metric-card__value" id="swRepaymentPartialCount">0</strong>
+              </article>
+              <article class="admin-layout-card sw-validation-summary-card sw-validation-summary-card--selected">
+                <span class="admin-section-eyebrow">Fully Paid</span>
+                <strong class="metric-card__value" id="swRepaymentFullCount">0</strong>
+              </article>
+            </section>
+
             <section class="filters-row admin-beneficiaries-filters sw-admin-filters">
               <label class="filter-group filter-group--search">
                 <span class="filter-label">Search</span>
@@ -444,39 +520,236 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
                 </div>
               </label>
               <label class="filter-group">
+                <span class="filter-label">Barangay</span>
+                <select class="filter-select" id="swRepaymentBarangay">
+                  <option value="">All barangays</option>
+                </select>
+              </label>
+              <label class="filter-group">
+                <span class="filter-label">Assigned PDO</span>
+                <select class="filter-select" id="swRepaymentPdo">
+                  <option value="">All PDOs</option>
+                </select>
+              </label>
+              <label class="filter-group">
                 <span class="filter-label">Status</span>
-                <select class="filter-select" id="swRepaymentStatus">
+                <select class="filter-select" id="swRepaymentState">
                   <option value="">All repayment states</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="needs_correction">Needs Correction</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="under_review">Uploaded</option>
+                  <option value="needs_correction">Return for Update</option>
+                  <option value="rejected">Marked Invalid</option>
                   <option value="partial_paid">Partial Paid</option>
                   <option value="fully_paid">Fully Paid</option>
                 </select>
               </label>
+              <label class="filter-group">
+                <span class="filter-label">From date</span>
+                <input class="filter-select" id="swRepaymentFromDate" type="date">
+              </label>
+              <label class="filter-group">
+                <span class="filter-label">To date</span>
+                <input class="filter-select" id="swRepaymentToDate" type="date">
+              </label>
+              <div class="filter-group filter-group--action">
+                <span class="filter-label">Reset</span>
+                <button type="button" class="app-btn-outline" id="swRepaymentReset">Clear filters</button>
+              </div>
             </section>
 
-            <section class="table-card">
-              <div class="table-wrapper sw-table-wrapper">
-                <table class="admin-data-table">
+            <section class="data-table-card po-repayment-roster sw-repayment-roster">
+              <header class="data-table-card__header">
+                <div>
+                  <span class="po-panel-label">Repayments</span>
+                  <h3>Beneficiary Roster</h3>
+                </div>
+                <span class="chip" id="swRepaymentRosterCount">0 beneficiaries</span>
+              </header>
+              <div class="data-table-wrapper po-repayment-table-wrapper sw-repayment-table-wrapper">
+                <table class="data-table po-repayment-table sw-repayment-table">
                   <thead>
                     <tr>
-                      <th>Current Payer</th>
                       <th>Beneficiary</th>
-                      <th>Coverage</th>
-                      <th>Amount</th>
-                      <th>OR Number</th>
-                      <th>Payment Date</th>
-                      <th>Status</th>
-                      <th>Action</th>
+                      <th>Gender</th>
+                      <th>Age Group</th>
+                      <th>Service Type</th>
+                      <th>Barangay</th>
+                      <th>Assigned PDO</th>
+                      <th>Repayment</th>
+                      <th>Verified Amount</th>
+                      <th>Months Passed</th>
+                      <th>Months Paid</th>
+                      <th>Repayment Rate</th>
+                      <th class="actions">Action</th>
                     </tr>
                   </thead>
-                  <tbody data-sw-repayments-body>
-                    <tr><td colspan="8">Loading repayments...</td></tr>
+                  <tbody id="swRepaymentRosterBody">
+                    <tr><td colspan="12">Loading repayments...</td></tr>
                   </tbody>
                 </table>
               </div>
             </section>
+          </div>
+
+          <div class="admin-repayment-modal" id="swRepaymentModal" aria-hidden="true">
+            <div class="admin-repayment-modal__backdrop" data-repayment-modal-close></div>
+            <div class="admin-repayment-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="swRepaymentModalTitle">
+              <header class="admin-repayment-modal__header">
+                <div class="admin-repayment-modal__header-copy">
+                  <span class="admin-section-label">Repayment Review</span>
+                  <h3 id="swRepaymentModalTitle">Beneficiary repayment review</h3>
+                  <p id="swRepaymentModalSubtitle">Select a beneficiary repayment record.</p>
+                </div>
+                <div class="admin-repayment-modal__header-actions">
+                  <span class="admin-inline-pill admin-inline-pill--slate" id="swRepaymentModalStatus">No Upload Yet</span>
+                  <button type="button" class="admin-repayment-modal__close" id="swRepaymentModalClose" data-repayment-modal-close aria-label="Close repayment review modal">&times;</button>
+                </div>
+              </header>
+
+              <div class="admin-repayment-modal__body">
+                <section class="admin-repayment-modal__summary">
+                  <article class="admin-repayment-modal__metric">
+                    <span>Outstanding Balance</span>
+                    <strong id="swRepaymentSummaryOutstanding">PHP 0.00</strong>
+                  </article>
+                  <article class="admin-repayment-modal__metric">
+                    <span>Verified Amount</span>
+                    <strong id="swRepaymentSummaryVerified">PHP 0.00</strong>
+                  </article>
+                  <article class="admin-repayment-modal__metric">
+                    <span>Repayment Compliance</span>
+                    <strong id="swRepaymentSummaryProgress">0 / 0 months</strong>
+                  </article>
+                  <article class="admin-repayment-modal__metric">
+                    <span>Current Repayment Standing</span>
+                    <strong id="swRepaymentSummaryStanding">No Upload Yet</strong>
+                  </article>
+                </section>
+
+                <section class="admin-repayment-panel">
+                  <header class="admin-repayment-panel__header">
+                    <div>
+                      <span class="admin-section-label">Repayment History</span>
+                      <h4>Repayment History</h4>
+                    </div>
+                  </header>
+                  <div class="table-wrapper admin-repayment-history-wrapper">
+                    <table class="data-table admin-repayment-history-table">
+                      <colgroup>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                        <col>
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th>Coverage Month</th>
+                          <th>Expected Amount</th>
+                          <th>Submitted Amount</th>
+                          <th>OR Number</th>
+                          <th>Submission Status</th>
+                          <th>Verification Result</th>
+                          <th>Reviewer</th>
+                          <th>Remarks</th>
+                          <th>Date Reviewed</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="swRepaymentHistoryBody">
+                        <tr>
+                          <td colspan="10">No repayment history recorded yet.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <div class="admin-repayment-record-modal" id="swRepaymentRecordModal" aria-hidden="true">
+                  <div class="admin-repayment-record-modal__backdrop" data-repayment-record-close></div>
+                  <div class="admin-repayment-record-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="swRepaymentBeneficiaryName">
+                    <header class="admin-repayment-record-modal__header">
+                      <div>
+                        <span class="admin-section-label">Repayment Review</span>
+                        <h4 id="swRepaymentBeneficiaryName">Beneficiary</h4>
+                      </div>
+                      <button type="button" class="admin-repayment-modal__close" id="swRepaymentRecordClose" data-repayment-record-close aria-label="Close repayment record review">&times;</button>
+                    </header>
+                    <div class="admin-repayment-record-modal__body">
+                      <section class="admin-repayment-modal__top">
+                        <article class="admin-repayment-panel admin-repayment-panel--proof">
+                          <header class="admin-repayment-panel__header">
+                            <div>
+                              <span class="admin-section-label">Uploaded OR / Proof</span>
+                              <h4>Proof / Receipt Preview</h4>
+                            </div>
+                          </header>
+                          <div class="admin-repayment-proof-meta">
+                            <strong id="swRepaymentProofName">No proof uploaded</strong>
+                            <span id="swRepaymentProofType">--</span>
+                            <small id="swRepaymentProofDate">--</small>
+                          </div>
+                          <div class="admin-repayment-proof-preview" id="swRepaymentProofPreview">
+                            <div class="admin-repayment-proof-empty">No proof preview available.</div>
+                          </div>
+                          <div class="admin-repayment-proof-actions">
+                            <button type="button" class="app-btn-outline" id="swRepaymentOpenProof">Open file</button>
+                            <button type="button" class="app-btn-outline" id="swRepaymentDownloadProof">Download file</button>
+                            <button type="button" class="app-btn-outline" id="swRepaymentFullscreenProof">Fullscreen</button>
+                          </div>
+                        </article>
+
+                        <div class="admin-repayment-modal__details">
+                          <article class="admin-repayment-panel">
+                            <header class="admin-repayment-panel__header">
+                              <div>
+                                <span class="admin-section-label">Beneficiary Summary</span>
+                                <h4>Account Details</h4>
+                              </div>
+                            </header>
+                            <div class="admin-repayment-detail-grid">
+                              <div><span>Business</span><strong id="swRepaymentBusiness">--</strong></div>
+                              <div><span>Barangay</span><strong id="swRepaymentDetailBarangay">--</strong></div>
+                              <div><span>Assigned PDO</span><strong id="swRepaymentAssignedPdo">--</strong></div>
+                              <div><span>Submission date</span><strong id="swRepaymentSubmittedAt">--</strong></div>
+                            </div>
+                          </article>
+
+                          <article class="admin-repayment-panel">
+                            <header class="admin-repayment-panel__header">
+                              <div>
+                                <span class="admin-section-label">OR Details</span>
+                                <h4>Submission Details</h4>
+                              </div>
+                            </header>
+                            <div class="admin-repayment-detail-grid">
+                              <div><span>OR number</span><strong id="swRepaymentOrNumber">--</strong></div>
+                              <div><span>Payment date</span><strong id="swRepaymentPaymentDate">--</strong></div>
+                              <div><span>Submitted by</span><strong id="swRepaymentSubmittedBy">--</strong></div>
+                              <div><span>Submission type</span><strong id="swRepaymentSubmissionType">--</strong></div>
+                              <div><span>Coverage month(s)</span><strong id="swRepaymentCoverage">--</strong></div>
+                              <div><span>Amount</span><strong id="swRepaymentAmount">PHP 0.00</strong></div>
+                              <div><span>Uploaded status</span><strong id="swRepaymentUploadStatus">--</strong></div>
+                              <div><span>Hard copy submitted to office</span><strong id="swRepaymentHardCopyStatus">--</strong></div>
+                            </div>
+                            <div class="admin-repayment-warning is-hidden" id="swRepaymentDuplicateWarning"></div>
+                          </article>
+                        </div>
+                      </section>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="admin-repayment-modal__footer">
+                <button type="button" class="app-btn-outline" id="swRepaymentClose">Close</button>
+              </footer>
+            </div>
           </div>
         </section>
 
@@ -515,7 +788,9 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_
   </div>
 
   <script src="<?= $baseUrl ?>/assets/js/shared/notifications.js?v=<?= urlencode((string) $notificationsJsVersion) ?>" defer></script>
+  <script src="<?= $baseUrl ?>/assets/js/dashboards/repayment-review-workspace.js?v=<?= urlencode((string) $repaymentWorkspaceJsVersion) ?>" defer></script>
   <script src="<?= $baseUrl ?>/assets/js/modules/reports.js?v=<?= urlencode((string) $reportsModuleJsVersion) ?>" defer></script>
   <script src="<?= $baseUrl ?>/assets/js/dashboards/social-worker.js?v=<?= urlencode((string) $socialWorkerJsVersion) ?>" defer></script>
+  <script src="<?= $baseUrl ?>/assets/js/shared/ui-interactive.js?v=<?= urlencode((string) $uiInteractiveJsVersion) ?>" defer></script>
 </body>
 </html>

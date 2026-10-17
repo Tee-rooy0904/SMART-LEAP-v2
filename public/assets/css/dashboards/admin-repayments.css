@@ -818,9 +818,9 @@ body.admin-repayment-modal-open {
 .admin-repayment-history-table col:nth-child(10),
 .admin-repayment-history-table th:nth-child(10),
 .admin-repayment-history-table td:nth-child(10) {
-  width: 148px;
-  min-width: 148px;
-  max-width: 148px;
+  width: 176px;
+  min-width: 176px;
+  max-width: 176px;
   white-space: normal;
 }
 
@@ -846,7 +846,7 @@ body.admin-repayment-modal-open {
 }
 
 .admin-repayment-history-wrapper .admin-repayment-history-table {
-  min-width: 1120px !important;
+  min-width: 1200px !important;
   table-layout: fixed !important;
 }
 
@@ -915,9 +915,9 @@ body.admin-repayment-modal-open {
 .admin-repayment-history-wrapper .admin-repayment-history-table col:nth-child(10),
 .admin-repayment-history-wrapper .admin-repayment-history-table th:nth-child(10),
 .admin-repayment-history-wrapper .admin-repayment-history-table td:nth-child(10) {
-  width: 94px !important;
-  min-width: 94px !important;
-  max-width: 94px !important;
+  width: 168px !important;
+  min-width: 168px !important;
+  max-width: 168px !important;
 }
 
 .admin-repayment-history-table .repayment-state-chip,
@@ -926,9 +926,18 @@ body.admin-repayment-modal-open {
   white-space: nowrap;
 }
 
+.admin-repayment-history-table th.actions,
+.admin-repayment-history-table td.actions {
+  text-align: center !important;
+}
+
 .admin-repayment-history-table .actions .app-btn-outline {
-  min-width: 78px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
   padding-inline: 12px;
+  margin-inline: auto;
 }
 
 .admin-repayment-record-modal__dialog {
@@ -977,6 +986,10 @@ body.admin-repayment-modal-open {
   min-width: 0;
 }
 
+.admin-repayment-decision-grid.is-note-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .admin-repayment-remarks {
   min-height: 168px;
   resize: vertical;
@@ -1004,6 +1017,21 @@ body.admin-repayment-modal-open {
   font-size: 0.92rem;
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.admin-repayment-decision-grid.is-note-only .admin-repayment-decision-note {
+  max-width: 56ch;
+}
+
+.admin-repayment-decision-guide {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 12px;
+  background: rgba(240, 249, 255, 0.9);
+  color: #31526f;
+  font-size: 0.8rem;
+  line-height: 1.55;
 }
 
 .admin-repayment-decision-cards {
@@ -1062,29 +1090,44 @@ body.admin-repayment-modal-open {
   color: #5f7591;
 }
 
-.admin-repayment-hardcopy-update {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.admin-repayment-hardcopy-update .filter-group {
+.admin-repayment-hardcopy-summary {
   display: grid;
-  gap: 6px;
-  min-width: 200px;
-  flex: 1 1 220px;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(239, 246, 255, 0.9));
 }
 
-.admin-repayment-hardcopy-update .filter-select {
-  min-height: 44px;
+.admin-repayment-hardcopy-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
 }
 
 .admin-repayment-hardcopy-current {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.96);
+  color: #0f3a67;
+  font-size: 0.92rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.admin-repayment-hardcopy-note {
+  margin: 0;
   font-size: 0.88rem;
+  line-height: 1.5;
   color: #5f7591;
-  padding: 10px 0;
 }
 
 .admin-repayment-modal__footer {
@@ -1186,4 +1229,113 @@ body.admin-repayment-modal-open {
     padding-left: 16px;
     padding-right: 16px;
   }
+}
+
+/* --------------------------------------------------------------------------
+   DARK MODE OVERRIDES (ADMIN REPAYMENTS)
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .admin-repayments-page,
+[data-theme="dark"] #repayments-section {
+  background: #0a1120 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayments-summary-strip .metric-card {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayments-summary-strip .metric-card__label {
+  background: rgba(56, 182, 255, 0.16) !important;
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .admin-repayments-summary-strip .metric-card__value {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayments-summary-strip .metric-card__meta {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .admin-repayments-filters-card,
+[data-theme="dark"] .admin-repayments-roster-card,
+[data-theme="dark"] .admin-repayment-panel {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayments-block-head h3,
+[data-theme="dark"] .admin-repayment-panel__header h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayments-table-wrapper {
+  background: #111d33 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .admin-repayments-table thead th {
+  background: #0c1628 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .admin-repayments-table tbody td {
+  background: #111d33 !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .admin-repayment-person strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayment-modal__dialog {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .admin-repayment-modal__metric {
+  background: #162540 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .admin-repayment-modal__metric span {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .admin-repayment-modal__metric strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayment-detail-grid span {
+  color: #38b6ff !important;
+}
+
+[data-theme="dark"] .admin-repayment-detail-grid strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .admin-repayment-modal__footer {
+  background: #111d33 !important;
+  background-image: none !important;
+  border-top-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .admin-repayments-table tbody tr:hover,
+[data-theme="dark"] .admin-repayments-table tbody tr.is-active {
+  background: #182744 !important;
+}
+
+[data-theme="dark"] .admin-repayments-table tbody tr:hover td,
+[data-theme="dark"] .admin-repayments-table tbody tr.is-active td {
+  background: #182744 !important;
+  color: #f1f5f9 !important;
 }

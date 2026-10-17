@@ -37,7 +37,9 @@ class ApplicationService
     public function getApplicantEntryState(int $userId): array
     {
         $user = $this->fetchUser($userId);
-        $profile = $this->fetchApplicantProfile($userId);
+        $sourceContext = $this->resolveApprovedCoMakerHistoricalSource($userId);
+        $profileOwnerUserId = (int) ($sourceContext['sourceUserId'] ?? $userId);
+        $profile = $this->fetchApplicantProfile($profileOwnerUserId);
         $application = $profile ? $this->fetchLatestApplication((int) $profile['id']) : null;
         if ($application !== null && (($application['assignedPdo']['name'] ?? null) === null) && isset($profile['assignedPdo'])) {
             $application['assignedPdo'] = $profile['assignedPdo'];
@@ -61,6 +63,7 @@ class ApplicationService
             'application' => $application,
             'requirements' => $requirements,
             'requirementDefinitions' => self::REQUIREMENT_LABELS,
+            'sourceContext' => $sourceContext,
         ];
     }
 
@@ -391,7 +394,7 @@ class ApplicationService
         ];
     }
 
-    public function listApplications(array $filters, array $actor): array
+    public function listApplications(array $filters, array $actor = []): array
     {
         $actorRole = strtolower((string) ($actor['role'] ?? ''));
         $isProjectOfficer = str_contains($actorRole, 'project');
@@ -470,10 +473,19 @@ class ApplicationService
             }
         }
 
+        $batchNo = trim((string) ($filters['batch'] ?? ($filters['batchNo'] ?? '')));
+        if ($batchNo !== '' && strtolower($batchNo) !== 'all') {
+            if (in_array('batch_no', $this->applicantProfileColumns(), true)) {
+                $conditions[] = 'LOWER(TRIM(COALESCE(applicant_profiles.batch_no, ""))) = :batch_no';
+                $params['batch_no'] = strtolower($batchNo);
+            }
+        }
+
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
-            $conditions[] = '(applicant_users.full_name LIKE :search OR applicant_users.email LIKE :search)';
-            $params['search'] = '%' . $search . '%';
+            $conditions[] = '(applicant_users.full_name LIKE :search_name OR applicant_users.email LIKE :search_email)';
+            $params['search_name'] = '%' . $search . '%';
+            $params['search_email'] = '%' . $search . '%';
         }
 
         $sql = '
@@ -544,6 +556,7 @@ class ApplicationService
             'barangays' => $this->availableBarangays($actor),
             'assignedPdos' => $isProjectOfficer ? [] : $this->availableAssignedPdos(),
             'scopeBarangays' => $isProjectOfficer ? $this->assignedBarangaysForUser((int) $actor['id']) : [],
+            'allBatches' => (new BatchService())->getAllBatches(),
         ];
     }
 
@@ -1389,7 +1402,7 @@ class ApplicationService
         ];
     }
 
-    public function currentProjectOfficerRoster(array $actor): array
+   public function currentProjectOfficerRoster(array $actor): array
     {
         (new BeneficiaryProfileService())->synchronizeSystemInactivityStatuses();
         $data = $this->listApplications([], $actor);
@@ -1419,10 +1432,76 @@ class ApplicationService
                 'approved' => count(array_filter($coMakerRegistrations, static fn (array $row): bool => in_array(strtolower((string) ($row['registrationStatus'] ?? '')), [CoMakerRegistrationService::STATUS_APPROVED, CoMakerRegistrationService::LEGACY_STATUS_ACTIVE], true))),
                 'rejected' => count(array_filter($coMakerRegistrations, static fn (array $row): bool => strtolower((string) ($row['registrationStatus'] ?? '')) === CoMakerRegistrationService::STATUS_REJECTED)),
             ],
+            'trainingAttendanceSummary' => $this->fetchProjectOfficerTrainingAttendanceSummary($actor),
             'roster' => $roster,
             'applications' => $data['applications'],
             'scopeBarangays' => $data['scopeBarangays'],
         ];
+    }
+
+    private function fetchProjectOfficerTrainingAttendanceSummary(array $actor): array
+    {
+        $summary = [
+            'segments' => [
+                ['key' => 'attended', 'label' => 'Attended', 'count' => 0],
+                ['key' => 'absent', 'label' => 'Absent', 'count' => 0],
+                ['key' => 'excused', 'label' => 'Excused', 'count' => 0],
+                ['key' => 'pending', 'label' => 'Pending', 'count' => 0],
+            ],
+            'total' => 0,
+        ];
+
+        $staffProfileId = $this->findStaffProfileIdForUser((int) ($actor['id'] ?? 0));
+        if ($staffProfileId === null) {
+            return $summary;
+        }
+
+        try {
+            $statement = db()->prepare(
+                'SELECT
+                    LOWER(COALESCE(attendance_records.attendance_status, training_invitees.invite_status, "pending")) AS attendance_status,
+                    COUNT(*) AS aggregate
+                 FROM training_invitees
+                 INNER JOIN applicant_profiles ON applicant_profiles.id = training_invitees.applicant_profile_id
+                 INNER JOIN staff_barangay_assignments
+                    ON staff_barangay_assignments.barangay_id = applicant_profiles.barangay_id
+                   AND staff_barangay_assignments.staff_profile_id = :staff_profile_id
+                   AND staff_barangay_assignments.ended_at IS NULL
+                 LEFT JOIN attendance_records ON attendance_records.training_invitee_id = training_invitees.id
+                 GROUP BY attendance_status'
+            );
+            $statement->execute(['staff_profile_id' => $staffProfileId]);
+            $rows = $statement->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $exception) {
+            log_database_query_failure('application.project_officer_training_attendance_summary', $exception, [
+                'staff_profile_id' => $staffProfileId,
+            ]);
+            return $summary;
+        }
+
+        $segments = [
+            'attended' => ['key' => 'attended', 'label' => 'Attended', 'count' => 0],
+            'absent' => ['key' => 'absent', 'label' => 'Absent', 'count' => 0],
+            'excused' => ['key' => 'excused', 'label' => 'Excused', 'count' => 0],
+            'pending' => ['key' => 'pending', 'label' => 'Pending', 'count' => 0],
+        ];
+
+        foreach ($rows as $row) {
+            $raw = strtolower(trim((string) ($row['attendance_status'] ?? '')));
+            $count = (int) ($row['aggregate'] ?? 0);
+            $key = match ($raw) {
+                'attended', 'present', 'completed' => 'attended',
+                'missed', 'absent' => 'absent',
+                'excused' => 'excused',
+                default => 'pending',
+            };
+            $segments[$key]['count'] += $count;
+        }
+
+        $summary['segments'] = array_values($segments);
+        $summary['total'] = array_sum(array_column($summary['segments'], 'count'));
+
+        return $summary;
     }
 
     private function notifyApplicantRequirementReviewed(int $applicationId, string $requirementLabel, string $status, string $remarks): void
@@ -1962,6 +2041,50 @@ class ApplicationService
         return $user;
     }
 
+    private function resolveApprovedCoMakerHistoricalSource(int $userId): ?array
+    {
+        $registration = (new CoMakerRegistrationService())->registrationForUser($userId);
+        if ($registration === null) {
+            return null;
+        }
+
+        $registrationStatus = strtolower(trim((string) ($registration['registrationStatus'] ?? 'inactive')));
+        if (!in_array($registrationStatus, ['approved', 'active'], true)) {
+            return null;
+        }
+
+        $deceasedBeneficiaryProfileId = (int) ($registration['deceasedBeneficiaryProfileId'] ?? 0);
+        if ($deceasedBeneficiaryProfileId <= 0) {
+            return null;
+        }
+
+        $statement = db()->prepare(
+            'SELECT beneficiary_profiles.user_id,
+                    users.full_name
+             FROM beneficiary_profiles
+             INNER JOIN users ON users.id = beneficiary_profiles.user_id
+             WHERE beneficiary_profiles.id = :beneficiary_profile_id
+             LIMIT 1'
+        );
+        $statement->execute(['beneficiary_profile_id' => $deceasedBeneficiaryProfileId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($row)) {
+            return null;
+        }
+
+        $sourceUserId = (int) ($row['user_id'] ?? 0);
+        if ($sourceUserId <= 0 || $sourceUserId === $userId) {
+            return null;
+        }
+
+        return [
+            'mode' => 'co_maker_historical_view',
+            'sourceUserId' => $sourceUserId,
+            'deceasedBeneficiaryProfileId' => $deceasedBeneficiaryProfileId,
+            'primaryBeneficiaryName' => trim((string) ($row['full_name'] ?? ($registration['primaryBeneficiaryName'] ?? ''))),
+        ];
+    }
+
     private function fetchApplicantProfile(int $userId): ?array
     {
         $statement = db()->prepare(
@@ -2323,6 +2446,23 @@ class ApplicationService
           $supportsSectorOtherSpecify = in_array('sector_other_specify', $this->applicantProfileColumns(), true);
           $hasBatchNoInput = array_key_exists('batchNo', $input);
           $batchNo = trim((string) ($input['batchNo'] ?? ''));
+          if ($batchNo === '') {
+              $userEmailStmt = $pdo->prepare('SELECT email FROM users WHERE id = :user_id LIMIT 1');
+              $userEmailStmt->execute(['user_id' => $userId]);
+              $uEmail = (string) ($userEmailStmt->fetchColumn() ?: '');
+              if ($uEmail !== '') {
+                  $s1Stmt = $pdo->prepare('SELECT batch_no FROM stage_one_registrations WHERE LOWER(email) = LOWER(:email) ORDER BY id DESC LIMIT 1');
+                  $s1Stmt->execute(['email' => $uEmail]);
+                  $s1Batch = (string) ($s1Stmt->fetchColumn() ?: '');
+                  if ($s1Batch !== '') {
+                      $batchNo = $s1Batch;
+                  }
+              }
+              if ($batchNo === '') {
+                  $batchNo = (new BatchService())->getActiveBatch();
+              }
+              $hasBatchNoInput = true;
+          }
           $sector = trim((string) ($input['sector'] ?? ''));
           $sectorOtherSpecify = strcasecmp($sector, 'Other') === 0
               ? $this->normalizeOptionalString($input['sectorOtherSpecify'] ?? null)

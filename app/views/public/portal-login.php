@@ -1,5 +1,11 @@
 <?php /** @var string $baseUrl */ ?>
-<?php $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time(); ?>
+<?php
+$faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
+$portalCssVersion = @filemtime(base_path('public/assets/css/public/portal.css')) ?: time();
+$transitionsCssVersion = @filemtime(base_path('public/assets/css/shared/transitions.css')) ?: time();
+$portalJsVersion = @filemtime(base_path('public/assets/js/public/portal.js')) ?: time();
+$uiInteractiveJsVersion = @filemtime(base_path('public/assets/js/shared/ui-interactive.js')) ?: time();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,8 +14,10 @@
     <title>SMART LEAP | Sign In</title>
     <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
-    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) (@filemtime(base_path('public/assets/css/public/portal.css')) ?: time())) ?>">
-    <script defer src="<?= $baseUrl ?>/assets/js/public/portal.js?v=<?= urlencode((string) (@filemtime(base_path('public/assets/js/public/portal.js')) ?: time())) ?>"></script>
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/public/portal.css?v=<?= urlencode((string) $portalCssVersion) ?>">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/shared/transitions.css?v=<?= urlencode((string) $transitionsCssVersion) ?>">
+    <script defer src="<?= $baseUrl ?>/assets/js/public/portal.js?v=<?= urlencode((string) $portalJsVersion) ?>"></script>
+    <script defer src="<?= $baseUrl ?>/assets/js/shared/ui-interactive.js?v=<?= urlencode((string) $uiInteractiveJsVersion) ?>"></script>
 </head>
 <body class="portal-page portal-page--login">
     <div class="page-shell">
@@ -137,3 +145,4 @@
     </div>
 </body>
 </html>
+

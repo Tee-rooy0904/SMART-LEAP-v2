@@ -16,6 +16,8 @@ $projectOfficerCssVersion = @filemtime(base_path('public/assets/css/dashboards/p
 $postApprovalCssVersion = @filemtime(base_path('public/assets/css/dashboards/post-approval.css')) ?: time();
 $postApprovalReviewCssVersion = @filemtime(base_path('public/assets/css/dashboards/post-approval-review.css')) ?: time();
 $notificationsCssVersion = @filemtime(base_path('public/assets/css/components/notifications.css')) ?: time();
+$transitionsCssVersion = @filemtime(base_path('public/assets/css/shared/transitions.css')) ?: time();
+$uiInteractiveJsVersion = @filemtime(base_path('public/assets/js/shared/ui-interactive.js')) ?: time();
 $adminJsVersion = @filemtime(base_path('public/assets/js/dashboards/admin.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
 $dashboardModuleJsVersion = @filemtime(base_path('public/assets/js/modules/dashboard.js')) ?: time();
@@ -51,6 +53,16 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
     <link rel="icon" type="image/png" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
 
+    <script>
+        (function() {
+            try {
+                if (localStorage.getItem('smartleap_staff_theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <!-- Shared and admin-specific dashboard styles used across the shell and mounted sections. -->
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/project-officer.css?v=<?= urlencode((string) $projectOfficerCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/admin.css?v=<?= urlencode((string) $adminCssVersion) ?>">
@@ -66,6 +78,7 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval.css?v=<?= urlencode((string) $postApprovalCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval-review.css?v=<?= urlencode((string) $postApprovalReviewCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode((string) $notificationsCssVersion) ?>">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/shared/transitions.css?v=<?= urlencode((string) $transitionsCssVersion) ?>">
 
     <!-- Icon font used by navigation, cards, and action controls in the admin portal. -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -122,6 +135,10 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
                 </div>
 
                 <div class="admin-topbar__actions">
+                    <!-- Dark mode toggle for CSWDD staff. -->
+                    <button type="button" class="theme-toggle-btn" id="staffThemeToggle" data-action="toggle-theme" aria-label="Toggle dark mode" title="Toggle dark mode">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
                     <!-- Manual top-level refresh for the active Admin workspace. -->
                     <button type="button" class="app-btn-outline admin-refresh-button" id="adminRefreshButton" aria-label="Refresh admin dashboard">
                         <svg class="admin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.8-4.2L13 11h8V3l-3.3 3.3Z"/></svg>
@@ -183,5 +200,6 @@ $generatedAt = (string) ($overview['generatedAt'] ?? date(DATE_ATOM));
     <script src="<?= $baseUrl ?>/assets/js/dashboards/repayment-review-workspace.js?v=<?= urlencode((string) $repaymentWorkspaceJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/shared/notifications.js?v=<?= urlencode((string) $notificationsJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/admin.js?v=<?= urlencode((string) $adminJsVersion) ?>" defer></script>
+    <script src="<?= $baseUrl ?>/assets/js/shared/ui-interactive.js?v=<?= urlencode((string) $uiInteractiveJsVersion) ?>" defer></script>
 </body>
 </html>

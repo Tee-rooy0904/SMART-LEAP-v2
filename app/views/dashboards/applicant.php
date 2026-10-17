@@ -11,6 +11,8 @@ $applicantProfileJsVersion = @filemtime(base_path('public/assets/js/dashboards/a
 $languageToggleJsVersion = @filemtime(base_path('public/assets/js/dashboards/language-toggle.js')) ?: time();
 $supportHelpdeskJsVersion = @filemtime(base_path('public/assets/js/dashboards/support-helpdesk.js')) ?: time();
 $notificationsJsVersion = @filemtime(base_path('public/assets/js/shared/notifications.js')) ?: time();
+$transitionsCssVersion = @filemtime(base_path('public/assets/css/shared/transitions.css')) ?: time();
+$uiInteractiveJsVersion = @filemtime(base_path('public/assets/js/shared/ui-interactive.js')) ?: time();
 $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 $butuanBarangays = array_map(
     static fn (array $row): string => (string) ($row['name'] ?? ''),
@@ -34,6 +36,7 @@ $butuanBarangays = array_map(
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/beneficiary.css?v=<?= urlencode((string) $beneficiaryCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval.css?v=<?= urlencode((string) $postApprovalCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode((string) $notificationsCssVersion) ?>">
+    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/shared/transitions.css?v=<?= urlencode((string) $transitionsCssVersion) ?>">
 </head>
 <body class="applicant-dashboard-page">
     <!-- Bootstrap values consumed by the applicant dashboard scripts after page load. -->
@@ -82,6 +85,10 @@ $butuanBarangays = array_map(
                     <strong class="mobile-topbar__title" id="mobileTopbarTitle" data-i18n-key="overview">Overview</strong>
                 </div>
                 <div class="applicant-contextbar__actions">
+                    <button type="button" class="easy-read-toggle-btn" id="easyReadToggle" data-action="toggle-easy-read" aria-label="Toggle easy-read mode for larger text" aria-pressed="false" title="Dako nga letra / Large text">
+                        <span aria-hidden="true" style="font-size:1.1em; font-weight:800;">Aa</span>
+                        <span class="easy-read-label">Easy Read</span>
+                    </button>
                     <div class="applicant-contextbar__notifications" id="applicantNotificationMount"></div>
                     <div class="portal-language-toggle" role="group" aria-label="Select language">
                         <button type="button" class="portal-language-toggle__button is-active" data-language-option="en">English</button>
@@ -781,5 +788,6 @@ $butuanBarangays = array_map(
     <script src="<?= $baseUrl ?>/assets/js/dashboards/applicant-beneficiary.js?v=<?= urlencode((string) $applicantBeneficiaryJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/applicant-profile.js?v=<?= urlencode((string) $applicantProfileJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/support-helpdesk.js?v=<?= urlencode((string) $supportHelpdeskJsVersion) ?>" defer></script>
+    <script src="<?= $baseUrl ?>/assets/js/shared/ui-interactive.js?v=<?= urlencode((string) $uiInteractiveJsVersion) ?>" defer></script>
 </body>
 </html>

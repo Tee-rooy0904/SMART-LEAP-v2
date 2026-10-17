@@ -124,7 +124,8 @@ function fetch_pdo_summary(PDO $pdo): array
 SELECT
     users.full_name AS pdo_name,
     COALESCE(app_counts.applicant_count, 0) AS applicant_count,
-    COALESCE(ben_counts.beneficiary_count, 0) AS beneficiary_count
+    COALESCE(ben_counts.current_beneficiary_count, 0) AS beneficiary_count,
+    COALESCE(ben_counts.workspace_profile_count, 0) AS workspace_profile_count
 FROM users
 INNER JOIN roles ON roles.id = users.role_id
 INNER JOIN staff_profiles ON staff_profiles.user_id = users.id
@@ -137,7 +138,20 @@ LEFT JOIN (
 ) AS app_counts ON app_counts.staff_profile_id = staff_profiles.id
 LEFT JOIN (
   SELECT beneficiary_profiles.assigned_staff_profile_id AS staff_profile_id,
-         COUNT(*) AS beneficiary_count
+         SUM(
+             CASE
+                 WHEN LOWER(COALESCE(beneficiary_profiles.beneficiary_status, '')) IN ('active', 'inactive', 'deceased')
+                 THEN 1
+                 ELSE 0
+             END
+         ) AS current_beneficiary_count,
+         SUM(
+             CASE
+                 WHEN LOWER(COALESCE(beneficiary_profiles.beneficiary_status, '')) = 'application_workspace'
+                 THEN 1
+                 ELSE 0
+             END
+         ) AS workspace_profile_count
   FROM beneficiary_profiles
   WHERE beneficiary_profiles.assigned_staff_profile_id IS NOT NULL
   GROUP BY beneficiary_profiles.assigned_staff_profile_id

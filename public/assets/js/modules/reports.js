@@ -23,12 +23,11 @@
   const baseUrl = (window.SMARTLEAP_BASE_URL || '').replace(/\/+$/, '');
   const chartPalette = ['#2563eb', '#16a34a', '#f97316', '#dc2626', '#7c3aed', '#0891b2', '#eab308', '#be185d', '#475569', '#65a30d'];
   const quarterLabels = [
-    { value: '1', label: 'Q1' },
-    { value: '2', label: 'Q2' },
-    { value: '3', label: 'Q3' },
-    { value: '4', label: 'Q4' },
+    { value: '1', label: 'Q1 (Jan - Mar)' },
+    { value: '2', label: 'Q2 (Apr - Jun)' },
+    { value: '3', label: 'Q3 (Jul - Sep)' },
+    { value: '4', label: 'Q4 (Oct - Dec)' },
   ];
-  const repaymentCycleStartMonth = 5;
 
   const padMonth = (value) => String(value).padStart(2, '0');
   const shiftMonthValue = (monthValue, offset) => {
@@ -36,11 +35,6 @@
     if (Number.isNaN(parsed.getTime())) return monthValue;
     parsed.setMonth(parsed.getMonth() + Number(offset || 0));
     return `${parsed.getFullYear()}-${padMonth(parsed.getMonth() + 1)}`;
-  };
-  const buildRepaymentCycleMonths = (yearValue) => {
-    const baseYear = Number.parseInt(yearValue, 10) || Number.parseInt(currentYear, 10);
-    const startMonth = `${baseYear}-${padMonth(repaymentCycleStartMonth)}`;
-    return Array.from({ length: 12 }, (_, index) => shiftMonthValue(startMonth, index));
   };
   const buildCalendarYearMonths = (yearValue) => {
     const baseYear = Number.parseInt(yearValue, 10) || Number.parseInt(currentYear, 10);
@@ -55,8 +49,7 @@
     const [, monthNumberRaw] = String(monthValue || '').split('-');
     const monthNumber = Number.parseInt(monthNumberRaw, 10);
     if (!monthNumber) return '1';
-    const normalized = (monthNumber - repaymentCycleStartMonth + 12) % 12;
-    return String(Math.floor(normalized / 3) + 1);
+    return String(Math.floor((monthNumber - 1) / 3) + 1);
   };
   const niceAxisStep = (rawMax) => {
     const safeMax = Math.max(Number(rawMax) || 0, 1);
@@ -287,14 +280,15 @@
   const scheduledRepaymentQuartersForYear = (yearValue) => {
     const year = Number.parseInt(yearValue, 10);
     const quarters = Array.isArray(reportData?.options?.repaymentQuarters) ? reportData.options.repaymentQuarters : [];
-    return quarters
+    const matched = quarters
       .filter((item) => Number(item?.year || 0) === year)
       .map((item) => ({
         value: String(item.quarter || ''),
-        label: String(item.label || `Q${item.quarter || ''} ${year}`),
+        label: String(item.label || `Q${item.quarter || ''}`),
       }))
       .filter((item) => /^[1-4]$/.test(item.value))
       .sort((left, right) => Number(left.value) - Number(right.value));
+    return matched.length ? matched : quarterLabels;
   };
 
   const scheduledRepaymentYears = (period) => {
@@ -448,10 +442,15 @@
     return `
       <div class="reports-toolbar reports-filter-card">
         <div class="reports-filter-grid reports-filter-grid--realtime">
-          <div class="reports-filter-group reports-search">
+          <div class="reports-filter-group">
             <span class="reports-label">Search</span>
-            <i class="fas fa-search" aria-hidden="true"></i>
-            <input type="search" id="reports-search" placeholder="Search person, business, or PDO" value="${escapeHtml(filters.search)}">
+            <div class="reports-search-box">
+              <i class="fas fa-search reports-search-icon" aria-hidden="true"></i>
+              <input type="search" id="reports-search" class="reports-search-input" placeholder="Search person, business, or PDO" value="${escapeHtml(filters.search)}" autocomplete="off">
+              <button type="button" class="reports-search-clear${filters.search ? ' is-visible' : ''}" id="reports-search-clear" aria-label="Clear search" title="Clear search">
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
           ${repaymentControls}
           ${pdoControl}
@@ -916,7 +915,8 @@
 
   const attendanceLabel = (status) => {
     const text = String(status || '').trim().toLowerCase();
-    if (['attended', 'completed', 'present'].includes(text)) return 'Present';
+    if (text === 'completed') return 'Completed';
+    if (['attended', 'present'].includes(text)) return 'Present';
     if (['missed', 'absent'].includes(text)) return 'Absent';
     if (text === 'excused') return 'Excused';
     if (text === 'notified') return 'Notified';
@@ -1049,7 +1049,8 @@
 
   const trainingAttendanceTone = (status) => {
     const text = String(status || '').trim().toLowerCase();
-    if (['attended', 'completed', 'present'].includes(text)) return 'emerald';
+    if (text === 'completed') return 'blue';
+    if (['attended', 'present'].includes(text)) return 'emerald';
     if (['missed', 'absent'].includes(text)) return 'rose';
     if (text === 'excused') return 'amber';
     return 'slate';
@@ -1069,23 +1070,35 @@
     root.innerHTML = `
       <div class="reports-training-attendance-summary">
         <div class="reports-training-attendance-summary__header">
-          <div>
-            <strong>${escapeHtml(filterParts.length ? filterParts.join(' | ') : 'All Sessions and Groups')}</strong>
-            <span>${escapeHtml(`${summary.participants || 0} participant${Number(summary.participants || 0) === 1 ? '' : 's'} matched the current report filters.`)}</span>
+          <div class="reports-training-attendance-summary__title-wrap">
+            <strong class="reports-training-attendance-summary__title">${escapeHtml(filterParts.length ? filterParts.join(' | ') : 'All Sessions and Groups')}</strong>
+            <span class="reports-training-attendance-summary__subtitle">${escapeHtml(`${summary.participants || 0} participant${Number(summary.participants || 0) === 1 ? '' : 's'} matched the current report filters.`)}</span>
           </div>
           <div class="reports-training-attendance-summary__chips">
-            <span>Present <strong>${escapeHtml(String(summary.present || 0))}</strong></span>
-            <span>Absent <strong>${escapeHtml(String(summary.absent || 0))}</strong></span>
-            <span>Excused <strong>${escapeHtml(String(summary.excused || 0))}</strong></span>
-            <span>Completed <strong>${escapeHtml(String(summary.completed || 0))}</strong></span>
+            <span class="reports-training-attendance-summary__chip reports-training-attendance-summary__chip--present">
+              <span class="reports-training-chip-dot"></span>Present <strong>${escapeHtml(String(summary.present || 0))}</strong>
+            </span>
+            <span class="reports-training-attendance-summary__chip reports-training-attendance-summary__chip--absent">
+              <span class="reports-training-chip-dot"></span>Absent <strong>${escapeHtml(String(summary.absent || 0))}</strong>
+            </span>
+            <span class="reports-training-attendance-summary__chip reports-training-attendance-summary__chip--excused">
+              <span class="reports-training-chip-dot"></span>Excused <strong>${escapeHtml(String(summary.excused || 0))}</strong>
+            </span>
+            <span class="reports-training-attendance-summary__chip reports-training-attendance-summary__chip--completed">
+              <span class="reports-training-chip-dot"></span>Completed <strong>${escapeHtml(String(summary.completed || 0))}</strong>
+            </span>
           </div>
         </div>
         <div class="reports-training-attendance-breakdown">
           ${breakdown.map((item) => `
             <article class="reports-training-attendance-breakdown__card">
-              <span>${escapeHtml(item.label || `Session ${item.session || '--'}`)}</span>
+              <span class="reports-training-attendance-breakdown__session">${escapeHtml(item.label || `Session ${item.session || '--'}`)}</span>
               <strong>${escapeHtml(String((item.present || 0) + (item.absent || 0) + (item.excused || 0)))}</strong>
-              <small>${escapeHtml(`${item.present || 0} present | ${item.absent || 0} absent | ${item.excused || 0} excused`)}</small>
+              <small class="reports-training-attendance-breakdown__meta">
+                <span class="breakdown-tag breakdown-tag--present">${escapeHtml(String(item.present || 0))} present</span> ·
+                <span class="breakdown-tag breakdown-tag--absent">${escapeHtml(String(item.absent || 0))} absent</span> ·
+                <span class="breakdown-tag breakdown-tag--excused">${escapeHtml(String(item.excused || 0))} excused</span>
+              </small>
             </article>
           `).join('')}
         </div>
@@ -1157,6 +1170,11 @@
     const content = qs('#reports-content');
     if (!content) return;
 
+    const activeEl = document.activeElement;
+    const isSearchFocused = activeEl && activeEl.id === 'reports-search';
+    const selectionStart = isSearchFocused ? activeEl.selectionStart : null;
+    const selectionEnd = isSearchFocused ? activeEl.selectionEnd : null;
+
     const items = records();
     const summary = reportData?.summary || currentSummary(items);
     const metrics = reportData?.repaymentAnalytics?.periodMetrics || reportData?.summary?.repaymentPerformance || {
@@ -1179,6 +1197,16 @@
       <div id="reports-performance-body"></div>
     `;
     if (refreshToolbar) renderToolbarOnly();
+
+    if (isSearchFocused) {
+      const newSearchInput = qs('#reports-search');
+      if (newSearchInput) {
+        newSearchInput.focus();
+        if (selectionStart !== null && selectionEnd !== null) {
+          try { newSearchInput.setSelectionRange(selectionStart, selectionEnd); } catch (_) {}
+        }
+      }
+    }
     const performanceBody = qs('#reports-performance-body', content);
     if (!performanceBody) return;
     performanceBody.innerHTML = buildPerformanceSection(metrics, activeReport);
@@ -1272,9 +1300,42 @@
     section.addEventListener('input', (event) => {
       const id = event.target?.id || '';
       if (id === 'reports-search') {
-        state.filters.reports.search = event.target.value;
+        const val = event.target.value;
+        state.filters.reports.search = val;
+        const clearBtn = qs('#reports-search-clear');
+        if (clearBtn) clearBtn.classList.toggle('is-visible', Boolean(val.trim()));
         window.clearTimeout(searchTimer);
         searchTimer = window.setTimeout(fetchReportData, 350);
+      }
+    });
+
+    section.addEventListener('keydown', (event) => {
+      const id = event.target?.id || '';
+      if (id === 'reports-search') {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          window.clearTimeout(searchTimer);
+          fetchReportData();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          event.target.value = '';
+          state.filters.reports.search = '';
+          const clearBtn = qs('#reports-search-clear');
+          if (clearBtn) clearBtn.classList.remove('is-visible');
+          window.clearTimeout(searchTimer);
+          fetchReportData();
+        }
+      }
+    });
+
+    section.addEventListener('search', (event) => {
+      const id = event.target?.id || '';
+      if (id === 'reports-search') {
+        state.filters.reports.search = event.target.value;
+        const clearBtn = qs('#reports-search-clear');
+        if (clearBtn) clearBtn.classList.toggle('is-visible', Boolean(event.target.value.trim()));
+        window.clearTimeout(searchTimer);
+        fetchReportData();
       }
     });
 
@@ -1336,6 +1397,20 @@
     });
 
     section.addEventListener('click', (event) => {
+      const clearBtn = event.target.closest('#reports-search-clear');
+      if (clearBtn) {
+        const searchInput = qs('#reports-search');
+        if (searchInput) {
+          searchInput.value = '';
+          searchInput.focus();
+        }
+        state.filters.reports.search = '';
+        clearBtn.classList.remove('is-visible');
+        window.clearTimeout(searchTimer);
+        fetchReportData();
+        return;
+      }
+
       const openReport = event.target.closest('[data-report-open]');
       if (openReport) {
         state.filters.reports.activeReport = openReport.getAttribute('data-report-open') || 'repayments';

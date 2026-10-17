@@ -164,8 +164,8 @@
     return ({
       uploaded: 'Uploaded',
       under_review: 'Under Review',
-      needs_correction: 'Needs Correction',
-      rejected: 'Rejected',
+      needs_correction: 'Return for Update',
+      rejected: 'Marked Invalid',
       verified: 'Verified',
     })[stage] || 'Uploaded';
   }
@@ -597,6 +597,7 @@
   // Build one reusable repayment workspace instance for a staff page by wiring IDs to shared roster and modal logic.
   function createWorkspace(config) {
     const ids = config.ids || {};
+    const isReadOnlyMode = Boolean(config.readOnly);
     const initialPayments = Array.isArray(config.initialPayments)
       ? config.initialPayments.map(normalizePayment).filter(Boolean)
       : [];
@@ -666,10 +667,6 @@
       return beneficiary.records.find((record) => ['uploaded', 'under_review', 'needs_correction'].includes(record.stage))
         || beneficiary.records[0]
         || null;
-    }
-
-    function selectedHardCopyOfficeStatus() {
-      return normalizeHardCopyOfficeStatus(byId(ids.hardCopyInput)?.value);
     }
 
     function remarksDirty() {
@@ -755,6 +752,11 @@
           node.value = value;
         }
       });
+      const searchEl = byId(ids.search);
+      const searchClearEl = searchEl?.parentElement?.querySelector('.applications-search-box__clear');
+      if (searchClearEl) {
+        searchClearEl.style.display = searchEl?.value ? 'inline-flex' : 'none';
+      }
     }
 
     function populateSelectOptions() {
@@ -860,9 +862,9 @@
         const verificationResult = record.stage === 'verified'
           ? submissionStatusLabel(record)
           : record.stage === 'needs_correction'
-            ? 'Needs Correction'
+            ? 'Return for Update'
             : record.stage === 'rejected'
-              ? 'Rejected'
+              ? 'Marked Invalid'
               : 'Pending';
         return `
           <tr class="${isActive ? 'is-active' : ''}" data-repayment-record="${record.id}">
@@ -883,27 +885,38 @@
     }
 
     function renderDecisionState(beneficiary, record) {
+      const decisionGrid = byId(ids.decisionGrid);
+      const remarksGroup = byId(ids.remarksGroup);
       const remarksField = byId(ids.remarks);
       const decisionCards = byId(ids.decisionCards);
+      const decisionGuide = byId(ids.decisionGuide);
       const noteNode = byId(ids.decisionNote);
       const hasRecord = Boolean(record);
       const isVerified = Boolean(record && record.stage === 'verified');
       const isConfirmed = isVerified && normalizeHardCopyOfficeStatus(record?.hardCopyOfficeStatus) === 'confirmed_by_office';
-      const isLocked = isConfirmed;
+      const isReadOnlyState = isReadOnlyMode || !hasRecord || isConfirmed;
+
+      if (decisionGrid) {
+        decisionGrid.classList.toggle('is-note-only', isReadOnlyState);
+      }
+
+      if (remarksGroup) {
+        remarksGroup.hidden = isReadOnlyState;
+      }
 
       if (remarksField) {
         const value = record ? text(record.notes) : '';
         remarksField.value = value;
-        remarksField.readOnly = !hasRecord || isLocked;
-        remarksField.disabled = !hasRecord || isLocked;
+        remarksField.readOnly = isReadOnlyState;
+        remarksField.disabled = isReadOnlyState;
         state.remarksSnapshot = value;
       }
 
       if (decisionCards) {
-        decisionCards.hidden = !hasRecord || isLocked;
+        decisionCards.hidden = !hasRecord || isReadOnlyMode;
         const cards = decisionCards.querySelectorAll('[data-decision]');
         cards.forEach(function(card) {
-          card.disabled = !hasRecord || isLocked;
+          card.disabled = !hasRecord || isReadOnlyState;
           card.classList.remove('is-active');
           const decision = card.getAttribute('data-decision');
           if (isVerified && decision === 'approved') card.classList.add('is-active');
@@ -911,9 +924,8 @@
         });
       }
 
-      const hardCopyInput = byId(ids.hardCopyInput);
-      if (hardCopyInput) {
-        hardCopyInput.disabled = !hasRecord || isLocked;
+      if (decisionGuide) {
+        decisionGuide.hidden = !hasRecord || isReadOnlyMode;
       }
 
       if (!noteNode) return;
@@ -921,15 +933,19 @@
         noteNode.textContent = 'No uploaded repayment submission is available for review yet.';
         return;
       }
-      if (isLocked) {
-        noteNode.textContent = 'This submission is verified with confirmed OR — no further changes available.';
+      if (isReadOnlyMode) {
+        noteNode.textContent = 'Social Worker oversight is view-only for repayment records.';
+        return;
+      }
+      if (isConfirmed) {
+        noteNode.textContent = 'This submission is already verified and the office receipt is confirmed.';
         return;
       }
       if (isVerified) {
-        noteNode.textContent = 'Already verified. Use "Approve & Confirm Receipt" if the physical OR is now received.';
+        noteNode.textContent = 'Already verified. Use "Approve & Confirm Receipt" only when the office already has the physical OR.';
         return;
       }
-      noteNode.textContent = 'Select a decision below to apply to this repayment submission.';
+      noteNode.textContent = 'Approve accepted proof. Use "Approve & Confirm Receipt" only if the office already has the physical OR. Return fixable submissions for update, or mark invalid receipts that should not be accepted.';
     }
 
     // Sync every repayment modal panel from the selected beneficiary and the currently focused upload record.
@@ -977,9 +993,6 @@
       setText(ids.amount, formatCurrency(record?.amount || 0));
       setText(ids.uploadStatus, record ? submissionStatusLabel(record) : 'No Upload Yet');
       setText(ids.hardCopyStatus, hardCopyOfficeStatusLabel(record?.hardCopyOfficeStatus));
-      if (byId(ids.hardCopyInput)) {
-        byId(ids.hardCopyInput).value = normalizeHardCopyOfficeStatus(record?.hardCopyOfficeStatus);
-      }
 
       const warningNode = byId(ids.duplicateWarning);
       if (warningNode) {
@@ -1026,14 +1039,25 @@
     async function applyDecision(decisionKey) {
       const beneficiary = selectedBeneficiary();
       const record = activeRecord(beneficiary);
+      if (isReadOnlyMode) {
+        notify('This repayment workspace is view-only.', 'info');
+        return;
+      }
       if (!record) {
         notify('No repayment submission is available for review.', 'warning');
         return;
       }
 
+      const isConfirmed = record.stage === 'verified'
+        && normalizeHardCopyOfficeStatus(record?.hardCopyOfficeStatus) === 'confirmed_by_office';
+      if (isConfirmed) {
+        notify('This repayment is already fully confirmed and can no longer be changed here.', 'info');
+        return;
+      }
+
       const remarks = text(byId(ids.remarks)?.value);
       if (['needs_correction', 'rejected'].includes(decisionKey) && !remarks) {
-        notify('Remarks are required for correction and rejection decisions.', 'warning');
+        notify('Remarks are required when returning a submission or marking a receipt invalid.', 'warning');
         return;
       }
 
@@ -1052,11 +1076,11 @@
       } else if (decisionKey === 'needs_correction') {
         status = 'needs_correction';
         hardCopyOfficeStatus = normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus);
-        successMessage = 'Repayment submission marked for correction.';
+        successMessage = 'Repayment submission returned for update.';
       } else if (decisionKey === 'rejected') {
         status = 'rejected';
         hardCopyOfficeStatus = normalizeHardCopyOfficeStatus(record.hardCopyOfficeStatus);
-        successMessage = 'Repayment submission rejected.';
+        successMessage = 'Repayment submission marked invalid.';
       } else {
         return;
       }
@@ -1076,30 +1100,6 @@
         notify(successMessage, 'success');
       } catch (error) {
         notify(error.message || 'Unable to save the repayment review.', 'warning');
-      }
-    }
-
-    async function applyHardCopyUpdate() {
-      const beneficiary = selectedBeneficiary();
-      const record = activeRecord(beneficiary);
-      if (!record) {
-        notify('No repayment record selected.', 'warning');
-        return;
-      }
-      const selectedStatus = selectedHardCopyOfficeStatus();
-      try {
-        await fetchJson(`${window.SMARTLEAP_BASE_URL || ''}/api/repayments/update-hard-copy-status`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-          body: JSON.stringify({
-            repaymentId: record.id,
-            hardCopyOfficeStatus: selectedStatus,
-          }),
-        });
-        await refresh();
-        notify('Hard copy office status updated.', 'success');
-      } catch (error) {
-        notify(error.message || 'Unable to update hard copy status.', 'warning');
       }
     }
 
@@ -1178,6 +1178,29 @@
       renderRosterTable();
     }
 
+    function setPayments(payments) {
+      state.payments = Array.isArray(payments)
+        ? payments.map(normalizePayment).filter(Boolean)
+        : [];
+      state.roster = buildBeneficiaryRoster(state.payments, beneficiaryRecords(), config);
+      renderSummary();
+      populateSelectOptions();
+      filterRoster();
+      renderRosterTable();
+
+      if (state.modalOpen) {
+        const current = selectedBeneficiary();
+        if (current) {
+          if (state.activeRecordId > 0 && !current.records.some((record) => record.id === state.activeRecordId)) {
+            state.activeRecordId = activeRecord(current)?.id || 0;
+          }
+          renderModal();
+        } else {
+          closeModal(true);
+        }
+      }
+    }
+
     function bind() {
       ensureModalRootDetached();
       const rosterBody = byId(ids.rosterBody);
@@ -1191,12 +1214,44 @@
 
       byId(ids.resetFilters)?.addEventListener('click', resetFilters);
 
-      [ids.search, ids.barangayFilter, ids.pdoFilter, ids.stateFilter, ids.fromDateFilter, ids.toDateFilter]
+      const searchInput = byId(ids.search);
+      const searchClear = searchInput?.parentElement?.querySelector('.applications-search-box__clear');
+      let searchTimeout = null;
+
+      [ids.barangayFilter, ids.pdoFilter, ids.stateFilter, ids.fromDateFilter, ids.toDateFilter]
         .filter(Boolean)
         .forEach((id) => {
           byId(id)?.addEventListener('change', applyFilters);
         });
-      byId(ids.search)?.addEventListener('input', applyFilters);
+
+      if (searchInput) {
+        searchInput.addEventListener('change', applyFilters);
+        searchInput.addEventListener('input', () => {
+          if (searchClear) {
+            searchClear.style.display = searchInput.value ? 'inline-flex' : 'none';
+          }
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(applyFilters, 200);
+        });
+        searchInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            searchInput.value = '';
+            if (searchClear) searchClear.style.display = 'none';
+            applyFilters();
+          }
+        });
+      }
+
+      if (searchClear) {
+        searchClear.addEventListener('click', () => {
+          if (searchInput) {
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            searchInput.focus();
+            applyFilters();
+          }
+        });
+      }
 
       modalRoot?.addEventListener('click', (event) => {
         if (event.target.closest('[data-repayment-modal-close]')) {
@@ -1237,14 +1292,10 @@
       byId(ids.openProof)?.addEventListener('click', () => openFile(text(byId(ids.proofPreview)?.dataset.proof), false));
       byId(ids.downloadProof)?.addEventListener('click', () => openFile(text(byId(ids.proofPreview)?.dataset.proof), true));
       byId(ids.fullscreenProof)?.addEventListener('click', () => requestFullscreen(byId(ids.proofPreview)));
-      byId(ids.hardCopyInput)?.addEventListener('change', () => {
-        setText(ids.hardCopyStatus, hardCopyOfficeStatusLabel(selectedHardCopyOfficeStatus()));
-      });
       byId(ids.decisionCards)?.addEventListener('click', (event) => {
         const card = event.target.closest('[data-decision]');
-        if (card) applyDecision(card.getAttribute('data-decision'));
+        if (card && !card.disabled) applyDecision(card.getAttribute('data-decision'));
       });
-      byId(ids.hardCopyUpdateBtn)?.addEventListener('click', applyHardCopyUpdate);
       byId(ids.close)?.addEventListener('click', () => closeModal());
 
       document.addEventListener('keydown', (event) => {
@@ -1269,6 +1320,8 @@
 
     return {
       refresh,
+      resetFilters,
+      setPayments,
       syncBeneficiaries,
       openBeneficiary: selectBeneficiary,
       close: () => closeModal(true),

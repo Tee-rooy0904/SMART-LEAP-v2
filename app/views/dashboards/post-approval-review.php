@@ -6,8 +6,6 @@
 $reviewCssVersion = (string) @filemtime(base_path('public/assets/css/dashboards/post-approval-review.css'));
 $postApprovalCssVersion = (string) @filemtime(base_path('public/assets/css/dashboards/post-approval.css'));
 $reviewJsVersion = (string) @filemtime(base_path('public/assets/js/dashboards/post-approval-review.js'));
-$notificationsCssVersion = (string) @filemtime(base_path('public/assets/css/components/notifications.css'));
-$notificationsJsVersion = (string) @filemtime(base_path('public/assets/js/shared/notifications.js'));
 $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: time();
 ?>
 <!DOCTYPE html>
@@ -20,7 +18,6 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
     <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/logo-mark.png?v=<?= urlencode((string) $faviconVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval.css?v=<?= urlencode($postApprovalCssVersion) ?>">
     <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/dashboards/post-approval-review.css?v=<?= urlencode($reviewCssVersion) ?>">
-    <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/components/notifications.css?v=<?= urlencode($notificationsCssVersion) ?>">
 </head>
 <body class="<?= !empty($embedded) ? 'review-body--embedded' : '' ?>">
     <script>
@@ -126,7 +123,6 @@ $faviconVersion = @filemtime(base_path('public/assets/img/logo-mark.png')) ?: ti
 
     <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="<?= $baseUrl ?>/assets/js/shared/notifications.js?v=<?= urlencode($notificationsJsVersion) ?>" defer></script>
     <script src="<?= $baseUrl ?>/assets/js/dashboards/post-approval-review.js?v=<?= urlencode($reviewJsVersion) ?>" defer></script>
 </body>
 </html>

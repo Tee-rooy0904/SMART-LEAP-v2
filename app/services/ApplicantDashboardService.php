@@ -20,11 +20,13 @@ class ApplicantDashboardService
         $profile = $entryState['profile'];
         $application = $entryState['application'];
         $requirements = array_values($entryState['requirements']);
+        $historicalSource = is_array($entryState['sourceContext'] ?? null) ? $entryState['sourceContext'] : null;
+        $postApprovalUserId = (int) ($historicalSource['sourceUserId'] ?? $userId);
 
         $applicationDetail = $application ? $this->fetchApplicationDetail((int) $application['id']) : null;
         $training = $profile ? $this->fetchTrainingState((int) $profile['id'], (int) $user['id']) : $this->emptyTrainingState();
         $notifications = (new NotificationService())->listForUser($userId);
-        $postApprovalState = (new PostApprovalComplianceService())->stateForApplicant($userId);
+        $postApprovalState = (new PostApprovalComplianceService())->stateForApplicant($postApprovalUserId);
         $postApproval = $this->mapPostApprovalState($postApprovalState, $training);
         $certificate = (new CertificateService())->stateForDashboard($user, $profile, $training, $postApproval);
         $beneficiaryPortal = $this->buildBeneficiaryPortalState($userId, (string) ($user['role'] ?? ''));
@@ -39,7 +41,26 @@ class ApplicantDashboardService
             'postApproval' => $postApproval,
             'certificate' => $certificate,
             'beneficiaryPortal' => $beneficiaryPortal,
-            'nextStep' => $this->resolveNextStep($profile, $application, $applicationDetail, $training, $postApproval),
+            'historicalSource' => $historicalSource,
+            'nextStep' => $historicalSource !== null
+                ? $this->resolveHistoricalCoMakerNextStep($historicalSource)
+                : $this->resolveNextStep($profile, $application, $applicationDetail, $training, $postApproval),
+        ];
+    }
+
+    private function resolveHistoricalCoMakerNextStep(array $historicalSource): array
+    {
+        $primaryName = trim((string) ($historicalSource['primaryBeneficiaryName'] ?? ''));
+        $subject = $primaryName !== '' ? $primaryName : 'the previous beneficiary';
+
+        return [
+            'title' => 'Viewing previous beneficiary records',
+            'description' => sprintf(
+                'Application and training history shown here belongs to %s. Your co-maker account keeps using the active beneficiary repayment workspace.',
+                $subject
+            ),
+            'actionLabel' => 'Open repayments',
+            'actionPath' => 'applicant-dashboard#repayments',
         ];
     }
 
