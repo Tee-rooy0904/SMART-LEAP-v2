@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS account_verification_codes (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    challenge_type VARCHAR(40) NOT NULL DEFAULT 'account_activation',
+    code_hash VARCHAR(255) NOT NULL,
+    attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    expires_at DATETIME NOT NULL,
+    consumed_at DATETIME NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_account_verification_codes_user FOREIGN KEY (user_id) REFERENCES users(id)
+);

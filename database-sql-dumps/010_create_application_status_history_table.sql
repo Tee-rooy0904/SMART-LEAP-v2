@@ -1,0 +1,1 @@
+-- Migration scaffold: 010_create_application_status_history_table.sql

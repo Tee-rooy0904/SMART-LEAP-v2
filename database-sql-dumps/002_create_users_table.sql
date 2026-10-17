@@ -1,0 +1,1 @@
+-- Migration scaffold: 002_create_users_table.sql

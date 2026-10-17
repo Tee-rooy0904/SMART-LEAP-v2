@@ -1,0 +1,1 @@
+-- Migration scaffold: 008_create_applications_table.sql

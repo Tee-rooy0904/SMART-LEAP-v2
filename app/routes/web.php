@@ -48,6 +48,7 @@ return [
     'POST /admin/co-maker-registrations/review' => ['handler' => [AdminDashboardController::class, 'reviewCoMakerRegistration'], 'middleware' => ['auth', 'admin']],
     'GET /admin/reports/export/csv' => ['handler' => [ReportController::class, 'exportCsv'], 'middleware' => ['auth', 'admin']],
     'GET /admin/reports/export/excel' => ['handler' => [ReportController::class, 'exportExcel'], 'middleware' => ['auth', 'admin']],
+    
     'GET /admin/reports/export/pdf' => ['handler' => [ReportController::class, 'exportPdf'], 'middleware' => ['auth', 'admin']],
     'GET /admin/training' => ['handler' => [TrainingWorkspaceController::class, 'showAdmin'], 'middleware' => ['auth', 'admin']],
     'GET /admin/training/session' => ['handler' => [TrainingWorkspaceController::class, 'showAdmin'], 'middleware' => ['auth', 'admin']],

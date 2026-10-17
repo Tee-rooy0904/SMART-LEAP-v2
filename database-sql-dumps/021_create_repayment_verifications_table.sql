@@ -1,0 +1,1 @@
+-- Migration scaffold: 021_create_repayment_verifications_table.sql

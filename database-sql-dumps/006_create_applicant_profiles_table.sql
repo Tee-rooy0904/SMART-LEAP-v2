@@ -1,0 +1,1 @@
+-- Migration scaffold: 006_create_applicant_profiles_table.sql
